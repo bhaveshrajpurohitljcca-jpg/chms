@@ -1,4 +1,7 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+const STATIC_BASE = import.meta.env.VITE_API_BASE_URL
+  ? import.meta.env.VITE_API_BASE_URL.replace('/api/v1', '')
+  : 'http://localhost:8000';
 
 export interface UserProfile {
   id: string;
@@ -26,12 +29,32 @@ export interface StandardApiResponse<T> {
   data?: T;
 }
 
-// Token helper
+export interface SubmissionRecord {
+  id: string;
+  team_id: string;
+  hackathon_id: string;
+  problem_statement_id?: string;
+  title: string;
+  description?: string;
+  repo_url: string;
+  demo_url?: string;
+  video_url?: string;
+  additional_notes?: string;
+  file_url?: string;
+  file_name?: string;
+  status: string;
+  submitted_at: string;
+  evaluations?: any[];
+}
+
+export { STATIC_BASE };
+
+// Token helpers
 export const getStoredToken = (): string | null => localStorage.getItem('chms_access_token');
 export const setStoredToken = (token: string) => localStorage.setItem('chms_access_token', token);
 export const removeStoredToken = () => localStorage.removeItem('chms_access_token');
 
-// Generic fetch wrapper
+// Generic JSON fetch wrapper
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<StandardApiResponse<T>> {
   const token = getStoredToken();
   const headers: Record<string, string> = {
@@ -44,7 +67,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
       headers,
     });
@@ -60,8 +83,38 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 }
 
+// Multipart upload wrapper (browser sets Content-Type with boundary automatically)
+async function requestFormData<T>(
+  endpoint: string,
+  formData: FormData,
+  method = 'POST'
+): Promise<StandardApiResponse<T>> {
+  const token = getStoredToken();
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      method,
+      headers,
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.detail || data.message || 'File upload failed');
+    }
+    return data;
+  } catch (error: any) {
+    console.warn(`[Upload Error: ${endpoint}]`, error.message);
+    throw error;
+  }
+}
+
 export const apiService = {
-  // Auth
+  // ─── Auth ──────────────────────────────────────────────────
   async login(credentials: { email: string; password: string }) {
     return request<AuthResponseData>('/auth/login', {
       method: 'POST',
@@ -88,7 +141,7 @@ export const apiService = {
     return request<UserProfile>('/auth/me');
   },
 
-  // Users
+  // ─── Users ─────────────────────────────────────────────────
   async updateProfile(payload: {
     full_name?: string;
     department?: string;
@@ -120,7 +173,7 @@ export const apiService = {
     });
   },
 
-  // Hackathons
+  // ─── Hackathons ────────────────────────────────────────────
   async listHackathons() {
     return request<any[]>('/hackathons');
   },
@@ -129,7 +182,7 @@ export const apiService = {
     return request<any>(`/hackathons/${idOrSlug}`);
   },
 
-  // Teams
+  // ─── Teams ────────────────────────────────────────────────
   async listTeams(hackathonId?: string) {
     const query = hackathonId ? `?hackathon_id=${hackathonId}` : '';
     return request<any[]>(`/teams${query}`);
@@ -153,12 +206,22 @@ export const apiService = {
     });
   },
 
-  // Submissions
+  // ─── Submissions ───────────────────────────────────────────
+
+  /** List all submissions (admin/judge console), optionally filtered by hackathon */
   async listSubmissions(hackathonId?: string) {
     const query = hackathonId ? `?hackathon_id=${hackathonId}` : '';
-    return request<any[]>(`/submissions${query}`);
+    return request<SubmissionRecord[]>(`/submissions${query}`);
   },
 
+  /** Get the logged-in student's team submission for a specific hackathon */
+  async getMySubmission(hackathonId: string) {
+    return request<SubmissionRecord | null>(
+      `/submissions/my-submission?hackathon_id=${hackathonId}`
+    );
+  },
+
+  /** Create a new project submission */
   async createSubmission(payload: {
     team_id: string;
     hackathon_id: string;
@@ -168,13 +231,51 @@ export const apiService = {
     repo_url: string;
     demo_url?: string;
     video_url?: string;
+    additional_notes?: string;
   }) {
-    return request<any>('/submissions', {
+    return request<SubmissionRecord>('/submissions', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
   },
 
+  /** Update (resubmit) an existing submission */
+  async updateSubmission(
+    submissionId: string,
+    payload: {
+      title?: string;
+      description?: string;
+      repo_url?: string;
+      demo_url?: string;
+      video_url?: string;
+      additional_notes?: string;
+    }
+  ) {
+    return request<SubmissionRecord>(`/submissions/${submissionId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** Upload project deliverable file (PDF, PPT, PPTX, DOCX, ZIP, max 50MB) */
+  async uploadSubmissionFile(file: File, submissionId?: string) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const query = submissionId ? `?submission_id=${submissionId}` : '';
+    return requestFormData<{ file_url: string; file_name: string }>(
+      `/submissions/upload${query}`,
+      formData
+    );
+  },
+
+  /** Remove the uploaded file from a submission */
+  async deleteSubmissionFile(submissionId: string) {
+    return request<Record<string, never>>(`/submissions/${submissionId}/file`, {
+      method: 'DELETE',
+    });
+  },
+
+  /** Submit a judge evaluation score for a submission */
   async evaluateSubmission(payload: {
     submission_id: string;
     score_innovation: number;
@@ -186,5 +287,5 @@ export const apiService = {
       method: 'POST',
       body: JSON.stringify(payload),
     });
-  }
+  },
 };

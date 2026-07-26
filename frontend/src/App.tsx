@@ -47,6 +47,7 @@ import { ProblemStatementDetailPage } from '@/pages/student/ProblemStatementDeta
 import { TeamManagementPage } from '@/pages/student/TeamManagementPage';
 import { CreateTeamPage } from '@/pages/student/CreateTeamPage';
 import { RegistrationPage } from '@/pages/student/RegistrationPage';
+import StudentSubmissionPage from '@/pages/student/StudentSubmissionPage';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { ProfilePage } from '@/pages/ProfilePage';
@@ -2105,7 +2106,7 @@ function App() {
             <Route path="team/create" element={<CreateTeamPage />} />
             <Route path="registration" element={<RegistrationPage />} />
             <Route path="registration/:id" element={<RegistrationPage />} />
-            <Route path="submissions" element={<SubmissionsView />} />
+            <Route path="submissions" element={<StudentSubmissionPage />} />
             <Route path="certificates" element={<CertificatesView />} />
             <Route path="profile" element={<ProfileSettings />} />
           </Route>
@@ -2120,6 +2121,7 @@ function App() {
           {/* Coordinator Protected Portal */}
           <Route path="/coordinator" element={<RoleLayout allowedRoles={['coordinator']} />}>
             <Route index element={<CoordinatorView />} />
+            <Route path="submissions" element={<SubmissionsView />} />
             <Route path="announcements" element={<AnnouncementsView />} />
             <Route path="profile" element={<ProfileSettings />} />
           </Route>
