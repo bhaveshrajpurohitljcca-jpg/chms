@@ -73,17 +73,13 @@ export const ThreeParticleBg = () => {
 
       const elapsedTime = (performance.now() - startTime) / 1000;
 
-      // Subtle constant rotation
-      particles.rotation.y = elapsedTime * 0.03;
-      particles.rotation.x = elapsedTime * 0.015;
-
       // Smooth mouse tracking interpolation (Lerp)
-      targetX += (mouseX - targetX) * 0.05;
-      targetY += (mouseY - targetY) * 0.05;
+      targetX += (mouseX - targetX) * 0.08;
+      targetY += (mouseY - targetY) * 0.08;
 
-      // Move particle system offsets based on target values
-      particles.rotation.y += targetX * 0.4;
-      particles.rotation.x += targetY * 0.4;
+      // Apply base rotation + mouse responsive offset
+      particles.rotation.y = (elapsedTime * 0.03) + (targetX * 0.8);
+      particles.rotation.x = (elapsedTime * 0.015) + (targetY * 0.8);
 
       renderer.render(scene, camera);
     };
