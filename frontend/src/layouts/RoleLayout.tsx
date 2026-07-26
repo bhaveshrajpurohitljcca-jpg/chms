@@ -121,7 +121,7 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
       {/* TOP HEADER */}
       <header className="fixed top-0 left-0 right-0 h-20 z-30 px-6 flex items-center justify-between bg-[#050505]/60 backdrop-blur-md border-b border-[rgba(255,255,255,0.05)] pointer-events-auto">
         <div className="flex items-center gap-3">
-          <Link to={`/${user.role.toLowerCase()}`} className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.1)] flex items-center justify-center text-accent-primary">
               <Zap size={16} />
             </div>
