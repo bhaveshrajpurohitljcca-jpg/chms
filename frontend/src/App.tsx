@@ -19,7 +19,8 @@ import {
   Shirt,
   UserPlus,
   Award,
-  X
+  X,
+  Layers2
 } from 'lucide-react';
 import ThreeParticleBg from '@/components/ui/ThreeParticleBg';
 import StatusPulseBadge from '@/components/ui/StatusPulseBadge';
@@ -31,49 +32,24 @@ import Modal from '@/components/ui/modal';
 import { Table, TableRow, TableCell } from '@/components/ui/table';
 import Badge from '@/components/ui/badge';
 
+// Auth Imports
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import ProfileSettings from './pages/ProfileSettings';
+import RoleLayout from './layouts/RoleLayout';
+
 // ==========================================
 // A. GLOBAL LAYOUT (Header + WebGL Particles + Menu Drawer)
 // ==========================================
 const GlobalLayout = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isAuthenticated, user } = useAuth();
 
   const navigationLinks = [
     { label: 'Explore Hackathons', path: '/hackathons' },
     { label: 'Explore Gallery', path: '/gallery' },
     { label: 'View Leader Board', path: '/leaderboard' }
-  ];
-
-  const drawerSections = [
-    {
-      title: 'Student space',
-      links: [
-        { label: 'Public Home', path: '/' },
-        { label: 'Explore Hackathons', path: '/hackathons' },
-        { label: 'Team Portal', path: '/teams' },
-        { label: 'Submissions Console', path: '/submissions' },
-        { label: 'Platform Leaderboard', path: '/leaderboard' },
-        { label: 'Certificates Vault', path: '/certificates' },
-        { label: 'Announcements Board', path: '/announcements' }
-      ]
-    },
-    {
-      title: 'Judge Space',
-      links: [
-        { label: 'Evaluation Matrix', path: '/judge' }
-      ]
-    },
-    {
-      title: 'Coordination',
-      links: [
-        { label: 'Operations Console', path: '/coordinator' }
-      ]
-    },
-    {
-      title: 'Administration',
-      links: [
-        { label: 'Admin Command Console', path: '/admin' }
-      ]
-    }
   ];
 
   return (
@@ -108,13 +84,29 @@ const GlobalLayout = () => {
           ))}
         </nav>
 
-        {/* Right Menu trigger */}
-        <div>
+        {/* Right Menu trigger & Dashboard shortcut */}
+        <div className="flex items-center gap-4">
+          {isAuthenticated && user ? (
+            <Link 
+              to={`/${user.role.toLowerCase()}`}
+              className="hidden sm:inline-flex items-center h-10 px-6 rounded-full bg-accent-primary text-black font-semibold text-xs uppercase tracking-wider transition-all duration-300 hover:shadow-[0_0_15px_rgba(0,243,255,0.35)]"
+            >
+              Console
+            </Link>
+          ) : (
+            <Link 
+              to="/login"
+              className="hidden sm:inline-flex items-center h-10 px-6 rounded-full bg-white text-black font-semibold text-xs uppercase tracking-wider transition-all duration-300 hover:bg-accent-primary hover:text-black"
+            >
+              Login
+            </Link>
+          )}
+
           <button 
             onClick={() => setIsMenuOpen(true)}
             className="h-10 px-6 rounded-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.1)] hover:border-accent-primary hover:text-accent-primary text-xs font-semibold uppercase tracking-wider transition-all duration-300 flex items-center gap-2"
           >
-            <span>Menu</span>
+            <span>Index</span>
           </button>
         </div>
       </header>
@@ -145,27 +137,63 @@ const GlobalLayout = () => {
 
               {/* Categorized links list */}
               <div className="flex flex-col gap-8">
-                {drawerSections.map((section, idx) => (
-                  <div key={idx} className="flex flex-col gap-3">
-                    <h5 className="text-[10px] uppercase tracking-[0.2em] font-semibold text-[rgba(255,255,255,0.45)]">
-                      {section.title}
+                <div className="flex flex-col gap-3">
+                  <h5 className="text-[10px] uppercase tracking-[0.2em] font-semibold text-[rgba(255,255,255,0.45)]">
+                    Public Pages
+                  </h5>
+                  <ul className="flex flex-col gap-2.5">
+                    <li>
+                      <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-sm font-light text-white/70 hover:text-accent-primary transition-colors flex items-center gap-1.5">
+                        <span>Public Home</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link to="/hackathons" onClick={() => setIsMenuOpen(false)} className="text-sm font-light text-white/70 hover:text-accent-primary transition-colors flex items-center gap-1.5">
+                        <span>Explore Hackathons</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link to="/gallery" onClick={() => setIsMenuOpen(false)} className="text-sm font-light text-white/70 hover:text-accent-primary transition-colors flex items-center gap-1.5">
+                        <span>Explore Gallery</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link to="/leaderboard" onClick={() => setIsMenuOpen(false)} className="text-sm font-light text-white/70 hover:text-accent-primary transition-colors flex items-center gap-1.5">
+                        <span>Platform Leaderboard</span>
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
+
+                {isAuthenticated && user && (
+                  <div className="flex flex-col gap-3">
+                    <h5 className="text-[10px] uppercase tracking-[0.2em] font-semibold text-accent-primary">
+                      Authorized Workspaces
                     </h5>
                     <ul className="flex flex-col gap-2.5">
-                      {section.links.map((link) => (
-                        <li key={link.path}>
-                          <Link 
-                            to={link.path} 
-                            onClick={() => setIsMenuOpen(false)}
-                            className="text-sm font-light text-white/70 hover:text-accent-primary transition-colors flex items-center gap-1.5 group"
-                          >
-                            <ChevronRight size={12} className="opacity-0 group-hover:opacity-100 text-accent-primary transition-all duration-300" />
-                            <span>{link.label}</span>
-                          </Link>
-                        </li>
-                      ))}
+                      <li>
+                        <Link to="/student" onClick={() => setIsMenuOpen(false)} className="text-sm font-light text-white/70 hover:text-accent-primary transition-colors flex items-center gap-1.5">
+                          <span>Student Portal</span>
+                        </Link>
+                      </li>
+                      <li>
+                        <Link to="/judge" onClick={() => setIsMenuOpen(false)} className="text-sm font-light text-white/70 hover:text-accent-primary transition-colors flex items-center gap-1.5">
+                          <span>Judge Matrix</span>
+                        </Link>
+                      </li>
+                      <li>
+                        <Link to="/coordinator" onClick={() => setIsMenuOpen(false)} className="text-sm font-light text-white/70 hover:text-accent-primary transition-colors flex items-center gap-1.5">
+                          <span>Coordinator Console</span>
+                        </Link>
+                      </li>
+                      <li>
+                        <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="text-sm font-light text-white/70 hover:text-accent-primary transition-colors flex items-center gap-1.5">
+                          <span>Admin Command Console</span>
+                        </Link>
+                      </li>
                     </ul>
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
@@ -195,6 +223,7 @@ const GlobalLayout = () => {
 // 1. PUBLIC SCROLLING LANDING PAGE
 const PublicLanding = () => {
   const [email, setEmail] = useState('');
+  const { isAuthenticated, user } = useAuth();
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -218,16 +247,26 @@ const PublicLanding = () => {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-center w-full max-w-md">
-          <Link to="/hackathons" className="w-full sm:w-auto">
-            <Button variant="primary" className="w-full px-10">
-              Enter Lab
-            </Button>
-          </Link>
-          <a href="#lab" className="w-full sm:w-auto">
-            <Button variant="secondary" className="w-full px-10">
-              Explore Specs
-            </Button>
-          </a>
+          {isAuthenticated && user ? (
+            <Link to={`/${user.role.toLowerCase()}`} className="w-full sm:w-auto">
+              <Button variant="primary" className="w-full px-10">
+                Go to Workspace
+              </Button>
+            </Link>
+          ) : (
+            <>
+              <Link to="/login" className="w-full sm:w-auto">
+                <Button variant="primary" className="w-full px-10">
+                  Login Connection
+                </Button>
+              </Link>
+              <Link to="/signup" className="w-full sm:w-auto">
+                <Button variant="secondary" className="w-full px-10">
+                  Register Node
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
         <div className="absolute bottom-10 animate-bounce text-glow-cyan text-accent-primary">
@@ -418,15 +457,15 @@ const HackathonsView = () => {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-16 flex flex-col gap-8">
+    <div className="flex flex-col gap-8 w-full max-w-5xl">
       <div>
-        <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-glow-cyan text-white">
-          Active Hackathons
+        <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-glow-cyan text-white">
+          Explore Hackathons
         </h2>
-        <p className="text-sm text-text-secondary mt-1 font-light">Select and inspect problem statements across current college sprints.</p>
+        <p className="text-xs text-text-secondary mt-1 font-light">Select and inspect problem statements across current college sprints.</p>
       </div>
 
-      <div className="glass-card rounded-[32px] p-8">
+      <div className="glass-card rounded-[32px] p-6 bg-white/[0.01]">
         <Table headers={['Title', 'Timeline', 'Status', 'Actions']}>
           {hackathonsData.map((hack) => (
             <TableRow key={hack.id}>
@@ -500,7 +539,7 @@ const HackathonsView = () => {
                 Close
               </Button>
               {selectedHackathon.status === 'active' && (
-                <Link to="/teams">
+                <Link to="/student/teams">
                   <Button variant="primary" className="h-10 px-5 text-xs">
                     Register Team
                   </Button>
@@ -519,23 +558,23 @@ const GalleryView = () => {
   const showcaseProjects = [
     { id: '1', title: 'ZeroG LLM Quantizer', description: 'Advanced local quantization pipeline reducing large model footprint by 70%.', author: 'Team Zero_Gravity', award: 'Winner', color: 'cyan' },
     { id: '2', title: 'Eco-Glow Controller', description: 'Wearable display dashboard tracking carbon offsets in real-time.', author: 'Team Volt_Tech', award: '2nd Place', color: 'pink' },
-    { id: '3', title: 'Synthetix Routing Node', description: 'FastAPI routing architecture mapping dynamic database indices with low latency.', author: 'Team Neural_Knights', award: 'Finalist', color: 'purple' }
+    { id: '3', title: 'Synthetix Routing Node', description: 'FastAPI routing architecture mapping database indices with low latency.', author: 'Team Neural_Knights', award: 'Finalist', color: 'purple' }
   ];
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-16 flex flex-col gap-8">
+    <div className="flex flex-col gap-8 w-full max-w-5xl">
       <div>
-        <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-glow-cyan text-white">
+        <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-glow-cyan text-white">
           Explore Gallery
         </h2>
-        <p className="text-sm text-text-secondary mt-1 font-light">Showcase of outstanding student deliverables and technical submissions.</p>
+        <p className="text-xs text-text-secondary mt-1 font-light">Showcase of outstanding student deliverables and technical submissions.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {showcaseProjects.map((proj) => (
           <GlassProductCard 
             key={proj.id}
-            icon={Shirt} // Reusing graphic template zones
+            icon={Layers2}
             title={proj.title}
             description={`${proj.description} Developed by ${proj.author}.`}
             price={proj.award}
@@ -557,15 +596,15 @@ const LeaderboardView = () => {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-16 flex flex-col gap-8">
+    <div className="flex flex-col gap-8 w-full max-w-5xl">
       <div>
-        <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-glow-cyan text-white">
-          View Leader Board
+        <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-glow-cyan text-white">
+          Leaderboard Ledger
         </h2>
-        <p className="text-sm text-text-secondary mt-1 font-light">Platform metrics recording scoring levels across internal college hackathons.</p>
+        <p className="text-xs text-text-secondary mt-1 font-light">Platform metrics recording scoring levels across internal college hackathons.</p>
       </div>
 
-      <div className="glass-card rounded-[32px] p-8">
+      <div className="glass-card rounded-[32px] p-6 bg-white/[0.01]">
         <Table headers={['Rank', 'Team Name', 'Hackathon Context', 'Score', 'Feedback Remarks']}>
           {leaderboardData.map((team) => (
             <TableRow key={team.rank}>
@@ -604,17 +643,17 @@ const TeamsView = () => {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-16 flex flex-col gap-8">
+    <div className="flex flex-col gap-8 w-full max-w-5xl">
       <div>
-        <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-white">
+        <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-white">
           Team Portal
         </h2>
-        <p className="text-sm text-text-secondary mt-1 font-light font-manrope">Manage invite credentials, register teams, and invite peer developers.</p>
+        <p className="text-xs text-text-secondary mt-1 font-light font-manrope">Manage invite credentials, register teams, and invite peer developers.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <Card hoverable>
+          <Card hoverable className="bg-white/[0.02]">
             <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
               <div>
                 <span className="text-[10px] uppercase tracking-wider text-white/40 block">Team Identity</span>
@@ -631,7 +670,7 @@ const TeamsView = () => {
                 ) : (
                   <h3 className="text-xl font-archivo font-black text-glow-cyan text-white flex items-center gap-2 mt-1">
                     {teamName}
-                    <button className="text-xs text-accent-primary font-normal" onClick={() => setIsEditing(true)}>(Rename)</button>
+                    <button className="text-xs text-accent-primary font-normal animate-pulse" onClick={() => setIsEditing(true)}>(Rename)</button>
                   </h3>
                 )}
               </div>
@@ -656,7 +695,7 @@ const TeamsView = () => {
         </div>
 
         <div className="flex flex-col gap-6">
-          <Card hoverable>
+          <Card hoverable className="bg-white/[0.02]">
             <h4 className="text-xs uppercase tracking-widest text-[rgba(255,255,255,0.45)] mb-4 font-semibold">Invite Members</h4>
             <form onSubmit={(e) => { e.preventDefault(); alert(`Invite sent to: ${inviteEmail}`); setInviteEmail(''); }} className="flex flex-col gap-4">
               <Input 
@@ -683,17 +722,17 @@ const SubmissionsView = () => {
   const [repo, setRepo] = useState('');
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-16 flex flex-col gap-8">
+    <div className="flex flex-col gap-8 w-full max-w-5xl">
       <div>
-        <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-white">
+        <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-white">
           Submission Console
         </h2>
-        <p className="text-sm text-text-secondary mt-1 font-light">Submit completed project details, code repository links, and final deployments.</p>
+        <p className="text-xs text-text-secondary mt-1 font-light">Submit completed project details, code repository links, and final deployments.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <Card hoverable>
+          <Card hoverable className="bg-white/[0.02]">
             <form onSubmit={(e) => { e.preventDefault(); alert(`Submitted: ${title}`); setTitle(''); setRepo(''); }} className="flex flex-col gap-4">
               <Input label="Project Title" placeholder="ZeroG Optimizer" required value={title} onChange={(e) => setTitle(e.target.value)} />
               <Input label="GitHub URL" placeholder="https://github.com/..." required value={repo} onChange={(e) => setRepo(e.target.value)} />
@@ -709,15 +748,15 @@ const SubmissionsView = () => {
 // 7. CERTIFICATES VAULT
 const CertificatesView = () => {
   return (
-    <div className="max-w-6xl mx-auto px-8 py-16 flex flex-col gap-8">
+    <div className="flex flex-col gap-8 w-full max-w-5xl">
       <div>
-        <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-white">
+        <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-white">
           Certificates Vault
         </h2>
-        <p className="text-sm text-text-secondary mt-1 font-light">Download verified, signed participation and finalist awards certificates.</p>
+        <p className="text-xs text-text-secondary mt-1 font-light">Download verified, signed participation and finalist awards certificates.</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card hoverable>
+        <Card hoverable className="bg-white/[0.02]">
           <div className="flex flex-col justify-between h-full gap-4">
             <div className="flex gap-4">
               <div className="p-3 rounded-lg bg-accent-primary/10 border border-accent-primary/20 text-accent-primary">
@@ -741,14 +780,14 @@ const CertificatesView = () => {
 // 8. ANNOUNCEMENTS
 const AnnouncementsView = () => {
   return (
-    <div className="max-w-6xl mx-auto px-8 py-16 flex flex-col gap-8">
+    <div className="flex flex-col gap-8 w-full max-w-5xl">
       <div>
-        <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-white">
+        <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-white">
           Announcements
         </h2>
-        <p className="text-sm text-text-secondary mt-1 font-light font-manrope">Latest alerts published by administrators and system coordinators.</p>
+        <p className="text-xs text-text-secondary mt-1 font-light font-manrope">Latest alerts published by administrators and system coordinators.</p>
       </div>
-      <Card hoverable>
+      <Card hoverable className="bg-white/[0.02]">
         <div className="border-b border-white/5 pb-2 mb-3">
           <h4 className="text-md font-archivo font-black uppercase text-white">System Foundation Initialized</h4>
           <p className="text-[10px] text-white/40 mt-0.5">Published by Admin • 2026-07-25</p>
@@ -762,22 +801,22 @@ const AnnouncementsView = () => {
 // 9. JUDGE PANEL
 const JudgeView = () => {
   return (
-    <div className="max-w-6xl mx-auto px-8 py-16 flex flex-col gap-8">
+    <div className="flex flex-col gap-8 w-full max-w-5xl">
       <div>
-        <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-glow-cyan text-white">
+        <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-glow-cyan text-white">
           Judge Evaluation Matrix
         </h2>
-        <p className="text-sm text-text-secondary mt-1 font-light">Verify assigned student projects, enter grade values, and publish feedback remarks.</p>
+        <p className="text-xs text-text-secondary mt-1 font-light">Verify assigned student projects, enter grade values, and publish feedback remarks.</p>
       </div>
-      <Card hoverable>
-        <h3 className="text-md font-bold text-white mb-4">Pending Evaluations</h3>
+      <Card hoverable className="bg-white/[0.02]">
+        <h3 className="text-sm font-bold text-white mb-4">Pending Evaluations</h3>
         <Table headers={['Project', 'Team Name', 'Deliverable Link', 'Actions']}>
           <TableRow>
             <TableCell className="font-semibold text-white">ZeroG LLM Quantizer</TableCell>
             <TableCell>Zero_Gravity</TableCell>
             <TableCell><a href="#" className="text-accent-primary text-xs font-mono">github.com/zerog</a></TableCell>
             <TableCell>
-              <Button variant="primary" className="h-8 text-xs" onClick={() => alert('Opening Evaluation Scorecard...')}>
+              <Button variant="primary" className="h-8 text-xs font-bold" onClick={() => alert('Opening Evaluation Scorecard...')}>
                 Evaluate
               </Button>
             </TableCell>
@@ -791,22 +830,22 @@ const JudgeView = () => {
 // 10. COORDINATOR HUB
 const CoordinatorView = () => {
   return (
-    <div className="max-w-6xl mx-auto px-8 py-16 flex flex-col gap-8">
+    <div className="flex flex-col gap-8 w-full max-w-5xl">
       <div>
-        <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-glow-cyan text-white">
+        <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-glow-cyan text-white">
           Operations Console
         </h2>
-        <p className="text-sm text-text-secondary mt-1 font-light">Track submissions progress, publish announcements, and verify team registrations.</p>
+        <p className="text-xs text-text-secondary mt-1 font-light">Track submissions progress, publish announcements, and verify team registrations.</p>
       </div>
-      <Card hoverable>
-        <h3 className="text-md font-bold text-white mb-4">Pending Registrations</h3>
+      <Card hoverable className="bg-white/[0.02]">
+        <h3 className="text-sm font-bold text-white mb-4">Pending Registrations</h3>
         <Table headers={['Team Name', 'Members Count', 'Chosen PS', 'Action']}>
           <TableRow>
             <TableCell className="font-semibold text-white">Zero_Gravity</TableCell>
             <TableCell className="font-mono text-xs">2 Members</TableCell>
             <TableCell className="text-xs text-white/60">PS-01: Generative LLM Interface</TableCell>
             <TableCell>
-              <Button variant="success" className="h-8 text-xs" onClick={() => alert('Team Verified successfully!')}>
+              <Button variant="success" className="h-8 text-xs font-bold" onClick={() => alert('Team Verified successfully!')}>
                 Verify Team
               </Button>
             </TableCell>
@@ -820,19 +859,78 @@ const CoordinatorView = () => {
 // 11. ADMIN VIEW
 const AdminView = () => {
   return (
-    <div className="max-w-6xl mx-auto px-8 py-16 flex flex-col gap-8">
+    <div className="flex flex-col gap-8 w-full max-w-5xl">
       <div>
-        <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-glow-cyan text-white">
+        <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-glow-cyan text-white">
           Admin Command Console
         </h2>
-        <p className="text-sm text-text-secondary mt-1 font-light">Create new hackathons, publish problem sheets, allocate judges, and inspect platform analytics.</p>
+        <p className="text-xs text-text-secondary mt-1 font-light">Create new hackathons, publish problem sheets, allocate judges, and inspect platform analytics.</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <Card hoverable>
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-white/40 mb-4">Quick Command</h3>
-          <Button variant="primary" className="w-full justify-center" onClick={() => alert('Opening Hackathon Creation Module...')}>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card hoverable className="bg-white/[0.02]">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-4">Quick Command</h3>
+          <Button variant="primary" className="w-full justify-center text-xs font-bold" onClick={() => alert('Opening Hackathon Creation Module...')}>
             Create New Hackathon Event
           </Button>
+        </Card>
+
+        <Card hoverable className="bg-white/[0.02]">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-4">Platform Statistics</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <span className="text-[10px] text-white/40 uppercase block">Total Nodes</span>
+              <span className="text-xl font-bold font-mono text-glow-cyan text-accent-primary">124</span>
+            </div>
+            <div>
+              <span className="text-[10px] text-white/40 uppercase block">Active Events</span>
+              <span className="text-xl font-bold font-mono text-glow-magenta text-accent-secondary">1</span>
+            </div>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+// 12. ROLE SPECIFIC DASHBOARDS (Greeting & metrics)
+const StudentDashboard = () => {
+  const { user } = useAuth();
+  return (
+    <div className="flex flex-col gap-8 w-full max-w-5xl">
+      <div>
+        <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-glow-cyan text-white">
+          Welcome back, {user?.full_name || 'Operator'}
+        </h2>
+        <p className="text-xs text-text-secondary mt-1 font-light">
+          Your connection is registered as a student. Use the options in the sidebar to browse active events.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card hoverable className="bg-white/[0.02]">
+          <span className="text-[10px] text-white/40 uppercase tracking-widest block font-bold">Registered Team</span>
+          <span className="text-xl font-bold font-archivo text-white mt-1 block">Zero_Gravity</span>
+          <span className="text-[10px] text-success font-semibold mt-2 inline-flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-success animate-ping" />
+            Verified
+          </span>
+        </Card>
+
+        <Card hoverable className="bg-white/[0.02]">
+          <span className="text-[10px] text-white/40 uppercase tracking-widest block font-bold">Active Hackathon</span>
+          <span className="text-xl font-bold font-archivo text-white mt-1 block">AI Genesis 2026</span>
+          <span className="text-[10px] text-accent-primary font-semibold mt-2 block">
+            PS-01: Generative LLM Interface
+          </span>
+        </Card>
+
+        <Card hoverable className="bg-white/[0.02]">
+          <span className="text-[10px] text-white/40 uppercase tracking-widest block font-bold">Deliverables State</span>
+          <span className="text-xl font-bold font-archivo text-white mt-1 block">1 Submitted</span>
+          <span className="text-[10px] text-accent-secondary font-semibold mt-2 block">
+            Under Evaluation
+          </span>
         </Card>
       </div>
     </div>
@@ -844,27 +942,60 @@ const AdminView = () => {
 // ==========================================
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Nests all portals inside GlobalLayout sharing topbars and particles */}
-        <Route element={<GlobalLayout />}>
-          <Route path="/" element={<PublicLanding />} />
-          <Route path="/hackathons" element={<HackathonsView />} />
-          <Route path="/gallery" element={<GalleryView />} />
-          <Route path="/leaderboard" element={<LeaderboardView />} />
-          <Route path="/teams" element={<TeamsView />} />
-          <Route path="/submissions" element={<SubmissionsView />} />
-          <Route path="/certificates" element={<CertificatesView />} />
-          <Route path="/announcements" element={<AnnouncementsView />} />
-          <Route path="/judge" element={<JudgeView />} />
-          <Route path="/coordinator" element={<CoordinatorView />} />
-          <Route path="/admin" element={<AdminView />} />
+    <AuthProvider>
+      <Router>
+        <Routes>
+          
+          {/* Public Views nested in GlobalLayout */}
+          <Route element={<GlobalLayout />}>
+            <Route path="/" element={<PublicLanding />} />
+            <Route path="/hackathons" element={<HackathonsView />} />
+            <Route path="/gallery" element={<GalleryView />} />
+            <Route path="/leaderboard" element={<LeaderboardView />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+          </Route>
+
+          {/* Student Protected Portal */}
+          <Route path="/student" element={<RoleLayout allowedRoles={['Student']} />}>
+            <Route index element={<StudentDashboard />} />
+            <Route path="hackathons" element={<HackathonsView />} />
+            <Route path="gallery" element={<GalleryView />} />
+            <Route path="leaderboard" element={<LeaderboardView />} />
+            <Route path="teams" element={<TeamsView />} />
+            <Route path="submissions" element={<SubmissionsView />} />
+            <Route path="certificates" element={<CertificatesView />} />
+            <Route path="profile" element={<ProfileSettings />} />
+          </Route>
+
+          {/* Judge Protected Portal */}
+          <Route path="/judge" element={<RoleLayout allowedRoles={['Judge']} />}>
+            <Route index element={<JudgeView />} />
+            <Route path="history" element={<LeaderboardView />} />
+            <Route path="profile" element={<ProfileSettings />} />
+          </Route>
+
+          {/* Coordinator Protected Portal */}
+          <Route path="/coordinator" element={<RoleLayout allowedRoles={['Coordinator']} />}>
+            <Route index element={<CoordinatorView />} />
+            <Route path="announcements" element={<AnnouncementsView />} />
+            <Route path="profile" element={<ProfileSettings />} />
+          </Route>
+
+          {/* Admin Protected Portal */}
+          <Route path="/admin" element={<RoleLayout allowedRoles={['Administrator']} />}>
+            <Route index element={<AdminView />} />
+            <Route path="users" element={<LeaderboardView />} />
+            <Route path="settings" element={<AnnouncementsView />} />
+            <Route path="profile" element={<ProfileSettings />} />
+          </Route>
           
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
-    </Router>
+          
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 

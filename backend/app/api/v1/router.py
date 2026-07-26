@@ -1,32 +1,12 @@
-from fastapi import APIRouter, Depends, status
-from app.api.deps import get_current_user_placeholder
+from fastapi import APIRouter
+from app.api.v1.endpoints.auth import router as auth_endpoints_router
+from app.api.v1.endpoints.users import router as users_endpoints_router
 
 api_router = APIRouter()
 
-# Placeholder auth router
-auth_router = APIRouter(prefix="/auth", tags=["auth"])
-
-@auth_router.get("/status")
-async def auth_status():
-    return {
-        "success": True,
-        "message": "Auth integration status check",
-        "data": {
-            "auth_provider": "Supabase",
-            "status": "ready"
-        }
-    }
-
-# Placeholder users router
-users_router = APIRouter(prefix="/users", tags=["users"])
-
-@users_router.get("/me")
-async def get_me(current_user: dict = Depends(get_current_user_placeholder)):
-    return {
-        "success": True,
-        "message": "User profile retrieved successfully",
-        "data": current_user
-    }
+# Register core Sprint 1 authentication and user profile sub-routers
+api_router.include_router(auth_endpoints_router, prefix="/auth", tags=["auth"])
+api_router.include_router(users_endpoints_router, prefix="/users", tags=["users"])
 
 # Placeholder hackathons router
 hackathons_router = APIRouter(prefix="/hackathons", tags=["hackathons"])
@@ -50,8 +30,5 @@ async def list_teams():
         "data": []
     }
 
-# Include all routers into v1 main router
-api_router.include_router(auth_router)
-api_router.include_router(users_router)
 api_router.include_router(hackathons_router)
 api_router.include_router(teams_router)
