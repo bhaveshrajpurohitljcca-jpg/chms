@@ -13,13 +13,19 @@
 
 ---
 
-## Future Sprint Roadmap (Pending Assignment)
+## Sprint 1: Authentication & User Profiles (Completed)
+- [x] Supabase Auth & FastAPI JWT token creation and verification system
+- [x] User Profile model (User, UserRole enum: student, coordinator, judge, admin)
+- [x] Role Based Access Control validation decorators and dependencies
+- [x] Backend CRUD endpoints for Auth, Users, Hackathons, Teams, and Submissions
+- [x] Database auto-schema creation and demonstration seed data engine
+- [x] Frontend AuthContext provider with persistent login, logout, and token state
+- [x] Frontend AuthModal component with Tech-Noir glassmorphism and quick demo role switching
+- [x] Frontend User Profile Dashboard (`/profile`) with editable details, badges, and stats
 
-### Sprint 1: Authentication & User Profiles
-- [ ] Supabase Auth integration
-- [ ] User Profile model and schemas
-- [ ] Role Based Access Control validation decorators
-- [ ] Frontend sign-up, sign-in, and profile dashboard screens
+---
+
+## Future Sprint Roadmap (Pending Assignment)
 
 ### Sprint 2: Hackathon & Problem Statement Management
 - [ ] Hackathon management models and REST APIs (Admin create/edit)

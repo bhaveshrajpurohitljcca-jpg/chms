@@ -17,7 +17,6 @@ import {
   Globe,
   Layers,
   Shirt,
-  UserPlus,
   Award,
   X
 } from 'lucide-react';
@@ -27,15 +26,25 @@ import GlassProductCard from '@/components/ui/GlassProductCard';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import Card from '@/components/ui/card';
-import Modal from '@/components/ui/modal';
 import { Table, TableRow, TableCell } from '@/components/ui/table';
-import Badge from '@/components/ui/badge';
+import { StudentDashboard } from '@/pages/student/StudentDashboard';
+import { HackathonsListPage } from '@/pages/student/HackathonsListPage';
+import { HackathonDetailPage } from '@/pages/student/HackathonDetailPage';
+import { ProblemStatementDetailPage } from '@/pages/student/ProblemStatementDetailPage';
+import { TeamManagementPage } from '@/pages/student/TeamManagementPage';
+import { CreateTeamPage } from '@/pages/student/CreateTeamPage';
+import { RegistrationPage } from '@/pages/student/RegistrationPage';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { AuthModal } from '@/components/auth/AuthModal';
+import { ProfilePage } from '@/pages/ProfilePage';
+
 
 // ==========================================
 // A. GLOBAL LAYOUT (Header + WebGL Particles + Menu Drawer)
 // ==========================================
 const GlobalLayout = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, openAuthModal, logout } = useAuth();
 
   const navigationLinks = [
     { label: 'Explore Hackathons', path: '/hackathons' },
@@ -108,8 +117,42 @@ const GlobalLayout = () => {
           ))}
         </nav>
 
-        {/* Right Menu trigger */}
-        <div>
+        {/* Right Auth & Menu triggers */}
+        <div className="flex items-center gap-4">
+          {user ? (
+            <div className="flex items-center gap-3">
+              <Link
+                to="/profile"
+                className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:border-accent-primary transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+              >
+                <img
+                  src={user.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80'}
+                  alt={user.full_name}
+                  className="w-7 h-7 rounded-full object-cover border border-accent-primary/50"
+                />
+                <span className="text-xs font-semibold text-white max-w-[100px] truncate hidden sm:inline">
+                  {user.full_name}
+                </span>
+                <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-md bg-accent-primary/10 text-accent-primary border border-accent-primary/30">
+                  {user.role}
+                </span>
+              </Link>
+              <button
+                onClick={logout}
+                className="text-[11px] font-mono uppercase text-zinc-400 hover:text-accent-pink transition-colors px-2 py-1"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => openAuthModal('login')}
+              className="h-10 px-5 rounded-full bg-accent-primary/10 border border-accent-primary/40 text-accent-primary hover:bg-accent-primary hover:text-black text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-[0_0_15px_rgba(0,243,255,0.2)]"
+            >
+              Sign In
+            </button>
+          )}
+
           <button 
             onClick={() => setIsMenuOpen(true)}
             className="h-10 px-6 rounded-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.1)] hover:border-accent-primary hover:text-accent-primary text-xs font-semibold uppercase tracking-wider transition-all duration-300 flex items-center gap-2"
@@ -184,6 +227,8 @@ const GlobalLayout = () => {
         <Outlet />
       </main>
 
+      {/* Global Auth Modal */}
+      <AuthModal />
     </div>
   );
 };
@@ -407,112 +452,7 @@ const PublicLanding = () => {
   );
 };
 
-// 2. EXPLORE HACKATHONS
-const HackathonsView = () => {
-  const [selectedHackathon, setSelectedHackathon] = useState<any>(null);
 
-  const hackathonsData = [
-    { id: '1', title: 'AI Genesis 2026', description: 'Build generative AI nodes using local model endpoints.', start_date: '2026-08-15', end_date: '2026-08-17', status: 'active' },
-    { id: '2', title: 'Green-Tech Innovations', description: 'Solve college carbon offsets and logistics problems.', start_date: '2026-09-10', end_date: '2026-09-12', status: 'upcoming' },
-    { id: '3', title: 'Wearable Hardware Hack', description: 'Design wearable hardware and display trackers.', start_date: '2026-05-02', end_date: '2026-05-04', status: 'completed' },
-  ];
-
-  return (
-    <div className="max-w-6xl mx-auto px-8 py-16 flex flex-col gap-8">
-      <div>
-        <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-glow-cyan text-white">
-          Active Hackathons
-        </h2>
-        <p className="text-sm text-text-secondary mt-1 font-light">Select and inspect problem statements across current college sprints.</p>
-      </div>
-
-      <div className="glass-card rounded-[32px] p-8">
-        <Table headers={['Title', 'Timeline', 'Status', 'Actions']}>
-          {hackathonsData.map((hack) => (
-            <TableRow key={hack.id}>
-              <TableCell className="font-semibold text-white">
-                <div>
-                  <p className="text-sm">{hack.title}</p>
-                  <p className="text-xs text-[rgba(255,255,255,0.45)] mt-0.5">{hack.description}</p>
-                </div>
-              </TableCell>
-              <TableCell className="font-mono text-xs text-[rgba(255,255,255,0.65)]">
-                {hack.start_date} to {hack.end_date}
-              </TableCell>
-              <TableCell>
-                <Badge variant={hack.status === 'active' ? 'success' : hack.status === 'upcoming' ? 'warning' : 'primary'}>
-                  {hack.status}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <Button 
-                  variant="secondary" 
-                  className="h-9 text-xs px-4"
-                  onClick={() => setSelectedHackathon(hack)}
-                >
-                  Inspect
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </Table>
-      </div>
-
-      {selectedHackathon && (
-        <Modal 
-          isOpen={true} 
-          onClose={() => setSelectedHackathon(null)} 
-          title={selectedHackathon.title}
-        >
-          <div className="flex flex-col gap-4 py-2 font-manrope">
-            <div>
-              <span className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-semibold">Description</span>
-              <p className="text-sm text-white mt-1 leading-relaxed">{selectedHackathon.description}</p>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <span className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-semibold">Start Date</span>
-                <p className="text-xs font-mono text-white/80 mt-0.5">{selectedHackathon.start_date}</p>
-              </div>
-              <div>
-                <span className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-semibold">Close Date</span>
-                <p className="text-xs font-mono text-white/80 mt-0.5">{selectedHackathon.end_date}</p>
-              </div>
-            </div>
-
-            <div className="border-t border-[rgba(255,255,255,0.08)] pt-4 mt-2">
-              <span className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-semibold">Problem Statements</span>
-              
-              <div className="flex flex-col gap-2 mt-2">
-                <div className="p-3 rounded-lg bg-white/5 border border-white/10 flex justify-between items-center">
-                  <div>
-                    <h5 className="text-xs font-bold text-white">PS-01: Generative LLM Interface</h5>
-                    <p className="text-[10px] text-white/40">Category: Web & AI</p>
-                  </div>
-                  <Button variant="secondary" className="h-7 px-3 text-[10px]">Download</Button>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-3 justify-end mt-4">
-              <Button variant="secondary" onClick={() => setSelectedHackathon(null)} className="h-10 px-5 text-xs">
-                Close
-              </Button>
-              {selectedHackathon.status === 'active' && (
-                <Link to="/teams">
-                  <Button variant="primary" className="h-10 px-5 text-xs">
-                    Register Team
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </div>
-        </Modal>
-      )}
-    </div>
-  );
-};
 
 // 3. EXPLORE GALLERY (Completed Submissions Showcase)
 const GalleryView = () => {
@@ -592,90 +532,7 @@ const LeaderboardView = () => {
   );
 };
 
-// 5. TEAM PORTAL
-const TeamsView = () => {
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [teamName, setTeamName] = useState('Zero_Gravity');
-  const [isEditing, setIsEditing] = useState(false);
 
-  const teamMembers = [
-    { name: 'Alex Mercer', role: 'Leader (Student)', email: 'alex@college.edu', status: 'verified' },
-    { name: 'Sarah Chen', role: 'Developer', email: 'sarah@college.edu', status: 'verified' }
-  ];
-
-  return (
-    <div className="max-w-6xl mx-auto px-8 py-16 flex flex-col gap-8">
-      <div>
-        <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-white">
-          Team Portal
-        </h2>
-        <p className="text-sm text-text-secondary mt-1 font-light font-manrope">Manage invite credentials, register teams, and invite peer developers.</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <Card hoverable>
-            <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
-              <div>
-                <span className="text-[10px] uppercase tracking-wider text-white/40 block">Team Identity</span>
-                {isEditing ? (
-                  <div className="flex gap-2 mt-1">
-                    <input 
-                      type="text" 
-                      value={teamName}
-                      onChange={(e) => setTeamName(e.target.value)}
-                      className="bg-white/5 border border-accent-primary rounded-lg px-2 py-1 text-sm text-white"
-                    />
-                    <Button variant="primary" className="h-8 px-3 text-xs" onClick={() => setIsEditing(false)}>Save</Button>
-                  </div>
-                ) : (
-                  <h3 className="text-xl font-archivo font-black text-glow-cyan text-white flex items-center gap-2 mt-1">
-                    {teamName}
-                    <button className="text-xs text-accent-primary font-normal" onClick={() => setIsEditing(true)}>(Rename)</button>
-                  </h3>
-                )}
-              </div>
-              <Badge variant="success">Verified</Badge>
-            </div>
-
-            <Table headers={['Name', 'Role', 'Status']}>
-              {teamMembers.map((member, idx) => (
-                <TableRow key={idx}>
-                  <TableCell className="font-semibold text-white">
-                    <div>
-                      <p className="text-sm">{member.name}</p>
-                      <p className="text-[10px] text-white/40">{member.email}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs text-white/60">{member.role}</TableCell>
-                  <TableCell><Badge variant="success">{member.status}</Badge></TableCell>
-                </TableRow>
-              ))}
-            </Table>
-          </Card>
-        </div>
-
-        <div className="flex flex-col gap-6">
-          <Card hoverable>
-            <h4 className="text-xs uppercase tracking-widest text-[rgba(255,255,255,0.45)] mb-4 font-semibold">Invite Members</h4>
-            <form onSubmit={(e) => { e.preventDefault(); alert(`Invite sent to: ${inviteEmail}`); setInviteEmail(''); }} className="flex flex-col gap-4">
-              <Input 
-                label="Student Email" 
-                placeholder="developer@college.edu" 
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-              />
-              <Button type="submit" variant="primary" className="w-full flex items-center justify-center gap-2">
-                <UserPlus size={16} />
-                <span>Send Invite</span>
-              </Button>
-            </form>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // 6. SUBMISSIONS CONSOLE
 const SubmissionsView = () => {
@@ -844,28 +701,49 @@ const AdminView = () => {
 // ==========================================
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Nests all portals inside GlobalLayout sharing topbars and particles */}
-        <Route element={<GlobalLayout />}>
-          <Route path="/" element={<PublicLanding />} />
-          <Route path="/hackathons" element={<HackathonsView />} />
-          <Route path="/gallery" element={<GalleryView />} />
-          <Route path="/leaderboard" element={<LeaderboardView />} />
-          <Route path="/teams" element={<TeamsView />} />
-          <Route path="/submissions" element={<SubmissionsView />} />
-          <Route path="/certificates" element={<CertificatesView />} />
-          <Route path="/announcements" element={<AnnouncementsView />} />
-          <Route path="/judge" element={<JudgeView />} />
-          <Route path="/coordinator" element={<CoordinatorView />} />
-          <Route path="/admin" element={<AdminView />} />
-          
-          {/* Catch-all redirect */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Nests all portals inside GlobalLayout sharing topbars and particles */}
+          <Route element={<GlobalLayout />}>
+            <Route path="/" element={<PublicLanding />} />
+
+            {/* Profile Route */}
+            <Route path="/profile" element={<ProfilePage />} />
+
+            {/* Developer B - Student Experience Routes */}
+            <Route path="/student" element={<StudentDashboard />} />
+            <Route path="/student/dashboard" element={<StudentDashboard />} />
+            <Route path="/student/hackathons" element={<HackathonsListPage />} />
+            <Route path="/student/hackathons/:id" element={<HackathonDetailPage />} />
+            <Route path="/student/hackathons/:id/problems/:problemId" element={<ProblemStatementDetailPage />} />
+            <Route path="/student/team" element={<TeamManagementPage />} />
+            <Route path="/student/team/create" element={<CreateTeamPage />} />
+            <Route path="/student/registration" element={<RegistrationPage />} />
+            <Route path="/student/registration/:id" element={<RegistrationPage />} />
+
+            {/* Alias Shortcuts mapping to Student UI */}
+            <Route path="/hackathons" element={<HackathonsListPage />} />
+            <Route path="/teams" element={<TeamManagementPage />} />
+
+            {/* Other Module Placeholders */}
+            <Route path="/gallery" element={<GalleryView />} />
+            <Route path="/leaderboard" element={<LeaderboardView />} />
+            <Route path="/submissions" element={<SubmissionsView />} />
+            <Route path="/certificates" element={<CertificatesView />} />
+            <Route path="/announcements" element={<AnnouncementsView />} />
+            <Route path="/judge" element={<JudgeView />} />
+            <Route path="/coordinator" element={<CoordinatorView />} />
+            <Route path="/admin" element={<AdminView />} />
+            
+            {/* Catch-all redirect */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 
 export default App;
+

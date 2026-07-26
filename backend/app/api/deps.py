@@ -1,36 +1,61 @@
-from typing import Generator
+from typing import List, Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.config import settings
+from app.core.security import decode_access_token
+from app.models.user import User, UserRole
 
-# HTTPBearer security scheme for token authentication
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
-def get_current_user_placeholder(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
-    """
-    Placeholder authorization dependency verifying Supabase JWTs.
-    In feature sprints, this will verify token signatures using JWT_SECRET.
-    """
-    token = credentials.credentials
-    # Mock decoding behavior for baseline
-    if not token or len(token) < 5:
+def get_current_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    db: Session = Depends(get_db)
+) -> User:
+    if not credentials or not credentials.credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication token",
+            detail="Authentication credentials were not provided",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Return mock user metadata payload
-    return {
-        "id": "mock-uuid-user",
-        "email": "student@college.edu",
-        "role": "student"
-    }
-
-def get_current_active_user(user: dict = Depends(get_current_user_placeholder)) -> dict:
-    """
-    Ensures user is active. Placed here as a stub.
-    """
+    token = credentials.credentials
+    payload = decode_access_token(token)
+    if not payload or "sub" not in payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    user_id = payload["sub"]
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
     return user
+
+def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
+    if not current_user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Inactive user",
+        )
+    return current_user
+
+class RoleChecker:
+    def __init__(self, allowed_roles: List[UserRole]):
+        self.allowed_roles = allowed_roles
+
+    def __call__(self, user: User = Depends(get_current_active_user)) -> User:
+        if user.role not in self.allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access forbidden. Required roles: {[r.value for r in self.allowed_roles]}",
+            )
+        return user
+
+def require_roles(*allowed_roles: UserRole):
+    return RoleChecker(list(allowed_roles))
