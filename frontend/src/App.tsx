@@ -19,7 +19,18 @@ import {
   Shirt,
   UserPlus,
   Award,
-  X
+  X,
+  Clock,
+  CheckCircle,
+  Star,
+  ExternalLink,
+  FileText,
+  Search,
+  Plus,
+  Check,
+  Code,
+  Users,
+  Megaphone
 } from 'lucide-react';
 import ThreeParticleBg from '@/components/ui/ThreeParticleBg';
 import StatusPulseBadge from '@/components/ui/StatusPulseBadge';
@@ -30,6 +41,7 @@ import Card from '@/components/ui/card';
 import Modal from '@/components/ui/modal';
 import { Table, TableRow, TableCell } from '@/components/ui/table';
 import Badge from '@/components/ui/badge';
+import { AppLayout } from '@/layouts/AppLayout';
 
 // ==========================================
 // A. GLOBAL LAYOUT (Header + WebGL Particles + Menu Drawer)
@@ -549,45 +561,203 @@ const GalleryView = () => {
 
 // 4. VIEW LEADER BOARD
 const LeaderboardView = () => {
-  const leaderboardData = [
-    { rank: '1', name: 'Zero_Gravity', hackathon: 'AI Genesis 2026', points: 94.5, feedback: 'Stunning 3D WebGL particle rendering with smooth LERPs.', status: 'Graded' },
-    { rank: '2', name: 'Neural_Knights', hackathon: 'AI Genesis 2026', points: 91.2, feedback: 'Robust dynamic model quantization routines.', status: 'Graded' },
-    { rank: '3', name: 'Cyber_Pioneers', hackathon: 'AI Genesis 2026', points: 88.0, feedback: 'Strong custom routing structures and exception catching.', status: 'Graded' },
-    { rank: '4', name: 'Volt_Tech', hackathon: 'AI Genesis 2026', points: 83.5, feedback: 'Clean design systems, though lacks custom shaders.', status: 'Graded' },
-  ];
+  const [selectedHackathon, setSelectedHackathon] = useState('AI Genesis 2026');
+
+  // Realistic mock ranking databases
+  const leaderboardDb: Record<string, any[]> = {
+    'AI Genesis 2026': [
+      { rank: 1, team: 'Zero_Gravity', project: 'ZeroG LLM Quantizer', problemStatement: 'PS-01: Generative LLM Interface', score: 96, branch: 'Computer Science', status: 'Graded', feedback: 'Stunning 3D WebGL particle rendering with smooth LERPs and robust quantizers.' },
+      { rank: 2, team: 'Neural_Knights', project: 'Synthetix Routing Node', problemStatement: 'PS-04: Dynamic Database Indices', score: 92, branch: 'Information Technology', status: 'Graded', feedback: 'Very solid backend routing tables. Exception middleware structured cleanly.' },
+      { rank: 3, team: 'Volt_Tech', project: 'Eco-Glow Controller', problemStatement: 'PS-03: College Carbon Offsets', score: 85, branch: 'Electronics', status: 'Graded', feedback: 'Excellent integration of wearable bio-sensors with an elegant low-energy dashboard.' },
+      { rank: 4, team: 'Cyber_Pioneers', project: 'Packet-Guard Firewall', problemStatement: 'PS-02: Local Port Scanner', score: 83, branch: 'Computer Science', status: 'Graded', feedback: 'Strong custom routing structures and exception catching.' },
+      { rank: 5, team: 'Code_Crusaders', project: 'Docu-Crypt Vault', problemStatement: 'PS-01: Generative LLM Interface', score: 79, branch: 'Information Technology', status: 'Graded', feedback: 'Good file encryption structures, frontend layouts lack consistent glass styles.' }
+    ],
+    'Green-Tech Innovations': [
+      { rank: 1, team: 'Aqua_Tech', project: 'Hydro-Net Sensor', problemStatement: 'PS-05: Water Quality Telemetry', score: 94, branch: 'Civil Engineering', status: 'Graded', feedback: 'Outstanding distributed floating telemetry pods streaming live over LoRaWAN.' },
+      { rank: 2, team: 'Green_Alphas', project: 'Solar-Grid Optimizer', problemStatement: 'PS-07: Campus Energy Grid', score: 89, branch: 'Electrical Engineering', status: 'Graded', feedback: 'Excellent predictive logic for solar panel yields.' },
+      { rank: 3, team: 'Eco_Runners', project: 'Bio-Waste Digester', problemStatement: 'PS-08: Campus Compost Index', score: 82, branch: 'Biotechnology', status: 'Graded', feedback: 'Innovative biochemical telemetry capture.' }
+    ]
+  };
+
+  const activeLeaderboard = leaderboardDb[selectedHackathon] || [];
+
+  // Split top 3 and remainder
+  const podiumWinners = activeLeaderboard.slice(0, 3);
+
+  // Re-order podium for layout purposes: [2nd, 1st, 3rd]
+  const reorderedPodium = [];
+  if (podiumWinners[1]) reorderedPodium.push(podiumWinners[1]); // 2nd Place
+  if (podiumWinners[0]) reorderedPodium.push(podiumWinners[0]); // 1st Place
+  if (podiumWinners[2]) reorderedPodium.push(podiumWinners[2]); // 3rd Place
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-16 flex flex-col gap-8">
-      <div>
-        <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-glow-cyan text-white">
-          View Leader Board
-        </h2>
-        <p className="text-sm text-text-secondary mt-1 font-light">Platform metrics recording scoring levels across internal college hackathons.</p>
+    <div className="flex flex-col gap-8 max-w-7xl mx-auto w-full select-none pointer-events-auto">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-6">
+        <div>
+          <span className="text-xs uppercase tracking-[0.25em] text-accent-third font-bold font-archivo">
+            PLATFORM LEDGER
+          </span>
+          <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-glow-magenta text-white mt-1">
+            Global Leaderboard
+          </h2>
+          <p className="text-sm text-text-secondary mt-1 font-light">
+            Live standings and graded scorecards across completed college hackathon challenges.
+          </p>
+        </div>
+
+        {/* Hackathon select list */}
+        <div className="relative">
+          <select
+            value={selectedHackathon}
+            onChange={(e) => setSelectedHackathon(e.target.value)}
+            className="h-11 px-4 pr-10 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-white focus:outline-none focus:border-accent-secondary cursor-pointer appearance-none"
+          >
+            <option value="AI Genesis 2026" className="bg-[#050505] text-white">AI Genesis 2026</option>
+            <option value="Green-Tech Innovations" className="bg-[#050505] text-white">Green-Tech Innovations</option>
+          </select>
+        </div>
       </div>
 
-      <div className="glass-card rounded-[32px] p-8">
-        <Table headers={['Rank', 'Team Name', 'Hackathon Context', 'Score', 'Feedback Remarks']}>
-          {leaderboardData.map((team) => (
-            <TableRow key={team.rank}>
-              <TableCell className="font-mono text-accent-primary text-md font-bold">
-                #{team.rank}
-              </TableCell>
-              <TableCell className="font-semibold text-white">
-                {team.name}
-              </TableCell>
-              <TableCell className="text-xs text-white/60">
-                {team.hackathon}
-              </TableCell>
-              <TableCell className="font-mono font-bold text-sm text-accent-secondary">
-                {team.points} pts
-              </TableCell>
-              <TableCell className="text-xs text-[rgba(255,255,255,0.45)] max-w-sm italic">
-                "{team.feedback}"
-              </TableCell>
-            </TableRow>
-          ))}
-        </Table>
-      </div>
+      {/* Top 3 Podium Cards */}
+      {podiumWinners.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end px-4 py-8">
+          {/* Loop over reordered podium [2nd, 1st, 3rd] */}
+          {reorderedPodium.map((winner) => {
+            const isFirst = winner.rank === 1;
+            const isSecond = winner.rank === 2;
+            const isThird = winner.rank === 3;
+
+            let cardHeight = 'h-72'; // 2nd / 3rd
+            let accentBorder = 'border-[rgba(255,255,255,0.08)]';
+            let glowShadow = '';
+            let medalColor = 'text-white/40';
+
+            if (isFirst) {
+              cardHeight = 'h-88 md:-translate-y-4';
+              accentBorder = 'border-accent-primary';
+              glowShadow = 'shadow-[0_0_30px_rgba(0,243,255,0.15)]';
+              medalColor = 'text-accent-primary';
+            } else if (isSecond) {
+              accentBorder = 'border-accent-secondary';
+              medalColor = 'text-accent-secondary';
+            } else if (isThird) {
+              accentBorder = 'border-accent-third';
+              medalColor = 'text-accent-third';
+            }
+
+            return (
+              <div 
+                key={winner.team} 
+                className={`glass-card rounded-[40px] border p-8 flex flex-col justify-between items-center text-center relative ${cardHeight} ${accentBorder} ${glowShadow}`}
+              >
+                {/* Ranking Medals Badge */}
+                <div className={`w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-archivo text-lg font-black ${medalColor} mb-2`}>
+                  #{winner.rank}
+                </div>
+
+                <div className="flex flex-col gap-1 w-full">
+                  <h4 className="font-archivo text-xl font-black text-white truncate max-w-full">
+                    {winner.team}
+                  </h4>
+                  <p className="text-xs text-white/50 truncate max-w-full font-semibold">{winner.project}</p>
+                  <p className="text-[10px] text-white/30 uppercase tracking-widest font-mono mt-1">{winner.branch}</p>
+                </div>
+
+                {/* Score badge */}
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-white/40">Total Score</span>
+                  <span className="font-mono text-3xl font-black text-white mt-1">
+                    {winner.score}<span className="text-xs font-light text-white/40"> pts</span>
+                  </span>
+                </div>
+
+                {/* Background podium placement graphics */}
+                <div className="absolute bottom-4 inset-x-4 flex justify-center gap-1.5 opacity-10">
+                  <span className={`w-3 h-3 rounded-full bg-white ${isFirst ? 'bg-accent-primary' : ''}`} />
+                  <span className={`w-3 h-3 rounded-full bg-white ${isSecond ? 'bg-accent-secondary' : ''}`} />
+                  <span className={`w-3 h-3 rounded-full bg-white ${isThird ? 'bg-accent-third' : ''}`} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Ledger Rankings List */}
+      <Card className="p-8">
+        <h3 className="font-archivo text-lg font-black uppercase text-white tracking-wider mb-6">
+          Ranking Ledger
+        </h3>
+
+        <div className="overflow-x-auto">
+          <Table headers={['Rank', 'Team & Project', 'Academic Branch', 'Problem Statement', 'Evaluated Score', 'Feedback Comments']}>
+            {activeLeaderboard.map((team) => (
+              <TableRow key={team.team} className="hover:bg-white/[0.01] transition-all">
+                {/* Rank */}
+                <TableCell className="font-mono text-md font-bold text-center">
+                  <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-black ${
+                    team.rank === 1 
+                      ? 'bg-accent-primary/10 border border-accent-primary text-accent-primary shadow-[0_0_10px_rgba(0,243,255,0.2)]'
+                      : team.rank === 2
+                      ? 'bg-accent-secondary/10 border border-accent-secondary text-accent-secondary'
+                      : team.rank === 3
+                      ? 'bg-accent-third/10 border border-accent-third text-accent-third'
+                      : 'bg-white/5 border border-white/10 text-white/60'
+                  }`}>
+                    {team.rank}
+                  </span>
+                </TableCell>
+
+                {/* Team Info */}
+                <TableCell>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">{team.team}</h4>
+                    <p className="text-xs text-white/40 font-mono mt-0.5">{team.project}</p>
+                  </div>
+                </TableCell>
+
+                {/* Academic Branch */}
+                <TableCell className="text-xs text-white/80 font-semibold font-mono">
+                  {team.branch}
+                </TableCell>
+
+                {/* Problem Statement */}
+                <TableCell className="text-xs text-white/60">
+                  {team.problemStatement}
+                </TableCell>
+
+                {/* Visual score bars */}
+                <TableCell>
+                  <div className="flex flex-col gap-1.5 min-w-[120px]">
+                    <div className="flex justify-between font-mono text-xs font-bold text-accent-primary">
+                      <span>{team.score}</span>
+                      <span className="text-white/30">/100</span>
+                    </div>
+                    <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-[1000ms] ${
+                          team.rank === 1 
+                            ? 'bg-accent-primary shadow-[0_0_10px_rgba(0,243,255,0.4)]'
+                            : team.rank === 2
+                            ? 'bg-accent-secondary'
+                            : 'bg-accent-third'
+                        }`}
+                        style={{ width: `${team.score}%` }}
+                      />
+                    </div>
+                  </div>
+                </TableCell>
+
+                {/* Feedback */}
+                <TableCell className="text-xs text-white/40 italic max-w-sm leading-relaxed truncate hover:text-white/60 transition-colors">
+                  "{team.feedback}"
+                </TableCell>
+              </TableRow>
+            ))}
+          </Table>
+        </div>
+      </Card>
     </div>
   );
 };
@@ -679,29 +849,415 @@ const TeamsView = () => {
 
 // 6. SUBMISSIONS CONSOLE
 const SubmissionsView = () => {
-  const [title, setTitle] = useState('');
-  const [repo, setRepo] = useState('');
+  // Mock submissions database
+  const initialSubmissions = [
+    {
+      id: 'sub-01',
+      title: 'ZeroG LLM Quantizer',
+      team: 'Zero_Gravity',
+      hackathon: 'AI Genesis 2026',
+      problemStatement: 'PS-01: Generative LLM Interface',
+      githubUrl: 'https://github.com/zerogravity/quantizer',
+      demoUrl: 'https://zerog-live.vercel.app',
+      submittedAt: '2026-07-26 14:05',
+      status: 'under_review',
+      description: 'An advanced model quantization pipeline designed to compress high-dimensional neural weights down to 4-bit levels directly on client hardware with less than 2% perplexity loss.',
+      files: [
+        { name: 'architecture_specification.pdf', size: '2.4 MB' },
+        { name: 'quantization_benchmarks.xlsx', size: '1.1 MB' }
+      ]
+    },
+    {
+      id: 'sub-02',
+      title: 'Eco-Glow Controller',
+      team: 'Volt_Tech',
+      hackathon: 'AI Genesis 2026',
+      problemStatement: 'PS-03: College Carbon Offsets',
+      githubUrl: 'https://github.com/volttech/ecoglow',
+      demoUrl: 'https://ecoglow.vercel.app',
+      submittedAt: '2026-07-25 18:22',
+      status: 'graded',
+      description: 'Integrated IoT wearable sensor tracking student body temperature metrics to automate room ventilation speeds and offset college carbon indices.',
+      files: [
+        { name: 'iot_schematics_rev2.pdf', size: '4.8 MB' },
+        { name: 'presentation_slides.pptx', size: '8.2 MB' }
+      ]
+    },
+    {
+      id: 'sub-03',
+      title: 'Synthetix Routing Node',
+      team: 'Neural_Knights',
+      hackathon: 'AI Genesis 2026',
+      problemStatement: 'PS-04: Dynamic Database Indices',
+      githubUrl: 'https://github.com/neuralknights/routing',
+      demoUrl: 'https://synthetix.vercel.app',
+      submittedAt: '2026-07-25 15:40',
+      status: 'graded',
+      description: 'A multi-threaded cache-efficient router mapping dynamic database indices with sub-millisecond route calculations and structured exception envelopes.',
+      files: [
+        { name: 'benchmarking_report.pdf', size: '1.5 MB' }
+      ]
+    },
+    {
+      id: 'sub-04',
+      title: 'Hydro-Net Sensor',
+      team: 'Aqua_Tech',
+      hackathon: 'Green-Tech Innovations',
+      problemStatement: 'PS-05: Water Quality Telemetry',
+      githubUrl: 'https://github.com/aquatech/hydronet',
+      demoUrl: 'https://hydronet.vercel.app',
+      submittedAt: '2026-07-26 11:15',
+      status: 'submitted',
+      description: 'Distributed floating telemetry pods measuring water pH and mineral content around college ponds, streaming live alerts directly over LoRaWAN.',
+      files: [
+        { name: 'lora_network_topology.pdf', size: '3.1 MB' }
+      ]
+    },
+    {
+      id: 'sub-05',
+      title: 'Cyber-Mesh Auth',
+      team: 'Crypt_Keepers',
+      hackathon: 'Cybersecurity Sprint',
+      problemStatement: 'PS-06: WebAuthn Passwordless',
+      githubUrl: 'https://github.com/cryptkeepers/auth',
+      demoUrl: 'https://cybermesh.vercel.app',
+      submittedAt: '2026-07-26 09:30',
+      status: 'draft',
+      description: 'A passwordless biometric validation template substituting standard login forms with WebAuthn browser calls.',
+      files: []
+    }
+  ];
+
+  const [submissions] = useState(initialSubmissions);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [hackathonFilter, setHackathonFilter] = useState('all');
+  const [selectedSub, setSelectedSub] = useState<any | null>(null);
+
+  // Filter logic
+  const filteredSubmissions = submissions.filter(sub => {
+    const matchesSearch = sub.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          sub.team.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          sub.problemStatement.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || sub.status === statusFilter;
+    const matchesHackathon = hackathonFilter === 'all' || sub.hackathon === hackathonFilter;
+
+    return matchesSearch && matchesStatus && matchesHackathon;
+  });
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-16 flex flex-col gap-8">
-      <div>
-        <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-white">
+    <div className="flex flex-col gap-8 max-w-7xl mx-auto w-full select-none pointer-events-auto">
+      {/* Header */}
+      <div className="border-b border-white/5 pb-6">
+        <span className="text-xs uppercase tracking-[0.25em] text-accent-primary font-bold font-archivo">
+          PROJECT REPOSITORY
+        </span>
+        <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-glow-cyan text-white mt-1">
           Submission Console
         </h2>
-        <p className="text-sm text-text-secondary mt-1 font-light">Submit completed project details, code repository links, and final deployments.</p>
+        <p className="text-sm text-text-secondary mt-1 font-light">
+          Track code deliveries, live prototypes, and grading workflows across active campus hackathons.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <Card hoverable>
-            <form onSubmit={(e) => { e.preventDefault(); alert(`Submitted: ${title}`); setTitle(''); setRepo(''); }} className="flex flex-col gap-4">
-              <Input label="Project Title" placeholder="ZeroG Optimizer" required value={title} onChange={(e) => setTitle(e.target.value)} />
-              <Input label="GitHub URL" placeholder="https://github.com/..." required value={repo} onChange={(e) => setRepo(e.target.value)} />
-              <Button type="submit" variant="primary" className="w-full mt-2">Submit Deliverables</Button>
-            </form>
-          </Card>
+      {/* Advanced Filters Toolbar */}
+      <Card className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+        {/* Search */}
+        <div className="relative w-full md:max-w-md">
+          <input 
+            type="text" 
+            placeholder="Search projects, teams, or statements..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full h-11 pl-10 pr-4 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-primary transition-all duration-300"
+          />
+          <Search size={14} className="absolute left-3.5 top-3.5 text-white/35" />
         </div>
-      </div>
+
+        {/* Dropdowns */}
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <div className="relative flex-1 md:flex-none">
+            <select
+              value={hackathonFilter}
+              onChange={(e) => setHackathonFilter(e.target.value)}
+              className="w-full md:w-48 h-11 px-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-primary cursor-pointer appearance-none"
+            >
+              <option value="all" className="bg-[#050505] text-white">All Hackathons</option>
+              <option value="AI Genesis 2026" className="bg-[#050505] text-white">AI Genesis 2026</option>
+              <option value="Green-Tech Innovations" className="bg-[#050505] text-white">Green-Tech Innovations</option>
+              <option value="Cybersecurity Sprint" className="bg-[#050505] text-white">Cybersecurity Sprint</option>
+            </select>
+          </div>
+
+          <div className="relative flex-1 md:flex-none">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full md:w-40 h-11 px-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-primary cursor-pointer appearance-none"
+            >
+              <option value="all" className="bg-[#050505] text-white">All Statuses</option>
+              <option value="draft" className="bg-[#050505] text-white">Draft</option>
+              <option value="submitted" className="bg-[#050505] text-white">Submitted</option>
+              <option value="under_review" className="bg-[#050505] text-white">Under Review</option>
+              <option value="graded" className="bg-[#050505] text-white">Graded</option>
+            </select>
+          </div>
+        </div>
+      </Card>
+
+      {/* Results grid */}
+      <Card className="p-8">
+        <div className="overflow-x-auto">
+          {filteredSubmissions.length > 0 ? (
+            <Table headers={['Project & Team', 'Hackathon Context', 'Problem Statement', 'Submitted At', 'Status', 'Actions']}>
+              {filteredSubmissions.map((sub) => (
+                <TableRow key={sub.id} className="hover:bg-white/[0.01] transition-all">
+                  <TableCell>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">{sub.title}</h4>
+                      <p className="text-xs text-white/40 font-mono mt-0.5">{sub.team}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs text-white/80">
+                    {sub.hackathon}
+                  </TableCell>
+                  <TableCell className="text-xs text-white/60">
+                    {sub.problemStatement}
+                  </TableCell>
+                  <TableCell className="text-xs text-white/50 font-mono">
+                    {sub.submittedAt}
+                  </TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant={
+                        sub.status === 'graded' 
+                          ? 'success' 
+                          : sub.status === 'under_review' 
+                          ? 'warning' 
+                          : sub.status === 'submitted'
+                          ? 'primary'
+                          : 'secondary'
+                      }
+                    >
+                      {sub.status === 'under_review' ? 'Under Review' : sub.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Button 
+                      variant="secondary" 
+                      className="h-9 px-4 text-xs"
+                      onClick={() => setSelectedSub(sub)}
+                    >
+                      Inspect
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </Table>
+          ) : (
+            <div className="py-12 flex flex-col items-center justify-center gap-4 text-center">
+              <div className="w-12 h-12 rounded-full border border-dashed border-white/20 flex items-center justify-center text-white/30">
+                <FileText size={20} />
+              </div>
+              <div>
+                <h4 className="font-archivo text-md font-bold uppercase text-white">No submissions found</h4>
+                <p className="text-xs text-white/40 mt-1">Adjust search parameters or select a different filter category.</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* Side Details Drawer */}
+      {selectedSub && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => setSelectedSub(null)}
+          />
+
+          {/* Drawer content card */}
+          <div className="relative w-full max-w-xl h-full bg-[#050505]/95 border-l border-white/10 p-8 overflow-y-auto z-10 flex flex-col justify-between shadow-[0_0_50px_rgba(0,0,0,0.8)] animate-slide-left">
+            <div>
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-accent-primary font-bold">
+                    SUBMISSION METADATA
+                  </span>
+                  <h3 className="text-lg font-archivo font-black text-white uppercase mt-1">
+                    {selectedSub.title}
+                  </h3>
+                  <p className="text-xs text-white/40 font-mono mt-0.5">{selectedSub.team} • {selectedSub.hackathon}</p>
+                </div>
+                <button 
+                  onClick={() => setSelectedSub(null)}
+                  className="p-1.5 rounded-full bg-white/5 border border-white/10 text-white/60 hover:text-white transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Status & Statement info */}
+              <div className="flex flex-col gap-5 bg-white/[0.01] border border-white/5 rounded-2xl p-5 mb-6">
+                <div>
+                  <span className="text-[9px] uppercase tracking-widest text-white/40 font-bold block">Assigned Problem Statement</span>
+                  <p className="text-xs font-semibold text-white/90 mt-1">{selectedSub.problemStatement}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
+                  <div>
+                    <span className="text-[9px] uppercase tracking-widest text-white/40 font-bold block">Current Lifecycle Status</span>
+                    <div className="mt-1">
+                      <Badge 
+                        variant={
+                          selectedSub.status === 'graded' 
+                            ? 'success' 
+                            : selectedSub.status === 'under_review' 
+                            ? 'warning' 
+                            : selectedSub.status === 'submitted'
+                            ? 'primary'
+                            : 'secondary'
+                        }
+                      >
+                        {selectedSub.status === 'under_review' ? 'Under Review' : selectedSub.status}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[9px] uppercase tracking-widest text-white/40 font-bold block">Delivery Timestamp</span>
+                    <p className="text-xs font-mono font-semibold text-white/70 mt-1.5">{selectedSub.submittedAt}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Overview */}
+              <div className="mb-6 flex flex-col gap-2">
+                <h4 className="text-xs uppercase font-bold tracking-widest text-white/40">Project Overview</h4>
+                <p className="text-xs text-white/70 leading-relaxed font-light">{selectedSub.description}</p>
+              </div>
+
+              {/* Resource Links */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <a 
+                  href={selectedSub.githubUrl} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-white/[0.01] hover:border-accent-primary hover:bg-accent-primary/5 transition-all text-xs font-semibold text-white/70 hover:text-white"
+                >
+                  <Terminal size={16} className="text-accent-primary" />
+                  <div>
+                    <p className="font-bold">Code Repository</p>
+                    <p className="text-[10px] text-white/40 font-mono">Open in GitHub</p>
+                  </div>
+                </a>
+
+                <a 
+                  href={selectedSub.demoUrl} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-white/[0.01] hover:border-accent-secondary hover:bg-accent-secondary/5 transition-all text-xs font-semibold text-white/70 hover:text-white"
+                >
+                  <ExternalLink size={16} className="text-accent-secondary" />
+                  <div>
+                    <p className="font-bold">Live Demonstration</p>
+                    <p className="text-[10px] text-white/40 font-mono">Launch Prototype</p>
+                  </div>
+                </a>
+              </div>
+
+              {/* Uploaded files attachment list */}
+              <div className="mb-6">
+                <h4 className="text-xs uppercase font-bold tracking-widest text-white/40 mb-3">Project Deliverables</h4>
+                {selectedSub.files.length > 0 ? (
+                  <div className="flex flex-col gap-2">
+                    {selectedSub.files.map((file: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 hover:border-accent-primary/30 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <FileText size={14} className="text-accent-primary" />
+                          <span className="text-xs text-white/80 font-mono truncate max-w-[280px]">{file.name}</span>
+                        </div>
+                        <span className="text-[10px] font-mono text-white/40">{file.size}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-white/30 italic">No attachments submitted for this project.</p>
+                )}
+              </div>
+
+              {/* Detailed Evaluation Flow Timeline */}
+              <div>
+                <h4 className="text-xs uppercase font-bold tracking-widest text-white/40 mb-4">Lifecycle Audit Pipeline</h4>
+                <div className="flex flex-col gap-5 pl-2 relative border-l border-white/10">
+                  {/* Step 1 */}
+                  <div className="relative pl-6">
+                    <div className="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full bg-success border-2 border-black flex items-center justify-center shadow-[0_0_10px_rgba(0,255,157,0.4)]" />
+                    <h5 className="text-xs font-bold text-white">Project Draft Initiated</h5>
+                    <p className="text-[10px] text-white/40 font-mono mt-0.5">2026-07-26 09:30</p>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div className="relative pl-6">
+                    <div className={`absolute -left-[9px] top-0.5 w-4 h-4 rounded-full border-2 border-black flex items-center justify-center ${
+                      selectedSub.status !== 'draft' 
+                        ? 'bg-success shadow-[0_0_10px_rgba(0,255,157,0.4)]' 
+                        : 'bg-white/10'
+                    }`} />
+                    <h5 className={`text-xs font-bold ${selectedSub.status !== 'draft' ? 'text-white' : 'text-white/30'}`}>
+                      Deliverables Transmitted
+                    </h5>
+                    <p className="text-[10px] text-white/40 font-mono mt-0.5">
+                      {selectedSub.status !== 'draft' ? selectedSub.submittedAt : 'Pending transmission'}
+                    </p>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className="relative pl-6">
+                    <div className={`absolute -left-[9px] top-0.5 w-4 h-4 rounded-full border-2 border-black flex items-center justify-center ${
+                      selectedSub.status === 'under_review' || selectedSub.status === 'graded'
+                        ? 'bg-success shadow-[0_0_10px_rgba(0,255,157,0.4)]' 
+                        : 'bg-white/10'
+                    }`} />
+                    <h5 className={`text-xs font-bold ${selectedSub.status === 'under_review' || selectedSub.status === 'graded' ? 'text-white' : 'text-white/30'}`}>
+                      Under Architectural Review
+                    </h5>
+                    <p className="text-[10px] text-white/40 font-mono mt-0.5">
+                      {selectedSub.status === 'under_review' || selectedSub.status === 'graded' ? 'Assigned to Dr. Evelyn Carter' : 'Awaiting reviewer assignment'}
+                    </p>
+                  </div>
+
+                  {/* Step 4 */}
+                  <div className="relative pl-6">
+                    <div className={`absolute -left-[9px] top-0.5 w-4 h-4 rounded-full border-2 border-black flex items-center justify-center ${
+                      selectedSub.status === 'graded' 
+                        ? 'bg-success shadow-[0_0_10px_rgba(0,255,157,0.4)]' 
+                        : 'bg-white/10'
+                    }`} />
+                    <h5 className={`text-xs font-bold ${selectedSub.status === 'graded' ? 'text-white' : 'text-white/30'}`}>
+                      Evaluation Grading Scorecard Released
+                    </h5>
+                    <p className="text-[10px] text-white/40 font-mono mt-0.5">
+                      {selectedSub.status === 'graded' ? 'Score details logged to leaderboard' : 'Awaiting review publication'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Close */}
+            <div className="mt-8 border-t border-white/5 pt-4">
+              <Button 
+                variant="secondary" 
+                className="w-full justify-center"
+                onClick={() => setSelectedSub(null)}
+              >
+                Close Metadata Inspector
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -761,29 +1317,443 @@ const AnnouncementsView = () => {
 
 // 9. JUDGE PANEL
 const JudgeView = () => {
+  // Assigned submissions mock state
+  const [submissions, setSubmissions] = useState([
+    {
+      id: 'sub-01',
+      title: 'ZeroG LLM Quantizer',
+      team: 'Zero_Gravity',
+      problemStatement: 'PS-01: Generative LLM Interface',
+      status: 'under_review',
+      deadline: '2026-08-18 18:00',
+      scores: { innovation: 0, execution: 0, design: 0, impact: 0 },
+      feedback: '',
+      score: null as number | null
+    },
+    {
+      id: 'sub-02',
+      title: 'Eco-Glow Controller',
+      team: 'Volt_Tech',
+      problemStatement: 'PS-03: College Carbon Offsets',
+      status: 'graded',
+      deadline: '2026-08-18 18:00',
+      scores: { innovation: 9, execution: 8, design: 8, impact: 9 },
+      feedback: 'Excellent integration of wearable bio-sensors with an elegant low-energy dashboard.',
+      score: 85
+    },
+    {
+      id: 'sub-03',
+      title: 'Synthetix Routing Node',
+      team: 'Neural_Knights',
+      problemStatement: 'PS-04: Dynamic Database Indices',
+      status: 'graded',
+      deadline: '2026-08-18 18:00',
+      scores: { innovation: 10, execution: 9, design: 9, impact: 9 },
+      feedback: 'Very solid backend routing tables. Exception middleware structured cleanly.',
+      score: 92
+    }
+  ]);
+
+  const [selectedSub, setSelectedSub] = useState<any | null>(null);
+  const [evalScores, setEvalScores] = useState({ innovation: 8, execution: 8, design: 8, impact: 8 });
+  const [evalFeedback, setEvalFeedback] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  // Stats calculation
+  const totalAssigned = submissions.length;
+  const gradedCount = submissions.filter(s => s.status === 'graded').length;
+  const pendingCount = totalAssigned - gradedCount;
+  const averageScore = gradedCount > 0 
+    ? Math.round(submissions.reduce((acc, curr) => acc + (curr.score || 0), 0) / gradedCount) 
+    : 0;
+  
+  const completionPercentage = Math.round((gradedCount / totalAssigned) * 100);
+
+  // Trigger evaluation drawer
+  const handleOpenEval = (sub: any) => {
+    setSelectedSub(sub);
+    if (sub.status === 'graded') {
+      setEvalScores(sub.scores);
+      setEvalFeedback(sub.feedback);
+    } else {
+      setEvalScores({ innovation: 8, execution: 8, design: 8, impact: 8 });
+      setEvalFeedback('');
+    }
+  };
+
+  // Submit evaluation metrics
+  const handleSubmitEval = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    setTimeout(() => {
+      // Calculate overall score (average of 4 criteria * 10 to scale to 100)
+      const overall = Math.round(
+        ((evalScores.innovation + evalScores.execution + evalScores.design + evalScores.impact) / 4) * 10
+      );
+
+      setSubmissions(prev => prev.map(s => {
+        if (s.id === selectedSub.id) {
+          return {
+            ...s,
+            status: 'graded',
+            score: overall,
+            scores: { ...evalScores },
+            feedback: evalFeedback
+          };
+        }
+        return s;
+      }));
+
+      setIsSubmitting(false);
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        setSelectedSub(null);
+      }, 1500);
+    }, 1200);
+  };
+
+  // Circular SVG variables
+  const radius = 36;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (circumference * completionPercentage) / 100;
+
   return (
-    <div className="max-w-6xl mx-auto px-8 py-16 flex flex-col gap-8">
-      <div>
-        <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-glow-cyan text-white">
-          Judge Evaluation Matrix
-        </h2>
-        <p className="text-sm text-text-secondary mt-1 font-light">Verify assigned student projects, enter grade values, and publish feedback remarks.</p>
+    <div className="flex flex-col gap-8 max-w-7xl mx-auto w-full select-none pointer-events-auto">
+      {/* Header section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-6">
+        <div>
+          <span className="text-xs uppercase tracking-[0.25em] text-accent-secondary font-bold font-archivo">
+            EVALUATOR WORKSPACE
+          </span>
+          <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-glow-cyan text-white mt-1">
+            Judge Evaluation Matrix
+          </h2>
+          <p className="text-sm text-text-secondary mt-1 font-light">
+            Review assigned team code repositories, runtimes, and grade their technical executions.
+          </p>
+        </div>
+        
+        {/* Deadline panel */}
+        <div className="flex items-center gap-4 bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)] rounded-2xl p-4">
+          <div className="w-10 h-10 rounded-full bg-danger/10 border border-danger/30 flex items-center justify-center text-danger animate-pulse">
+            <Clock size={18} />
+          </div>
+          <div>
+            <p className="text-[10px] uppercase font-bold tracking-wider text-white/40">Evaluation Deadline</p>
+            <p className="text-sm font-mono font-bold text-white mt-0.5">Aug 18, 2026 at 18:00</p>
+          </div>
+        </div>
       </div>
-      <Card hoverable>
-        <h3 className="text-md font-bold text-white mb-4">Pending Evaluations</h3>
-        <Table headers={['Project', 'Team Name', 'Deliverable Link', 'Actions']}>
-          <TableRow>
-            <TableCell className="font-semibold text-white">ZeroG LLM Quantizer</TableCell>
-            <TableCell>Zero_Gravity</TableCell>
-            <TableCell><a href="#" className="text-accent-primary text-xs font-mono">github.com/zerog</a></TableCell>
-            <TableCell>
-              <Button variant="primary" className="h-8 text-xs" onClick={() => alert('Opening Evaluation Scorecard...')}>
-                Evaluate
-              </Button>
-            </TableCell>
-          </TableRow>
-        </Table>
+
+      {/* Grid: Stats row */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card hoverable className="flex flex-col justify-between p-6">
+          <div>
+            <p className="text-xs uppercase tracking-wider font-bold text-white/40">Assigned Projects</p>
+            <h3 className="font-archivo text-4xl font-black text-white mt-2">{totalAssigned}</h3>
+          </div>
+          <p className="text-[10px] text-white/50 mt-4 flex items-center gap-1">
+            <Layers size={12} className="text-accent-primary" /> Active Sprints Allocation
+          </p>
+        </Card>
+
+        <Card hoverable className="flex flex-col justify-between p-6">
+          <div>
+            <p className="text-xs uppercase tracking-wider font-bold text-white/40">Pending Evaluation</p>
+            <h3 className="font-archivo text-4xl font-black text-accent-secondary mt-2">{pendingCount}</h3>
+          </div>
+          <p className="text-[10px] text-accent-secondary mt-4 flex items-center gap-1">
+            <Clock size={12} /> Requires immediate scoring
+          </p>
+        </Card>
+
+        <Card hoverable className="flex flex-col justify-between p-6">
+          <div>
+            <p className="text-xs uppercase tracking-wider font-bold text-white/40">Average Score Given</p>
+            <h3 className="font-archivo text-4xl font-black text-accent-primary mt-2">{averageScore}<span className="text-lg font-light text-white/40">/100</span></h3>
+          </div>
+          <p className="text-[10px] text-accent-primary mt-4 flex items-center gap-1">
+            <Star size={12} className="fill-accent-primary/20" /> Based on {gradedCount} graded projects
+          </p>
+        </Card>
+
+        <Card hoverable className="flex items-center gap-6 p-6">
+          <div className="relative w-20 h-20 flex items-center justify-center">
+            <svg className="w-full h-full transform -rotate-90">
+              <circle cx="40" cy="40" r={radius} className="stroke-white/5 fill-none" strokeWidth="6" />
+              <circle 
+                cx="40" 
+                cy="40" 
+                r={radius} 
+                className="stroke-accent-primary fill-none transition-all duration-[800ms] ease-out" 
+                strokeWidth="6" 
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                strokeLinecap="round"
+              />
+            </svg>
+            <span className="absolute font-mono text-xs font-bold text-white">{completionPercentage}%</span>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wider font-bold text-white/40">Grading Progress</p>
+            <p className="text-sm font-semibold text-white mt-1">{gradedCount} of {totalAssigned} Complete</p>
+          </div>
+        </Card>
+      </div>
+
+      {/* Main Submissions list */}
+      <Card className="p-8">
+        <h3 className="font-archivo text-lg font-black uppercase text-white tracking-wider mb-6 flex items-center gap-2">
+          <span>Assigned Queue</span>
+          <span className="h-5 px-2 rounded bg-white/5 border border-white/10 text-xs font-mono font-normal flex items-center justify-center text-white/60">
+            {pendingCount} Pending
+          </span>
+        </h3>
+
+        <div className="overflow-x-auto">
+          <Table headers={['Project details', 'Problem Statement', 'Deadline', 'Evaluation status', 'Score Ledger', 'Actions']}>
+            {submissions.map((sub) => (
+              <TableRow key={sub.id} className="hover:bg-white/[0.01] transition-all">
+                <TableCell>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">{sub.title}</h4>
+                    <p className="text-xs text-white/40 font-mono mt-0.5">{sub.team}</p>
+                  </div>
+                </TableCell>
+                <TableCell className="text-xs text-white/70">
+                  {sub.problemStatement}
+                </TableCell>
+                <TableCell className="text-xs text-white/50 font-mono">
+                  {sub.deadline}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={sub.status === 'graded' ? 'success' : 'warning'}>
+                    {sub.status === 'graded' ? 'Graded' : 'Pending Review'}
+                  </Badge>
+                </TableCell>
+                <TableCell className="font-mono text-sm font-bold text-accent-primary">
+                  {sub.score !== null ? `${sub.score}/100` : '--'}
+                </TableCell>
+                <TableCell>
+                  <Button 
+                    variant={sub.status === 'graded' ? 'secondary' : 'primary'}
+                    className="h-9 px-4 text-xs"
+                    onClick={() => handleOpenEval(sub)}
+                  >
+                    {sub.status === 'graded' ? 'View/Edit Scores' : 'Evaluate'}
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </Table>
+        </div>
       </Card>
+
+      {/* Sliding Evaluation Drawer */}
+      {selectedSub && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => setSelectedSub(null)}
+          />
+
+          {/* Sliding Glass Card */}
+          <div className="relative w-full max-w-xl h-full bg-[#050505]/95 border-l border-white/10 p-8 overflow-y-auto z-10 flex flex-col justify-between shadow-[0_0_50px_rgba(0,0,0,0.8)] animate-slide-left">
+            {/* Header */}
+            <div>
+              <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-accent-primary font-bold">
+                    EVALUATION SCORECARD
+                  </span>
+                  <h3 className="text-lg font-archivo font-black text-white uppercase mt-1">
+                    {selectedSub.title}
+                  </h3>
+                  <p className="text-xs text-white/40 font-mono mt-0.5">{selectedSub.team} • {selectedSub.problemStatement}</p>
+                </div>
+                <button 
+                  onClick={() => setSelectedSub(null)}
+                  className="p-1.5 rounded-full bg-white/5 border border-white/10 text-white/60 hover:text-white transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Delivery Resources Links */}
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                <a 
+                  href="https://github.com" 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-white/[0.01] hover:border-accent-primary hover:bg-accent-primary/5 transition-all text-xs font-semibold text-white/70 hover:text-white"
+                >
+                  <Terminal size={16} className="text-accent-primary" />
+                  <div>
+                    <p className="font-bold">Code Repository</p>
+                    <p className="text-[10px] text-white/40 font-mono">github.com/deliverable</p>
+                  </div>
+                </a>
+
+                <a 
+                  href="https://demo.com" 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-white/[0.01] hover:border-accent-secondary hover:bg-accent-secondary/5 transition-all text-xs font-semibold text-white/70 hover:text-white"
+                >
+                  <ExternalLink size={16} className="text-accent-secondary" />
+                  <div>
+                    <p className="font-bold">Live Demo Url</p>
+                    <p className="text-[10px] text-white/40 font-mono">zerog-live.vercel.app</p>
+                  </div>
+                </a>
+              </div>
+
+              {/* Rubric sliders */}
+              <form onSubmit={handleSubmitEval} className="flex flex-col gap-6">
+                <div className="flex flex-col gap-5">
+                  <h4 className="text-xs uppercase font-bold tracking-widest text-white/40 mb-1 border-b border-white/5 pb-2">
+                    Scoring Rubrics (Range 0 - 10)
+                  </h4>
+
+                  {/* Innovation */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex justify-between text-xs">
+                      <span className="font-bold text-white/80">Innovation & Originality</span>
+                      <span className="font-mono text-accent-primary font-bold">{evalScores.innovation}/10</span>
+                    </div>
+                    <input 
+                      type="range" min="0" max="10" 
+                      value={evalScores.innovation}
+                      onChange={(e) => setEvalScores(prev => ({ ...prev, innovation: parseInt(e.target.value) }))}
+                      className="w-full accent-accent-primary bg-white/10 h-1.5 rounded-lg cursor-pointer"
+                    />
+                    <p className="text-[9px] text-white/40 leading-relaxed">
+                      Assesses whether the team solved a novel challenge or used models in creative configurations.
+                    </p>
+                  </div>
+
+                  {/* Technical Execution */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex justify-between text-xs">
+                      <span className="font-bold text-white/80">Technical Complexity & Architecture</span>
+                      <span className="font-mono text-accent-primary font-bold">{evalScores.execution}/10</span>
+                    </div>
+                    <input 
+                      type="range" min="0" max="10" 
+                      value={evalScores.execution}
+                      onChange={(e) => setEvalScores(prev => ({ ...prev, execution: parseInt(e.target.value) }))}
+                      className="w-full accent-accent-primary bg-white/10 h-1.5 rounded-lg cursor-pointer"
+                    />
+                    <p className="text-[9px] text-white/40 leading-relaxed">
+                      Measures code quality, error handler middleware structures, schema validations, and database performance.
+                    </p>
+                  </div>
+
+                  {/* Design */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex justify-between text-xs">
+                      <span className="font-bold text-white/80">UI/UX & Design Quality</span>
+                      <span className="font-mono text-accent-primary font-bold">{evalScores.design}/10</span>
+                    </div>
+                    <input 
+                      type="range" min="0" max="10" 
+                      value={evalScores.design}
+                      onChange={(e) => setEvalScores(prev => ({ ...prev, design: parseInt(e.target.value) }))}
+                      className="w-full accent-accent-primary bg-white/10 h-1.5 rounded-lg cursor-pointer"
+                    />
+                    <p className="text-[9px] text-white/40 leading-relaxed">
+                      Verifies visual harmony, responsive layouts, ease-of-use, and compliance with high-fidelity aesthetics.
+                    </p>
+                  </div>
+
+                  {/* Impact */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex justify-between text-xs">
+                      <span className="font-bold text-white/80">Implementation & Value Impact</span>
+                      <span className="font-mono text-accent-primary font-bold">{evalScores.impact}/10</span>
+                    </div>
+                    <input 
+                      type="range" min="0" max="10" 
+                      value={evalScores.impact}
+                      onChange={(e) => setEvalScores(prev => ({ ...prev, impact: parseInt(e.target.value) }))}
+                      className="w-full accent-accent-primary bg-white/10 h-1.5 rounded-lg cursor-pointer"
+                    />
+                    <p className="text-[9px] text-white/40 leading-relaxed">
+                      Validates practical viability, scalability indexes, and general real-world applicability.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Score Projection */}
+                <div className="p-4 rounded-xl border border-[rgba(0,243,255,0.15)] bg-[rgba(0,243,255,0.02)] flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-accent-primary">Estimated Overall Grade</span>
+                    <p className="text-xs text-white/50 mt-0.5">Calculated weighted average out of 100</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-mono font-black text-3xl text-glow-cyan text-accent-primary">
+                      {Math.round(((evalScores.innovation + evalScores.execution + evalScores.design + evalScores.impact) / 4) * 10)}
+                    </span>
+                    <span className="text-xs text-white/40 font-mono">/100</span>
+                  </div>
+                </div>
+
+                {/* Feedback Comments */}
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="eval-feedback" className="text-xs font-bold text-white/70">
+                    Evaluator Feedback Remarks
+                  </label>
+                  <textarea 
+                    id="eval-feedback"
+                    required
+                    placeholder="Enter architectural review comments, feedback regarding implementation pitfalls, and positive remarks..."
+                    value={evalFeedback}
+                    onChange={(e) => setEvalFeedback(e.target.value)}
+                    className="w-full h-24 p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-primary focus:shadow-[0_0_12px_rgba(0,243,255,0.1)] transition-all font-manrope resize-none"
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-4 mt-2">
+                  <Button 
+                    type="button" 
+                    variant="secondary" 
+                    className="flex-1 justify-center"
+                    onClick={() => setSelectedSub(null)}
+                  >
+                    Discard
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    variant="primary" 
+                    className="flex-1 justify-center relative overflow-hidden"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Recording Grade...' : 'Publish Scorecard'}
+                  </Button>
+                </div>
+              </form>
+            </div>
+
+            {/* Inner Success feedback indicator */}
+            {showSuccess && (
+              <div className="absolute inset-0 bg-[#050505]/95 flex flex-col items-center justify-center gap-4 z-20">
+                <div className="w-16 h-16 rounded-full bg-success/15 border border-success/30 flex items-center justify-center text-success shadow-[0_0_30px_rgba(0,255,157,0.2)] animate-bounce">
+                  <CheckCircle size={32} />
+                </div>
+                <div className="text-center">
+                  <h4 className="font-archivo text-lg font-black uppercase tracking-wider text-white">Scores Registered</h4>
+                  <p className="text-xs text-white/50 mt-1">Grading matrix published to core ledger successfully.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -819,22 +1789,382 @@ const CoordinatorView = () => {
 
 // 11. ADMIN VIEW
 const AdminView = () => {
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [showJudgeModal, setShowJudgeModal] = useState(false);
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+
+  // Form states
+  const [newEvent, setNewEvent] = useState({ title: '', startDate: '', endDate: '', psCount: 1 });
+  const [announcementText, setAnnouncementText] = useState('');
+  const [isPerformingAction, setIsPerformingAction] = useState(false);
+  const [toastText, setToastText] = useState('');
+
+  // Analytics mock
+  const kpiStats = [
+    { title: 'Total Submissions', value: '18', detail: '+4 from yesterday', icon: Code, color: 'text-accent-primary' },
+    { title: 'Pending Reviews', value: '5', detail: 'Assigned to 3 judges', icon: Clock, color: 'text-accent-secondary' },
+    { title: 'Active Judges', value: '8', detail: '2 evaluators online', icon: Users, color: 'text-accent-third' },
+    { title: 'Average Score', value: '86.4', detail: 'Standard deviation: 4.8', icon: Star, color: 'text-success' }
+  ];
+
+  // SVG Chart Mock Data - Submissions velocity
+  const chartData = [
+    { day: 'Mon', count: 2, height: 'h-[30%]', color: 'bg-accent-third' },
+    { day: 'Tue', count: 4, height: 'h-[50%]', color: 'bg-accent-third' },
+    { day: 'Wed', count: 12, height: 'h-[95%]', color: 'bg-accent-primary shadow-[0_0_15px_rgba(0,243,255,0.4)]' },
+    { day: 'Thu', count: 8, height: 'h-[80%]', color: 'bg-accent-third' },
+    { day: 'Fri', count: 5, height: 'h-[60%]', color: 'bg-accent-third' },
+    { day: 'Sat', count: 9, height: 'h-[85%]', color: 'bg-accent-secondary shadow-[0_0_15px_rgba(255,0,193,0.4)]' },
+    { day: 'Sun', count: 3, height: 'h-[40%]', color: 'bg-accent-third' }
+  ];
+
+  const recentActivities = [
+    { id: 1, user: 'Dr. Evelyn Carter', action: 'graded team Zero_Gravity', detail: 'ZeroG LLM Quantizer: 96 pts', time: '12 mins ago' },
+    { id: 2, user: 'Prof. Sarah Jenkins', action: 'verified registration for', detail: 'Team Volt_Tech', time: '1 hr ago' },
+    { id: 3, user: 'Dean Marcus Vance', action: 'published official standings', detail: 'AI Genesis 2026 results', time: '4 hrs ago' },
+    { id: 4, user: 'System Bot', action: 'triggered automated backup', detail: 'Railway database instance synced', time: '8 hrs ago' }
+  ];
+
+  const showToast = (text: string) => {
+    setToastText(text);
+    setTimeout(() => setToastText(''), 3000);
+  };
+
+  const handleCreateEvent = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsPerformingAction(true);
+    setTimeout(() => {
+      setIsPerformingAction(false);
+      setShowEventModal(false);
+      showToast(`Hackathon "${newEvent.title}" initialized on ledger.`);
+      setNewEvent({ title: '', startDate: '', endDate: '', psCount: 1 });
+    }, 1200);
+  };
+
+  const handlePublishAnnouncement = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsPerformingAction(true);
+    setTimeout(() => {
+      setIsPerformingAction(false);
+      setShowAnnouncementModal(false);
+      showToast(`Announcement published to student screens.`);
+      setAnnouncementText('');
+    }, 1000);
+  };
+
   return (
-    <div className="max-w-6xl mx-auto px-8 py-16 flex flex-col gap-8">
-      <div>
-        <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-glow-cyan text-white">
-          Admin Command Console
-        </h2>
-        <p className="text-sm text-text-secondary mt-1 font-light">Create new hackathons, publish problem sheets, allocate judges, and inspect platform analytics.</p>
+    <div className="flex flex-col gap-8 max-w-7xl mx-auto w-full select-none pointer-events-auto relative">
+      {/* Toast Alert */}
+      {toastText && (
+        <div className="fixed top-24 right-8 z-50 p-4 rounded-xl border border-success/30 bg-[#050505] shadow-[0_0_20px_rgba(0,255,157,0.15)] flex items-center gap-3 animate-slide-left">
+          <div className="w-6 h-6 rounded-full bg-success/20 flex items-center justify-center text-success">
+            <Check size={14} />
+          </div>
+          <span className="text-xs font-semibold text-white">{toastText}</span>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-6">
+        <div>
+          <span className="text-xs uppercase tracking-[0.25em] text-accent-primary font-bold font-archivo">
+            CONTROL CENTER
+          </span>
+          <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-glow-cyan text-white mt-1">
+            Admin Command Console
+          </h2>
+          <p className="text-sm text-text-secondary mt-1 font-light">
+            Monitor evaluation pipelines, compile platform metrics, and deploy internal hackathons.
+          </p>
+        </div>
+
+        {/* System Diagnostics panel */}
+        <div className="flex items-center gap-5 bg-white/[0.01] border border-white/5 rounded-2xl px-5 py-3">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+            <span className="text-[10px] font-mono text-white/50 uppercase">FastAPI: OK</span>
+          </div>
+          <div className="w-[1px] h-4 bg-white/10" />
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+            <span className="text-[10px] font-mono text-white/50 uppercase">Supabase: OK</span>
+          </div>
+          <div className="w-[1px] h-4 bg-white/10" />
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+            <span className="text-[10px] font-mono text-white/50 uppercase">Rail: Active</span>
+          </div>
+        </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <Card hoverable>
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-white/40 mb-4">Quick Command</h3>
-          <Button variant="primary" className="w-full justify-center" onClick={() => alert('Opening Hackathon Creation Module...')}>
-            Create New Hackathon Event
-          </Button>
+
+      {/* Stats KPI tiles */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {kpiStats.map((kpi, idx) => {
+          const Icon = kpi.icon;
+          return (
+            <Card key={idx} hoverable className="p-6 flex flex-col justify-between h-36">
+              <div className="flex justify-between items-start">
+                <p className="text-xs uppercase tracking-wider font-bold text-white/45">{kpi.title}</p>
+                <div className={`p-1.5 rounded-lg bg-white/5 border border-white/10 ${kpi.color}`}>
+                  <Icon size={16} />
+                </div>
+              </div>
+              <div className="mt-2">
+                <h3 className="font-archivo text-3xl font-black text-white">{kpi.value}</h3>
+                <p className="text-[9px] text-white/40 mt-1 font-medium">{kpi.detail}</p>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Charts & Activities layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Submissions velocity SVG chart */}
+        <Card className="lg:col-span-2 p-8 flex flex-col justify-between">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider">Submissions Velocity</h4>
+              <p className="text-[10px] text-white/40 mt-0.5">Project deliveries submitted over the week</p>
+            </div>
+            <Badge variant="primary">Weekly view</Badge>
+          </div>
+
+          {/* Sleek Custom SVG/HTML Bar Chart */}
+          <div className="h-56 flex items-end gap-5 px-4 pb-2 border-b border-white/10">
+            {chartData.map((data, idx) => (
+              <div key={idx} className="flex-1 flex flex-col items-center gap-3 group h-full justify-end cursor-pointer">
+                {/* Tooltip on hover */}
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white text-black text-[9px] font-mono font-bold px-2 py-0.5 rounded shadow absolute -translate-y-16">
+                  {data.count} projects
+                </div>
+                {/* Bar */}
+                <div className={`w-full rounded-t-lg transition-all duration-700 ease-out ${data.height} ${data.color}`} />
+                <span className="text-[10px] font-mono text-white/40">{data.day}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Recent Audit Activities logs */}
+        <Card className="p-8 flex flex-col justify-between">
+          <div>
+            <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider mb-6">Recent Activities</h4>
+            <div className="flex flex-col gap-5">
+              {recentActivities.map((act) => (
+                <div key={act.id} className="flex items-start gap-3 text-xs leading-relaxed">
+                  <div className="w-1.5 h-1.5 rounded-full bg-accent-secondary mt-1.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white/80">
+                      <span className="font-bold text-white">{act.user}</span> {act.action}{' '}
+                      <span className="font-bold text-accent-primary">{act.detail}</span>
+                    </p>
+                    <span className="text-[9px] text-white/30 font-mono mt-0.5 block">{act.time}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Link to="/submissions" className="mt-6 border-t border-white/5 pt-4 text-xs font-semibold text-accent-primary hover:text-white transition-colors flex items-center gap-1.5 group">
+            <span>View Submissions Ledger</span>
+            <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+          </Link>
         </Card>
       </div>
+
+      {/* Quick operations hub & shortcuts */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Operations Panel */}
+        <Card className="md:col-span-2 p-8">
+          <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider mb-6">Operations Hub</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <button 
+              onClick={() => setShowEventModal(true)}
+              className="p-4 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-primary hover:bg-accent-primary/5 transition-all text-left flex flex-col justify-between h-28 group"
+            >
+              <Plus size={18} className="text-accent-primary group-hover:rotate-90 transition-transform duration-300" />
+              <div>
+                <p className="text-xs font-bold text-white">Create Hackathon</p>
+                <p className="text-[10px] text-white/40 mt-0.5 font-medium">Scaffold new sprint events</p>
+              </div>
+            </button>
+
+            <button 
+              onClick={() => setShowJudgeModal(true)}
+              className="p-4 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-secondary hover:bg-accent-secondary/5 transition-all text-left flex flex-col justify-between h-28 group"
+            >
+              <Users size={18} className="text-accent-secondary" />
+              <div>
+                <p className="text-xs font-bold text-white">Allocate Judges</p>
+                <p className="text-[10px] text-white/40 mt-0.5 font-medium">Assign review matrices</p>
+              </div>
+            </button>
+
+            <button 
+              onClick={() => setShowAnnouncementModal(true)}
+              className="p-4 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-third hover:bg-accent-third/5 transition-all text-left flex flex-col justify-between h-28 group"
+            >
+              <Megaphone size={18} className="text-accent-third" />
+              <div>
+                <p className="text-xs font-bold text-white">Publish Alert</p>
+                <p className="text-[10px] text-white/40 mt-0.5 font-medium">Broadcast system alerts</p>
+              </div>
+            </button>
+          </div>
+        </Card>
+
+        {/* Shortcuts Panel */}
+        <Card className="p-8 flex flex-col justify-between">
+          <div>
+            <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider mb-6">Quick Links</h4>
+            <div className="flex flex-col gap-3 text-xs">
+              <Link to="/submissions" className="p-3 rounded-xl border border-white/5 bg-[#050505] hover:border-white/20 transition-colors flex justify-between items-center text-white/80 hover:text-white">
+                <span>Submissions Console</span>
+                <ChevronRight size={14} />
+              </Link>
+              <Link to="/leaderboard" className="p-3 rounded-xl border border-white/5 bg-[#050505] hover:border-white/20 transition-colors flex justify-between items-center text-white/80 hover:text-white">
+                <span>Leaderboard ledger</span>
+                <ChevronRight size={14} />
+              </Link>
+              <Link to="/announcements" className="p-3 rounded-xl border border-white/5 bg-[#050505] hover:border-white/20 transition-colors flex justify-between items-center text-white/80 hover:text-white">
+                <span>Announcements desk</span>
+                <ChevronRight size={14} />
+              </Link>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Modal 1: Create Hackathon Event */}
+      {showEventModal && (
+        <Modal 
+          isOpen={true} 
+          onClose={() => setShowEventModal(false)}
+          title="Create New Hackathon Event"
+        >
+          <form onSubmit={handleCreateEvent} className="flex flex-col gap-5 py-2 font-manrope">
+            <Input 
+              label="Hackathon Event Name" 
+              placeholder="e.g. AI Genesis 2026" 
+              required 
+              value={newEvent.title} 
+              onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))} 
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input 
+                label="Launch Date" 
+                type="date"
+                required 
+                value={newEvent.startDate} 
+                onChange={(e) => setNewEvent(prev => ({ ...prev, startDate: e.target.value }))} 
+              />
+              <Input 
+                label="Deadline Date" 
+                type="date"
+                required 
+                value={newEvent.endDate} 
+                onChange={(e) => setNewEvent(prev => ({ ...prev, endDate: e.target.value }))} 
+              />
+            </div>
+
+            <Input 
+              label="Initial Problem Statements count" 
+              type="number"
+              min="1" max="10"
+              required 
+              value={newEvent.psCount} 
+              onChange={(e) => setNewEvent(prev => ({ ...prev, psCount: parseInt(e.target.value) }))} 
+            />
+
+            <div className="flex gap-3 justify-end mt-4">
+              <Button type="button" variant="secondary" onClick={() => setShowEventModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" disabled={isPerformingAction}>
+                {isPerformingAction ? 'Initializing ledger...' : 'Initialize Event'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Modal 2: Allocate Judges */}
+      {showJudgeModal && (
+        <Modal 
+          isOpen={true} 
+          onClose={() => setShowJudgeModal(false)}
+          title="Allocate Evaluators"
+        >
+          <div className="flex flex-col gap-4 py-2 font-manrope">
+            <p className="text-xs text-white/70 leading-relaxed">
+              Allocate judges to evaluate submitted codebases. Evaluations are assigned round-robin or custom-mapped to specific problem statement tracks.
+            </p>
+
+            <div className="flex flex-col gap-3 border border-white/5 bg-white/[0.01] p-4 rounded-xl">
+              <div className="flex justify-between items-center text-xs">
+                <div>
+                  <h5 className="font-bold text-white">Dr. Evelyn Carter</h5>
+                  <p className="text-[10px] text-white/40">Track: AI & Neural Quantizers</p>
+                </div>
+                <Badge variant="success">3 Assignments</Badge>
+              </div>
+              <div className="flex justify-between items-center text-xs border-t border-white/5 pt-3">
+                <div>
+                  <h5 className="font-bold text-white">Prof. Andrew Ng</h5>
+                  <p className="text-[10px] text-white/40">Track: Machine Learning Operations</p>
+                </div>
+                <Badge variant="primary">0 Assignments</Badge>
+              </div>
+            </div>
+
+            <div className="flex gap-3 justify-end mt-4">
+              <Button type="button" variant="secondary" onClick={() => setShowJudgeModal(false)}>
+                Close
+              </Button>
+              <Button type="button" variant="primary" onClick={() => { setShowJudgeModal(false); showToast('Judge tracks mapped successfully.'); }}>
+                Run Allocation Matrix
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal 3: Broadcast Announcement */}
+      {showAnnouncementModal && (
+        <Modal 
+          isOpen={true} 
+          onClose={() => setShowAnnouncementModal(false)}
+          title="Broadcast Announcement"
+        >
+          <form onSubmit={handlePublishAnnouncement} className="flex flex-col gap-5 py-2 font-manrope">
+            <div className="flex flex-col gap-2">
+              <label htmlFor="broadcast-msg" className="text-xs font-bold text-white/70">
+                Alert Content Text
+              </label>
+              <textarea 
+                id="broadcast-msg"
+                required
+                placeholder="Enter global broadcast text to display on student and judge screens..."
+                value={announcementText}
+                onChange={(e) => setAnnouncementText(e.target.value)}
+                className="w-full h-24 p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-primary focus:shadow-[0_0_12px_rgba(0,243,255,0.1)] transition-all font-manrope resize-none"
+              />
+            </div>
+
+            <div className="flex gap-3 justify-end mt-4">
+              <Button type="button" variant="secondary" onClick={() => setShowAnnouncementModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" disabled={isPerformingAction}>
+                {isPerformingAction ? 'Publishing broadcast...' : 'Broadcast Alert'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 };
@@ -842,15 +2172,27 @@ const AdminView = () => {
 // ==========================================
 // C. CENTRAL ROUTER BOOT
 // ==========================================
+const AppLayoutWrapper = () => {
+  return (
+    <AppLayout>
+      <Outlet />
+    </AppLayout>
+  );
+};
+
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Nests all portals inside GlobalLayout sharing topbars and particles */}
+        {/* Nests all public portals inside GlobalLayout sharing topbars and particles */}
         <Route element={<GlobalLayout />}>
           <Route path="/" element={<PublicLanding />} />
-          <Route path="/hackathons" element={<HackathonsView />} />
           <Route path="/gallery" element={<GalleryView />} />
+        </Route>
+
+        {/* Nests all internal portals inside AppLayout featuring persistent sidebars */}
+        <Route element={<AppLayoutWrapper />}>
+          <Route path="/hackathons" element={<HackathonsView />} />
           <Route path="/leaderboard" element={<LeaderboardView />} />
           <Route path="/teams" element={<TeamsView />} />
           <Route path="/submissions" element={<SubmissionsView />} />
@@ -859,10 +2201,10 @@ function App() {
           <Route path="/judge" element={<JudgeView />} />
           <Route path="/coordinator" element={<CoordinatorView />} />
           <Route path="/admin" element={<AdminView />} />
-          
-          {/* Catch-all redirect */}
-          <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
+
+        {/* Catch-all redirect */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

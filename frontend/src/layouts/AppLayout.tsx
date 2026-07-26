@@ -10,9 +10,13 @@ import {
   User, 
   Menu, 
   X,
-  Code
+  Code,
+  Shield,
+  ClipboardCheck,
+  Sliders,
+  Settings
 } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 export interface AppLayoutProps {
   children: React.ReactNode;
@@ -21,37 +25,124 @@ export interface AppLayoutProps {
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
-  // Navigation Links matching user roles/modules
-  const navItems = [
-    { label: 'Hackathons', path: '/hackathons', icon: Trophy },
-    { label: 'Team Portal', path: '/teams', icon: Users },
-    { label: 'Submissions', path: '/submissions', icon: Code },
-    { label: 'Leaderboard', path: '/leaderboard', icon: BarChart3 },
-    { label: 'Certificates', path: '/certificates', icon: Award },
-    { label: 'Announcements', path: '/announcements', icon: Megaphone },
-  ];
+  // Retrieve role state from localStorage, default to 'student'
+  const [activeRole, setActiveRole] = useState<string>(() => {
+    return localStorage.getItem('chms_role') || 'student';
+  });
+
+  // Dynamic user data mapping
+  const getUserProfile = (role: string) => {
+    switch (role) {
+      case 'judge':
+        return {
+          name: 'Dr. Evelyn Carter',
+          role: 'Lead Evaluator (Judge)',
+          avatarColor: 'border-accent-secondary bg-accent-secondary/10'
+        };
+      case 'admin':
+        return {
+          name: 'Dean Marcus Vance',
+          role: 'Dean / System Admin',
+          avatarColor: 'border-accent-third bg-accent-third/10'
+        };
+      case 'coordinator':
+        return {
+          name: 'Prof. Sarah Jenkins',
+          role: 'Ops Coordinator',
+          avatarColor: 'border-accent-primary bg-accent-primary/10'
+        };
+      case 'student':
+      default:
+        return {
+          name: 'Alex Mercer',
+          role: 'Student Developer',
+          avatarColor: 'border-accent-primary bg-accent-primary/10'
+        };
+    }
+  };
+
+  const currentUser = getUserProfile(activeRole);
+
+  // Dynamic navigation items based on active role
+  const getNavItems = (role: string) => {
+    const baseItems = [
+      { label: 'Submissions', path: '/submissions', icon: Code },
+      { label: 'Leaderboard', path: '/leaderboard', icon: BarChart3 },
+      { label: 'Announcements', path: '/announcements', icon: Megaphone },
+    ];
+
+    switch (role) {
+      case 'judge':
+        return [
+          { label: 'Judge Dashboard', path: '/judge', icon: ClipboardCheck },
+          ...baseItems
+        ];
+      case 'admin':
+        return [
+          { label: 'Admin Dashboard', path: '/admin', icon: Shield },
+          ...baseItems
+        ];
+      case 'coordinator':
+        return [
+          { label: 'Operations Console', path: '/coordinator', icon: Sliders },
+          ...baseItems
+        ];
+      case 'student':
+      default:
+        return [
+          { label: 'Hackathons', path: '/hackathons', icon: Trophy },
+          { label: 'Team Portal', path: '/teams', icon: Users },
+          { label: 'Submissions', path: '/submissions', icon: Code },
+          { label: 'Leaderboard', path: '/leaderboard', icon: BarChart3 },
+          { label: 'Certificates', path: '/certificates', icon: Award },
+          { label: 'Announcements', path: '/announcements', icon: Megaphone },
+        ];
+    }
+  };
+
+  const navItems = getNavItems(activeRole);
+
+  // Handle preview role updates
+  const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newRole = e.target.value;
+    setActiveRole(newRole);
+    localStorage.setItem('chms_role', newRole);
+
+    // Redirect to default page for role
+    switch (newRole) {
+      case 'judge':
+        navigate('/judge');
+        break;
+      case 'admin':
+        navigate('/admin');
+        break;
+      case 'coordinator':
+        navigate('/coordinator');
+        break;
+      case 'student':
+      default:
+        navigate('/hackathons');
+        break;
+    }
+  };
 
   // Active state checker
-  const isActive = (path: string) => location.pathname.startsWith(path);
-
-  // Mock User Metadata
-  const user = {
-    name: 'Alex Mercer',
-    role: 'Student Developer',
-    avatar: ''
-  };
+  const isActive = (path: string) => location.pathname === path || (path !== '/' && location.pathname.startsWith(path));
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-[#050505] border-r border-[rgba(255,255,255,0.08)]">
       {/* Brand Logo Header */}
       <div className="h-20 flex items-center px-8 border-b border-[rgba(255,255,255,0.06)] gap-3 select-none">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-accent-secondary to-accent-primary flex items-center justify-center shadow-[0_0_15px_rgba(0,243,255,0.25)]">
-          <Layers size={18} className="text-black" />
-        </div>
-        <span className="font-archivo text-lg tracking-wider font-black text-glow-cyan">
-          CHMS
-        </span>
+        <Link to="/" className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-accent-secondary to-accent-primary flex items-center justify-center shadow-[0_0_15px_rgba(0,243,255,0.25)]">
+            <Layers size={18} className="text-black" />
+          </div>
+          <span className="font-archivo text-lg tracking-wider font-black text-glow-cyan text-white">
+            CHMS
+          </span>
+        </Link>
       </div>
 
       {/* Navigation List */}
@@ -77,18 +168,46 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
         })}
       </nav>
 
-      {/* User Session profile panel */}
-      <div className="p-4 border-t border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.01)]">
-        <div className="flex items-center gap-3 p-2 rounded-xl">
-          <div className="w-9 h-9 rounded-full bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] flex items-center justify-center text-accent-primary">
+      {/* Dynamic Preview Role Switcher Panel */}
+      <div className="px-6 py-4 border-t border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.015)] flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="preview-role-select" className="text-[10px] uppercase font-bold tracking-[0.15em] text-accent-secondary">
+            Preview Role Simulation
+          </label>
+          <div className="relative">
+            <select
+              id="preview-role-select"
+              value={activeRole}
+              onChange={handleRoleChange}
+              className="w-full h-9 px-3 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-primary transition-all duration-300 appearance-none cursor-pointer"
+            >
+              <option value="student" className="bg-[#050505] text-white">Student View</option>
+              <option value="judge" className="bg-[#050505] text-white">Judge View</option>
+              <option value="admin" className="bg-[#050505] text-white">Admin View</option>
+              <option value="coordinator" className="bg-[#050505] text-white">Coordinator View</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-white/50">
+              <Settings size={12} className="animate-spin-slow" />
+            </div>
+          </div>
+        </div>
+
+        {/* User Session Profile details */}
+        <div className="flex items-center gap-3 p-2 rounded-xl border border-[rgba(255,255,255,0.05)] bg-[rgba(0,0,0,0.2)]">
+          <div className={`w-9 h-9 rounded-full border flex items-center justify-center text-white ${currentUser.avatarColor}`}>
             <User size={16} />
           </div>
           <div className="flex-1 min-w-0 select-none">
-            <p className="text-xs font-semibold text-white truncate">{user.name}</p>
-            <p className="text-[10px] text-[rgba(255,255,255,0.45)] uppercase tracking-wider truncate font-medium">{user.role}</p>
+            <p className="text-xs font-semibold text-white truncate">{currentUser.name}</p>
+            <p className="text-[10px] text-[rgba(255,255,255,0.45)] uppercase tracking-wider truncate font-medium">{currentUser.role}</p>
           </div>
           <button 
-            title="Log Out"
+            title="Reset to Student"
+            onClick={() => {
+              setActiveRole('student');
+              localStorage.setItem('chms_role', 'student');
+              navigate('/hackathons');
+            }}
             className="p-2 rounded-lg text-white/40 hover:text-danger hover:bg-danger/10 transition-colors"
           >
             <LogOut size={16} />
@@ -153,7 +272,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
             onClick={() => setIsMobileOpen(false)}
           />
           {/* Drawer Panel */}
-          <div className="relative w-64 max-w-xs h-full bg-[#050505] flex flex-col z-50 animate-slide-right">
+          <div className="relative w-64 max-w-xs h-full bg-[#050505] flex flex-col z-50">
             <button 
               onClick={() => setIsMobileOpen(false)}
               className="absolute top-4 right-4 p-2 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-white"
