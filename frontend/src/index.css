@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS Variables for design system tokens */
+:root {
+  --bg-primary: #050505;
+  --bg-surface: rgba(255, 255, 255, 0.03);
+  --bg-card: rgba(255, 255, 255, 0.05);
+  
+  --accent-primary: #00f3ff;
+  --accent-secondary: #ff00c1;
+  --accent-third: #9d00ff;
+  
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.65);
+  
+  --border-color: rgba(255, 255, 255, 0.10);
+  
+  --success: #00ff9d;
+  --warning: #ffc857;
+  --danger: #ff4d6d;
+  
+  --font-archivo: 'Archivo', sans-serif;
+  --font-manrope: 'Manrope', sans-serif;
+}
+
+/* Global Reset & Base Styles */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-manrope);
+}
+
+/* Custom Scrollbar for Tech-Noir Aesthetics */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+}
+
+/* Tech-Noir Theme Custom Utilities */
+@layer utilities {
+  .glass-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+  }
+
+  .glass-surface {
+    background: var(--bg-surface);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+  }
+
+  .text-glow-cyan {
+    text-shadow: 0 0 10px rgba(0, 243, 255, 0.5), 0 0 20px rgba(0, 243, 255, 0.2);
+  }
+
+  .text-glow-magenta {
+    text-shadow: 0 0 10px rgba(255, 0, 193, 0.5), 0 0 20px rgba(255, 0, 193, 0.2);
+  }
+
+  .border-glow-cyan:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 12px rgba(0, 243, 255, 0.25);
+    outline: none;
+  }
+}

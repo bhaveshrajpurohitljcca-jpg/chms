@@ -1,0 +1,35 @@
+# Python (Backend)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.env
+backend/.env
+test.db
+*.db
+.pytest_cache/
+.alembic/
+
+# Node (Frontend)
+node_modules/
+dist/
+dist-ssr/
+*.local
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor/OS settings
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
