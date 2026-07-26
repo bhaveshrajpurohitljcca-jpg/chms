@@ -238,9 +238,39 @@ function FileUploadWidget({ submissionId, existingFileUrl, existingFileName, onF
   );
 }
 
+// ─── Demo Fallback Helpers ──────────────────────────────────
+const DEMO_TEAM = {
+  id: 'demo-team-id',
+  hackathon_id: 'demo-hackathon-id',
+  name: 'Zero_Gravity',
+  join_code: 'DEMO01',
+  leader_id: 'demo-student-id',
+  status: 'approved',
+  members: [
+    { id: 'm1', team_id: 'demo-team-id', user_id: 'demo-student-id', role_in_team: 'leader', user: { full_name: 'Alex Rivera', email: 'student@college.edu' } },
+    { id: 'm2', team_id: 'demo-team-id', user_id: 'demo-member-2',   role_in_team: 'member', user: { full_name: 'Priya Nair',   email: 'priya@college.edu'   } },
+    { id: 'm3', team_id: 'demo-team-id', user_id: 'demo-member-3',   role_in_team: 'member', user: { full_name: 'Arjun Mehta',  email: 'arjun@college.edu'   } },
+  ],
+  created_at: new Date().toISOString(),
+};
+
+const DEMO_SUB_KEY = 'chms_demo_submission';
+
+function loadDemoSubmission(): SubmissionRecord | null {
+  try {
+    const raw = localStorage.getItem(DEMO_SUB_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveDemoSubmission(sub: SubmissionRecord) {
+  localStorage.setItem(DEMO_SUB_KEY, JSON.stringify(sub));
+}
+
 // ─── Main Page ──────────────────────────────────────────────
 export default function StudentSubmissionPage() {
   const [loading, setLoading] = useState(true);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const [activeTeam, setActiveTeam] = useState<any | null>(null);
   const [submission, setSubmission] = useState<SubmissionRecord | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -274,15 +304,17 @@ export default function StudentSubmissionPage() {
   useEffect(() => {
     async function load() {
       setLoading(true);
+      let usedDemoMode = false;
+
       try {
         const teamsRes = await apiService.getMyTeams();
         const myTeams: any[] = teamsRes.data ?? [];
 
         if (myTeams.length > 0) {
+          // ── Real backend team found ──────────────
           const team = myTeams[0];
           setActiveTeam(team);
 
-          // Load existing submission for this hackathon
           try {
             const subRes = await apiService.getMySubmission(team.hackathon_id);
             const existing = subRes.data ?? null;
@@ -302,12 +334,36 @@ export default function StudentSubmissionPage() {
           } catch {
             // No submission yet — form stays empty
           }
+        } else {
+          // ── No real team — use demo fallback ────
+          usedDemoMode = true;
         }
       } catch {
-        // Backend offline — show mock state
-      } finally {
-        setLoading(false);
+        // ── Backend offline — use demo fallback ───
+        usedDemoMode = true;
       }
+
+      if (usedDemoMode) {
+        setIsDemoMode(true);
+        setActiveTeam(DEMO_TEAM);
+        // Restore any previous demo submission from localStorage
+        const saved = loadDemoSubmission();
+        if (saved) {
+          setSubmission(saved);
+          reset({
+            title: saved.title,
+            description: saved.description ?? '',
+            repo_url: saved.repo_url,
+            demo_url: saved.demo_url ?? '',
+            video_url: saved.video_url ?? '',
+            additional_notes: saved.additional_notes ?? '',
+          });
+          setFileUrl(saved.file_url ?? null);
+          setFileName(saved.file_name ?? null);
+        }
+      }
+
+      setLoading(false);
     }
     load();
   }, [reset]);
@@ -323,9 +379,52 @@ export default function StudentSubmissionPage() {
     setSubmitError(null);
     setSubmitSuccess(null);
 
+    // ── Demo mode: simulate backend with localStorage ──────────
+    if (isDemoMode) {
+      await new Promise(r => setTimeout(r, 900)); // simulate network delay
+      if (submission) {
+        const updated: SubmissionRecord = {
+          ...submission,
+          title: data.title,
+          description: data.description,
+          repo_url: data.repo_url,
+          demo_url: data.demo_url || undefined,
+          video_url: data.video_url || undefined,
+          additional_notes: data.additional_notes || undefined,
+          file_url: fileUrl ?? undefined,
+          file_name: fileName ?? undefined,
+        };
+        saveDemoSubmission(updated);
+        setSubmission(updated);
+        setSubmitSuccess('Submission updated successfully!');
+      } else {
+        const newSub: SubmissionRecord = {
+          id: `demo-sub-${Date.now()}`,
+          team_id: activeTeam.id,
+          hackathon_id: activeTeam.hackathon_id,
+          title: data.title,
+          description: data.description,
+          repo_url: data.repo_url,
+          demo_url: data.demo_url || undefined,
+          video_url: data.video_url || undefined,
+          additional_notes: data.additional_notes || undefined,
+          file_url: fileUrl ?? undefined,
+          file_name: fileName ?? undefined,
+          status: 'submitted',
+          submitted_at: new Date().toISOString(),
+          evaluations: [],
+        };
+        saveDemoSubmission(newSub);
+        setSubmission(newSub);
+        setSubmitSuccess('Project submitted successfully! Status: Pending Review.');
+      }
+      setSubmitLoading(false);
+      return;
+    }
+
+    // ── Real backend submit ────────────────────────────────────
     try {
       if (submission) {
-        // Update existing submission
         const res = await apiService.updateSubmission(submission.id, {
           title: data.title,
           description: data.description,
@@ -337,7 +436,6 @@ export default function StudentSubmissionPage() {
         setSubmission(res.data ?? submission);
         setSubmitSuccess('Submission updated successfully!');
       } else {
-        // Create new submission
         const res = await apiService.createSubmission({
           team_id: activeTeam.id,
           hackathon_id: activeTeam.hackathon_id,
@@ -349,7 +447,7 @@ export default function StudentSubmissionPage() {
           additional_notes: data.additional_notes || undefined,
         });
         setSubmission(res.data ?? null);
-        setSubmitSuccess('Project submitted successfully!');
+        setSubmitSuccess('Project submitted successfully! Status: Pending Review.');
       }
     } catch (err: any) {
       setSubmitError(err.message || 'Submission failed. Please try again.');
@@ -429,13 +527,18 @@ export default function StudentSubmissionPage() {
             <Users size={18} className="text-accent-primary" />
           </div>
           <div>
-            <p className="text-xs font-mono text-white/40 uppercase tracking-widest">Submitting as</p>
+            <p className="text-xs font-mono text-white/40 uppercase tracking-widest">
+              {isDemoMode ? 'Demo Team (Preview Mode)' : 'Submitting as'}
+            </p>
             <p className="text-base font-bold text-white">{activeTeam.name}</p>
             <p className="text-xs text-white/40">
               {memberCount} member{memberCount !== 1 ? 's' : ''} ·{' '}
               <span className="font-mono text-accent-primary">
                 {activeTeam.join_code}
               </span>
+              {isDemoMode && (
+                <span className="ml-2 text-yellow-400/70">· Preview data</span>
+              )}
             </p>
           </div>
         </div>
