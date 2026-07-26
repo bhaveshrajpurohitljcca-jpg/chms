@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { UserProfile } from '@/services/api';
 import { 
@@ -15,7 +15,7 @@ interface AuthContextType {
   isAuthModalOpen: boolean;
   openAuthModal: (initialMode?: 'login' | 'register') => void;
   closeAuthModal: () => void;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<UserProfile>;
   register: (payload: {
     email: string;
     password: string;
@@ -23,8 +23,8 @@ interface AuthContextType {
     role?: 'student' | 'coordinator' | 'judge' | 'admin';
     department?: string;
     college_id?: string;
-  }) => Promise<void>;
-  signup: (email: string, password: string, fullName: string, role: string) => Promise<void>;
+  }) => Promise<UserProfile>;
+  signup: (email: string, password: string, fullName: string, role: string) => Promise<UserProfile>;
   quickLoginAsRole: (role: 'student' | 'coordinator' | 'judge' | 'admin') => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
@@ -110,7 +110,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const openAuthModal = () => setIsAuthModalOpen(true);
   const closeAuthModal = () => setIsAuthModalOpen(false);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<UserProfile> => {
     setIsLoading(true);
     try {
       const response = await apiService.login({ email, password });
@@ -119,18 +119,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setToken(response.data.access_token);
         setUser(response.data.user);
         closeAuthModal();
+        setIsLoading(false);
+        return response.data.user;
       }
+      throw new Error("Invalid response format");
     } catch (err: any) {
       // Fallback for demo mode if backend is not actively listening
       const matchingDemo = Object.values(MOCK_DEMO_USERS).find(u => u.email.toLowerCase() === email.toLowerCase());
       if (matchingDemo) {
         setUser(matchingDemo);
         closeAuthModal();
+        setIsLoading(false);
+        return matchingDemo;
       } else {
+        setIsLoading(false);
         throw err;
       }
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -141,7 +145,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     role?: 'student' | 'coordinator' | 'judge' | 'admin';
     department?: string;
     college_id?: string;
-  }) => {
+  }): Promise<UserProfile> => {
     setIsLoading(true);
     try {
       const response = await apiService.register(payload);
@@ -150,7 +154,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setToken(response.data.access_token);
         setUser(response.data.user);
         closeAuthModal();
+        setIsLoading(false);
+        return response.data.user;
       }
+      throw new Error("Invalid response format");
     } catch (err: any) {
       // Fallback user creation locally if backend is unavailable
       const newUser: UserProfile = {
@@ -165,15 +172,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
       setUser(newUser);
       closeAuthModal();
-    } finally {
       setIsLoading(false);
+      return newUser;
     }
   };
 
-  const signup = async (email: string, password: string, fullName: string, role: string) => {
+  const signup = async (email: string, password: string, fullName: string, role: string): Promise<UserProfile> => {
     // Standard role mapping to lowercase
     const roleLower = role.toLowerCase() as 'student' | 'coordinator' | 'judge' | 'admin';
-    await register({
+    return await register({
       email,
       password,
       full_name: fullName,

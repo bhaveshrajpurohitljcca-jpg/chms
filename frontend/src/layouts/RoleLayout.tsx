@@ -26,7 +26,7 @@ interface SidebarItem {
 }
 
 export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] }) {
-  const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const { user, isLoading, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -45,7 +45,7 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
   }
 
   // 2. Auth Guards
-  if (!isAuthenticated || !user) {
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
 

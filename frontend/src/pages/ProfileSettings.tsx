@@ -65,7 +65,7 @@ export default function ProfileSettings() {
     setProfileSuccess(null);
     setProfileError(null);
     try {
-      await updateProfile(data.fullName, data.email);
+      await updateProfile({ full_name: data.fullName });
       setProfileSuccess('Profile metadata updated successfully.');
     } catch (err: any) {
       setProfileError(err.response?.data?.detail || 'Failed to update profile.');
@@ -137,6 +137,7 @@ export default function ProfileSettings() {
               label="Registry Email Coordinates"
               placeholder="developer@college.edu"
               type="email"
+              disabled
               error={profileErrors.email?.message}
               {...registerProfile('email')}
             />

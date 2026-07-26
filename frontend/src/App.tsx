@@ -195,7 +195,7 @@ const GlobalLayout = () => {
                   </ul>
                 </div>
 
-                {isAuthenticated && user && (
+                {!!user && (
                   <div className="flex flex-col gap-3">
                     <h5 className="text-[10px] uppercase tracking-[0.2em] font-semibold text-accent-primary">
                       Authorized Workspaces
@@ -255,7 +255,7 @@ const GlobalLayout = () => {
 // 1. PUBLIC SCROLLING LANDING PAGE
 const PublicLanding = () => {
   const [email, setEmail] = useState('');
-  const { isAuthenticated, user } = useAuth();
+  const { user } = useAuth();
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -279,7 +279,7 @@ const PublicLanding = () => {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-center w-full max-w-md">
-          {isAuthenticated && user ? (
+          {user ? (
             <Link to={`/${user.role.toLowerCase()}`} className="w-full sm:w-auto">
               <Button variant="primary" className="w-full px-10">
                 Go to Workspace
@@ -739,49 +739,7 @@ const AdminView = () => {
   );
 };
 
-// 12. ROLE SPECIFIC DASHBOARDS (Greeting & metrics)
-const StudentDashboard = () => {
-  const { user } = useAuth();
-  return (
-    <div className="flex flex-col gap-8 w-full max-w-5xl">
-      <div>
-        <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-glow-cyan text-white">
-          Welcome back, {user?.full_name || 'Operator'}
-        </h2>
-        <p className="text-xs text-text-secondary mt-1 font-light">
-          Your connection is registered as a student. Use the options in the sidebar to browse active events.
-        </p>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card hoverable className="bg-white/[0.02]">
-          <span className="text-[10px] text-white/40 uppercase tracking-widest block font-bold">Registered Team</span>
-          <span className="text-xl font-bold font-archivo text-white mt-1 block">Zero_Gravity</span>
-          <span className="text-[10px] text-success font-semibold mt-2 inline-flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-success animate-ping" />
-            Verified
-          </span>
-        </Card>
-
-        <Card hoverable className="bg-white/[0.02]">
-          <span className="text-[10px] text-white/40 uppercase tracking-widest block font-bold">Active Hackathon</span>
-          <span className="text-xl font-bold font-archivo text-white mt-1 block">AI Genesis 2026</span>
-          <span className="text-[10px] text-accent-primary font-semibold mt-2 block">
-            PS-01: Generative LLM Interface
-          </span>
-        </Card>
-
-        <Card hoverable className="bg-white/[0.02]">
-          <span className="text-[10px] text-white/40 uppercase tracking-widest block font-bold">Deliverables State</span>
-          <span className="text-xl font-bold font-archivo text-white mt-1 block">1 Submitted</span>
-          <span className="text-[10px] text-accent-secondary font-semibold mt-2 block">
-            Under Evaluation
-          </span>
-        </Card>
-      </div>
-    </div>
-  );
-};
 
 // ==========================================
 // C. CENTRAL ROUTER BOOT
