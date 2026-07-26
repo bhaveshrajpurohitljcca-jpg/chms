@@ -182,7 +182,7 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
         </aside>
 
         {/* MAIN ROUTE CONTENT CONTAINER */}
-        <main className="flex-grow md:pl-64 min-h-screen p-6 md:p-10 flex flex-col w-full">
+        <main className="flex-grow md:pl-76 min-h-screen p-6 md:p-10 flex flex-col w-full">
           <Outlet />
         </main>
       </div>

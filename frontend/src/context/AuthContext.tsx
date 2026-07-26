@@ -222,6 +222,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     removeStoredToken();
     setToken(null);
     setUser(null);
+    window.location.href = '/';
   };
 
   return (
