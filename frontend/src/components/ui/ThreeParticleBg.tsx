@@ -66,12 +66,12 @@ export const ThreeParticleBg = () => {
 
     // 7. Animation Loop
     let animationFrameId: number;
-    const clock = new THREE.Clock();
+    const startTime = performance.now();
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
 
-      const elapsedTime = clock.getElapsedTime();
+      const elapsedTime = (performance.now() - startTime) / 1000;
 
       // Subtle constant rotation
       particles.rotation.y = elapsedTime * 0.03;
