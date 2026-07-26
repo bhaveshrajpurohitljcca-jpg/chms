@@ -1,11 +1,13 @@
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.api.v1.router import api_router
 from app.middleware.exception_handler import setup_exception_handlers
+from app.database import engine, SessionLocal
+from app.core.seed import seed_database
 
-# Configure basic logging formatting
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -13,16 +15,28 @@ logging.basicConfig(
 )
 logger = logging.getLogger("chms.main")
 
-# Initialize FastAPI application
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize DB & Seed Data
+    logger.info("Initializing database schemas and checking seed data...")
+    db = SessionLocal()
+    try:
+        seed_database(db, engine)
+    except Exception as e:
+        logger.error(f"Error seeding database: {e}")
+    finally:
+        db.close()
+    yield
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="Backend API foundation for College Hackathon Management System (CHMS)",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
-# Set up CORS middleware
 origins = []
 if isinstance(settings.CORS_ORIGINS, list):
     origins = [str(o) for o in settings.CORS_ORIGINS]
@@ -37,17 +51,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Set up global exception handlers
 setup_exception_handlers(app)
 
-# Register central routers
 app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/", tags=["health"])
 async def root_health_check():
     return {
         "success": True,
-        "message": f"Welcome to {settings.PROJECT_NAME} API. Foundation is healthy.",
+        "message": f"Welcome to {settings.PROJECT_NAME} API.",
         "data": {
             "environment": settings.ENVIRONMENT,
             "version": "1.0.0"

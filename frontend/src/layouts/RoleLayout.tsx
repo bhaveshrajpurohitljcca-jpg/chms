@@ -1,5 +1,5 @@
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { 
   Zap, 
   User as UserIcon, 
@@ -74,29 +74,29 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
 
   // 3. Define sidebar items based on role
   const getSidebarItems = (role: string): SidebarItem[] => {
-    switch (role) {
-      case 'Student':
+    switch (role.toLowerCase()) {
+      case 'student':
         return [
           { label: 'Dashboard', path: '/student', icon: LayoutDashboard },
           { label: 'Explore Hackathons', path: '/student/hackathons', icon: Calendar },
-          { label: 'Team Portal', path: '/student/teams', icon: Users },
+          { label: 'Team Portal', path: '/student/team', icon: Users },
           { label: 'Submissions', path: '/student/submissions', icon: Code },
           { label: 'Certificates Vault', path: '/student/certificates', icon: Award },
           { label: 'Profile Settings', path: '/student/profile', icon: UserIcon }
         ];
-      case 'Judge':
+      case 'judge':
         return [
           { label: 'Evaluation Matrix', path: '/judge', icon: Cpu },
           { label: 'Graded History', path: '/judge/history', icon: BookOpen },
           { label: 'Profile Settings', path: '/judge/profile', icon: UserIcon }
         ];
-      case 'Coordinator':
+      case 'coordinator':
         return [
           { label: 'Operations Console', path: '/coordinator', icon: Terminal },
           { label: 'Announcements Board', path: '/coordinator/announcements', icon: Bell },
           { label: 'Profile Settings', path: '/coordinator/profile', icon: UserIcon }
         ];
-      case 'Administrator':
+      case 'admin':
         return [
           { label: 'Command Console', path: '/admin', icon: Shield },
           { label: 'User Directory', path: '/admin/users', icon: Users },

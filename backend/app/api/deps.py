@@ -1,65 +1,74 @@
-from typing import Generator, List
+from typing import List, Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.config import settings
-from app.services.user_service import get_user_by_id
-from app.models.user import User
-from jose import jwt, JWTError
-from app.schemas.token import TokenData
+from app.core.security import decode_access_token
+from app.models.user import User, UserRole
 
-# HTTPBearer security scheme for token authentication
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 def get_current_user(
-    db: Session = Depends(get_db),
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    db: Session = Depends(get_db)
 ) -> User:
     """
     Decodes the Bearer token, validates its signature and expiration,
     and returns the active User model from the database.
     """
+    if not credentials or not credentials.credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication credentials were not provided",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
     token = credentials.credentials
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
-        user_id_str: str = payload.get("sub")
-        user_role: str = payload.get("role")
-        if user_id_str is None or user_role is None:
-            raise credentials_exception
-        token_data = TokenData(sub=user_id_str, role=user_role)
-    except JWTError:
-        raise credentials_exception
-        
-    try:
-        user_id = int(token_data.sub)
-    except ValueError:
-        raise credentials_exception
-
-    user = get_user_by_id(db, user_id=user_id)
-    if user is None:
-        raise credentials_exception
-    if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
-        
+    payload = decode_access_token(token)
+    if not payload or "sub" not in payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    user_id = payload["sub"]
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
     return user
+
+def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Ensures that the current authenticated user profile is active.
+    """
+    if not current_user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Inactive user",
+        )
+    return current_user
 
 class RoleChecker:
     """
     RBAC dependency factory that limits API access to a list of allowed roles.
     """
-    def __init__(self, allowed_roles: List[str]):
+    def __init__(self, allowed_roles: List[UserRole]):
         self.allowed_roles = allowed_roles
 
-    def __call__(self, current_user: User = Depends(get_current_user)) -> User:
-        if current_user.role not in self.allowed_roles:
+    def __call__(self, user: User = Depends(get_current_active_user)) -> User:
+        if user.role not in self.allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied: Insufficient permissions for this role"
+                detail=f"Access forbidden. Required roles: {[r.value for r in self.allowed_roles]}",
             )
-        return current_user
+        return user
+
+def require_roles(*allowed_roles: UserRole):
+    """
+    Syntactic sugar helper returning a configured RoleChecker dependency.
+    """
+    return RoleChecker(list(allowed_roles))
