@@ -45,6 +45,8 @@ app = FastAPI(
 origins = []
 if isinstance(settings.CORS_ORIGINS, list):
     origins = [str(o) for o in settings.CORS_ORIGINS]
+elif isinstance(settings.CORS_ORIGINS, str):
+    origins = [o.strip() for o in settings.CORS_ORIGINS.split(",")]
 else:
     origins = [settings.CORS_ORIGINS]
 
