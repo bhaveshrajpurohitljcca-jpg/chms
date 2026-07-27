@@ -131,7 +131,7 @@ const GlobalLayout = () => {
               </Link>
               <button
                 onClick={logout}
-                className="text-[11px] font-mono uppercase text-zinc-400 hover:text-accent-pink transition-colors px-2 py-1"
+                className="h-10 px-5 rounded-full bg-danger/10 border border-danger/40 text-danger hover:bg-danger hover:text-white text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-[0_0_15px_rgba(255,77,109,0.15)] flex items-center justify-center"
               >
                 Logout
               </button>

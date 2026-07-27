@@ -82,7 +82,7 @@ const MOCK_DEMO_USERS: Record<string, UserProfile> = {
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<UserProfile | null>(() => MOCK_DEMO_USERS.student);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [token, setToken] = useState<string | null>(getStoredToken());
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
