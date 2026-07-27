@@ -250,8 +250,20 @@ export const apiService = {
     });
   },
 
-  async listUsers() {
-    return request<UserProfile[]>('/users');
+  async listUsers(params?: { search?: string; role?: string; is_active?: boolean }) {
+    let query = '';
+    if (params) {
+      const parts = [];
+      if (params.search) parts.push(`search=${encodeURIComponent(params.search)}`);
+      if (params.role) parts.push(`role=${params.role}`);
+      if (params.is_active !== undefined) parts.push(`is_active=${params.is_active}`);
+      // Bring in default limit 100 for admin console viewing
+      parts.push('limit=100');
+      if (parts.length) query = `?${parts.join('&')}`;
+    } else {
+      query = '?limit=100';
+    }
+    return request<any>(`/users${query}`);
   },
 
   async updateUserRole(userId: string, role: string) {
@@ -266,10 +278,41 @@ export const apiService = {
     return request<UserProfile[]>(`/users/search?email=${encodeURIComponent(email)}`);
   },
 
+  async updateUserStatus(userId: string, isActive: boolean) {
+    return request<any>(`/users/${userId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ is_active: isActive }),
+    });
+  },
+
+  async deleteUser(userId: string) {
+    return request<any>(`/users/${userId}`, {
+      method: 'DELETE',
+    });
+  },
+
   // ─── Hackathons ────────────────────────────────────────────
   async listHackathons(statusFilter?: string) {
     const query = statusFilter ? `?status_filter=${statusFilter}` : '';
     return request<BackendHackathon[]>(`/hackathons${query}`);
+  },
+
+  async createHackathon(payload: {
+    title: string;
+    slug: string;
+    tagline?: string;
+    description?: string;
+    start_date?: string;
+    end_date?: string;
+    registration_deadline?: string;
+    max_team_size?: number;
+    min_team_size?: number;
+    status?: string;
+  }) {
+    return request<any>('/hackathons', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   },
 
   async getHackathon(idOrSlug: string) {
