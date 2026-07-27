@@ -26,6 +26,8 @@ class Team(BaseTable):
     leader = relationship("User", foreign_keys=[leader_id])
     members = relationship("TeamMember", back_populates="team", cascade="all, delete-orphan")
     submissions = relationship("Submission", back_populates="team", cascade="all, delete-orphan")
+    invitations = relationship("TeamInvitation", back_populates="team", cascade="all, delete-orphan")
+    registrations = relationship("Registration", back_populates="team", cascade="all, delete-orphan")
 
 class TeamMember(BaseTable):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))

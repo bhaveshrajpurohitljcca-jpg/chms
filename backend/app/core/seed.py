@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from app.models.base import Base
+import app.models  # Ensures all models are registered on Base.metadata
 from app.models.user import User, UserRole
 from app.models.hackathon import Hackathon, ProblemStatement, HackathonStatus, ProblemCategory
 from app.models.team import Team, TeamMember, TeamStatus, MemberRole

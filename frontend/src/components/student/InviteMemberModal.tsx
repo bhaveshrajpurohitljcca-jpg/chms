@@ -3,11 +3,13 @@ import Modal from '@/components/ui/modal';
 import Input from '@/components/ui/input';
 import Button from '@/components/ui/button';
 import { UserPlus, CheckCircle2, AlertCircle } from 'lucide-react';
+import { apiService } from '@/services/api';
 
 interface InviteMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSendInvite: (email: string) => void;
+  teamId: string;
+  onInviteSent: () => void;
   currentMemberCount: number;
   maxTeamSize: number;
 }
@@ -15,22 +17,30 @@ interface InviteMemberModalProps {
 export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
   isOpen,
   onClose,
-  onSendInvite,
+  teamId,
+  onInviteSent,
   currentMemberCount,
-  maxTeamSize
+  maxTeamSize,
 }) => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleInvite = (e: React.FormEvent) => {
+  const handleClose = () => {
+    setEmail('');
+    setError('');
+    setSuccessMessage('');
+    onClose();
+  };
+
+  const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccessMessage('');
 
-    if (!email || !email.includes('@')) {
-      setError('Please enter a valid college email address.');
+    if (!email.trim() || !email.includes('@')) {
+      setError('Please enter a valid email address.');
       return;
     }
 
@@ -40,18 +50,20 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
     }
 
     setIsLoading(true);
-
-    // Simulate short network delay
-    setTimeout(() => {
-      onSendInvite(email);
-      setIsLoading(false);
-      setSuccessMessage(`Invitation successfully sent to ${email}`);
+    try {
+      await apiService.sendInvitation(teamId, email.trim());
+      setSuccessMessage(`Invitation sent to ${email.trim()}`);
       setEmail('');
-    }, 600);
+      onInviteSent();
+    } catch (err: any) {
+      setError(err.message || 'Failed to send invitation. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Invite Teammate" size="md">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Invite Teammate" size="md">
       <div className="flex flex-col gap-5 py-2 font-manrope">
         {/* Info Box */}
         <div className="p-4 rounded-2xl bg-[rgba(0,243,255,0.04)] border border-[rgba(0,243,255,0.15)] flex items-start gap-3">
@@ -59,7 +71,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
           <div className="text-xs">
             <p className="font-semibold text-white">Invite via College Email</p>
             <p className="text-[rgba(255,255,255,0.6)] mt-0.5 leading-relaxed">
-              Enter your peer student's registered college email. An invite link will be issued to their dashboard.
+              Enter your peer student's registered college email. They will receive an invitation on their Team Dashboard.
             </p>
             <p className="text-[10px] text-accent-primary font-mono mt-1">
               Current Members: {currentMemberCount} / {maxTeamSize} max
@@ -68,20 +80,20 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
         </div>
 
         {/* Success Alert */}
-        {successMessage ? (
+        {successMessage && (
           <div className="p-3.5 rounded-xl bg-success/10 border border-success/30 text-success text-xs flex items-center gap-2">
             <CheckCircle2 size={16} />
             <span>{successMessage}</span>
           </div>
-        ) : null}
+        )}
 
         {/* Error Alert */}
-        {error ? (
+        {error && (
           <div className="p-3.5 rounded-xl bg-danger/10 border border-danger/30 text-danger text-xs flex items-center gap-2">
             <AlertCircle size={16} />
             <span>{error}</span>
           </div>
-        ) : null}
+        )}
 
         {/* Invite Form */}
         <form onSubmit={handleInvite} className="flex flex-col gap-4">
@@ -98,7 +110,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
             <Button
               type="button"
               variant="secondary"
-              onClick={onClose}
+              onClick={handleClose}
               className="h-10 text-xs px-5"
             >
               Cancel

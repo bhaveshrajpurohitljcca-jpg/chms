@@ -2,25 +2,32 @@ import React from 'react';
 import Card from '@/components/ui/card';
 import Badge from '@/components/ui/badge';
 import Button from '@/components/ui/button';
-import { Calendar, Users, Trophy, MapPin, ArrowRight, CheckCircle2 } from 'lucide-react';
-import type { StudentHackathon } from '@/mocks/studentMockData';
+import { Calendar, Users, ArrowRight, CheckCircle2, Clock } from 'lucide-react';
+import type { BackendHackathon } from '@/services/api';
 
 interface HackathonCardProps {
-  hackathon: StudentHackathon;
-  onInspect: (hackathon: StudentHackathon) => void;
-  onRegister?: (hackathon: StudentHackathon) => void;
+  hackathon: BackendHackathon;
+  onInspect: (hackathon: BackendHackathon) => void;
+  onRegister?: (hackathon: BackendHackathon) => void;
+  isRegistered?: boolean;
 }
+
+const statusVariantMap: Record<string, 'success' | 'warning' | 'primary' | 'secondary'> = {
+  active: 'success',
+  upcoming: 'warning',
+  draft: 'secondary',
+  ended: 'primary',
+};
 
 export const HackathonCard: React.FC<HackathonCardProps> = ({
   hackathon,
   onInspect,
-  onRegister
+  onRegister,
+  isRegistered = false,
 }) => {
-  const statusVariants: Record<StudentHackathon['status'], 'success' | 'warning' | 'primary' | 'secondary'> = {
-    active: 'success',
-    upcoming: 'warning',
-    evaluating: 'secondary',
-    completed: 'primary'
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return 'TBD';
+    return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
   return (
@@ -31,44 +38,47 @@ export const HackathonCard: React.FC<HackathonCardProps> = ({
       <div>
         {/* Header Badges */}
         <div className="flex items-center justify-between gap-2 mb-4">
-          <Badge variant={statusVariants[hackathon.status]}>
+          <Badge variant={statusVariantMap[hackathon.status] || 'primary'}>
             {hackathon.status}
           </Badge>
-          <span className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-mono font-semibold">
-            {hackathon.category}
-          </span>
+          {hackathon.registration_deadline && (
+            <div className="flex items-center gap-1 text-[10px] text-warning/80 font-mono font-semibold">
+              <Clock size={11} />
+              <span>Reg by {formatDate(hackathon.registration_deadline)}</span>
+            </div>
+          )}
         </div>
 
         {/* Title & Tagline */}
         <h3 className="font-archivo text-xl uppercase font-black tracking-tight text-white mb-1.5 group-hover:text-glow-cyan transition-all duration-300">
           {hackathon.title}
         </h3>
-        <p className="text-xs text-accent-primary/90 font-medium mb-3">
-          {hackathon.tagline}
-        </p>
+        {hackathon.tagline && (
+          <p className="text-xs text-accent-primary/90 font-medium mb-3">
+            {hackathon.tagline}
+          </p>
+        )}
 
         {/* Description */}
-        <p className="text-xs text-[rgba(255,255,255,0.65)] font-light leading-relaxed line-clamp-2 mb-6">
-          {hackathon.description}
-        </p>
+        {hackathon.description && (
+          <p className="text-xs text-[rgba(255,255,255,0.65)] font-light leading-relaxed line-clamp-2 mb-6">
+            {hackathon.description}
+          </p>
+        )}
 
         {/* Metadata Grid */}
         <div className="grid grid-cols-2 gap-3 py-3 border-y border-[rgba(255,255,255,0.08)] mb-6 text-xs">
           <div className="flex items-center gap-2 text-[rgba(255,255,255,0.7)]">
             <Calendar size={14} className="text-accent-primary flex-shrink-0" />
-            <span className="truncate">{hackathon.startDate}</span>
+            <span className="truncate">{formatDate(hackathon.start_date)}</span>
           </div>
           <div className="flex items-center gap-2 text-[rgba(255,255,255,0.7)]">
             <Users size={14} className="text-accent-secondary flex-shrink-0" />
-            <span>{hackathon.minTeamSize}-{hackathon.maxTeamSize} Members</span>
+            <span>{hackathon.min_team_size}–{hackathon.max_team_size} Members</span>
           </div>
           <div className="flex items-center gap-2 text-[rgba(255,255,255,0.7)]">
-            <Trophy size={14} className="text-warning flex-shrink-0" />
-            <span className="truncate">{hackathon.totalPrizePool}</span>
-          </div>
-          <div className="flex items-center gap-2 text-[rgba(255,255,255,0.7)]">
-            <MapPin size={14} className="text-accent-third flex-shrink-0" />
-            <span className="truncate">{hackathon.location}</span>
+            <span className="text-[10px] text-white/40 font-semibold uppercase">PS</span>
+            <span>{hackathon.problem_statements.length} Problems</span>
           </div>
         </div>
       </div>
@@ -83,7 +93,7 @@ export const HackathonCard: React.FC<HackathonCardProps> = ({
           Inspect Specs
         </Button>
 
-        {hackathon.isRegistered ? (
+        {isRegistered ? (
           <div className="h-10 px-4 rounded-full bg-success/10 border border-success/30 text-success text-xs font-semibold flex items-center gap-1.5 select-none">
             <CheckCircle2 size={14} />
             <span>Registered</span>

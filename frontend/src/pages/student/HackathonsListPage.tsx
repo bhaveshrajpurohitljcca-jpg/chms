@@ -1,32 +1,102 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Input from '@/components/ui/input';
 import { Search, Filter, Trophy } from 'lucide-react';
-import { mockHackathons } from '@/mocks/studentMockData';
+import { apiService } from '@/services/api';
+import type { BackendHackathon, BackendRegistration } from '@/services/api';
 import { HackathonCard } from '@/components/student/HackathonCard';
-import { EmptyState, LoadingState } from '@/components/student/StateContainer';
+import { EmptyState, LoadingState, ErrorState } from '@/components/student/StateContainer';
 
 export const HackathonsListPage: React.FC = () => {
   const navigate = useNavigate();
+
+  const [hackathons, setHackathons] = useState<BackendHackathon[]>([]);
+  const [registrations, setRegistrations] = useState<BackendRegistration[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [isLoading] = useState(false);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setIsLoading(true);
+        setError('');
+        const [hackathonsRes, registrationsRes] = await Promise.allSettled([
+          apiService.listHackathons(),
+          apiService.getMyRegistrations(),
+        ]);
+
+        if (hackathonsRes.status === 'fulfilled' && hackathonsRes.value.data) {
+          setHackathons(hackathonsRes.value.data);
+        } else if (hackathonsRes.status === 'rejected') {
+          throw hackathonsRes.reason;
+        }
+
+        if (registrationsRes.status === 'fulfilled' && registrationsRes.value.data) {
+          setRegistrations(registrationsRes.value.data);
+        }
+        // Silently ignore registration load failure (user might not be logged in)
+      } catch (err: any) {
+        setError(err.message || 'Failed to load hackathons.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  // Check if student is registered for a hackathon
+  const isRegisteredFor = (hackathonId: string) =>
+    registrations.some(
+      r => r.hackathon_id === hackathonId && r.status === 'registered'
+    );
 
   // Filter hackathons
-  const filteredHackathons = mockHackathons.filter(hack => {
-    const matchesSearch = 
+  const filteredHackathons = hackathons.filter(hack => {
+    const matchesSearch =
       hack.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      hack.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      hack.category.toLowerCase().includes(searchQuery.toLowerCase());
+      (hack.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (hack.tagline || '').toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus = selectedStatus === 'all' || hack.status === selectedStatus;
-    const matchesCategory = selectedCategory === 'all' || hack.category === selectedCategory;
 
-    return matchesSearch && matchesStatus && matchesCategory;
+    return matchesSearch && matchesStatus;
   });
 
-  const categories = Array.from(new Set(mockHackathons.map(h => h.category)));
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-8 max-w-7xl mx-auto w-full font-manrope">
+        <div>
+          <div className="flex items-center gap-2 text-accent-primary text-xs uppercase tracking-[0.2em] font-semibold mb-1">
+            <Trophy size={14} />
+            <span>Internal Hackathon Directory</span>
+          </div>
+          <h2 className="font-archivo text-3xl md:text-4xl font-black text-white uppercase tracking-tight">
+            Explore College Hackathons
+          </h2>
+        </div>
+        <LoadingState message="Fetching active hackathon directory..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col gap-8 max-w-7xl mx-auto w-full font-manrope">
+        <div>
+          <h2 className="font-archivo text-3xl md:text-4xl font-black text-white uppercase tracking-tight">
+            Explore College Hackathons
+          </h2>
+        </div>
+        <ErrorState
+          title="Failed to Load Hackathons"
+          message={error}
+          onRetry={() => window.location.reload()}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto w-full font-manrope">
@@ -42,7 +112,7 @@ export const HackathonsListPage: React.FC = () => {
             Explore College Hackathons
           </h2>
           <p className="text-xs md:text-sm text-[rgba(255,255,255,0.65)] font-light mt-1">
-            View active sprints, problem statements, registration deadlines, and prize incentives.
+            View active sprints, problem statements, registration deadlines.
           </p>
         </div>
       </div>
@@ -53,7 +123,7 @@ export const HackathonsListPage: React.FC = () => {
         {/* Search Field */}
         <div className="relative flex-1 w-full">
           <Input
-            placeholder="Search hackathons by title, tag, or category..."
+            placeholder="Search hackathons by title, tag, or description..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-11"
@@ -61,62 +131,50 @@ export const HackathonsListPage: React.FC = () => {
           <Search size={18} className="absolute left-4 top-3.5 text-[rgba(255,255,255,0.4)] pointer-events-none" />
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
-          {/* Status Filter */}
-          <div className="flex items-center gap-2 px-3 h-12 rounded-input bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.10)] text-xs text-white">
-            <Filter size={14} className="text-accent-primary" />
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="bg-transparent text-white focus:outline-none cursor-pointer font-semibold"
-            >
-              <option value="all" className="bg-[#050505] text-white">All Statuses</option>
-              <option value="active" className="bg-[#050505] text-white">Active</option>
-              <option value="upcoming" className="bg-[#050505] text-white">Upcoming</option>
-              <option value="evaluating" className="bg-[#050505] text-white">Evaluating</option>
-              <option value="completed" className="bg-[#050505] text-white">Completed</option>
-            </select>
-          </div>
-
-          {/* Category Filter */}
-          <div className="flex items-center gap-2 px-3 h-12 rounded-input bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.10)] text-xs text-white">
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="bg-transparent text-white focus:outline-none cursor-pointer font-semibold"
-            >
-              <option value="all" className="bg-[#050505] text-white">All Categories</option>
-              {categories.map(cat => (
-                <option key={cat} value={cat} className="bg-[#050505] text-white">{cat}</option>
-              ))}
-            </select>
-          </div>
+        {/* Status Filter */}
+        <div className="flex items-center gap-2 px-3 h-12 rounded-input bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.10)] text-xs text-white">
+          <Filter size={14} className="text-accent-primary" />
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="bg-transparent text-white focus:outline-none cursor-pointer font-semibold"
+          >
+            <option value="all" className="bg-[#050505] text-white">All Statuses</option>
+            <option value="active" className="bg-[#050505] text-white">Active</option>
+            <option value="upcoming" className="bg-[#050505] text-white">Upcoming</option>
+            <option value="ended" className="bg-[#050505] text-white">Ended</option>
+            <option value="draft" className="bg-[#050505] text-white">Draft</option>
+          </select>
         </div>
-
       </div>
 
       {/* Grid Content */}
-      {isLoading ? (
-        <LoadingState message="Fetching active hackathon directory..." />
-      ) : filteredHackathons.length === 0 ? (
-        <EmptyState
-          title="No Hackathons Found"
-          description="We couldn't find any hackathons matching your search query or selected filter criteria."
-          actionLabel="Reset Search Filters"
-          onAction={() => {
-            setSearchQuery('');
-            setSelectedStatus('all');
-            setSelectedCategory('all');
-          }}
-          icon={Trophy}
-        />
+      {filteredHackathons.length === 0 ? (
+        hackathons.length === 0 ? (
+          <EmptyState
+            title="No Hackathons Available"
+            description="No hackathons have been published yet. Check back soon — coordinators are setting things up!"
+            icon={Trophy}
+          />
+        ) : (
+          <EmptyState
+            title="No Hackathons Found"
+            description="We couldn't find any hackathons matching your search query or filters."
+            actionLabel="Reset Filters"
+            onAction={() => {
+              setSearchQuery('');
+              setSelectedStatus('all');
+            }}
+            icon={Trophy}
+          />
+        )
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredHackathons.map((hackathon) => (
             <HackathonCard
               key={hackathon.id}
               hackathon={hackathon}
+              isRegistered={isRegisteredFor(hackathon.id)}
               onInspect={(h) => navigate(`/student/hackathons/${h.id}`)}
               onRegister={(h) => navigate(`/student/registration?hackathonId=${h.id}`)}
             />

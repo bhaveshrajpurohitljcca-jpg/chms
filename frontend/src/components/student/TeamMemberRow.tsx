@@ -1,10 +1,10 @@
 import React from 'react';
 import Badge from '@/components/ui/badge';
 import { User, Crown, Mail, Trash2 } from 'lucide-react';
-import type { StudentTeamMember } from '@/mocks/studentMockData';
+import type { BackendTeamMember } from '@/services/api';
 
 interface TeamMemberRowProps {
-  member: StudentTeamMember;
+  member: BackendTeamMember;
   isCurrentLeader: boolean;
   onRemove?: (memberId: string) => void;
 }
@@ -14,7 +14,7 @@ export const TeamMemberRow: React.FC<TeamMemberRowProps> = ({
   isCurrentLeader,
   onRemove
 }) => {
-  const isLeader = member.role === 'Leader';
+  const isLeader = member.role_in_team === 'leader';
 
   return (
     <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.04)] transition-all duration-300">
@@ -32,7 +32,7 @@ export const TeamMemberRow: React.FC<TeamMemberRowProps> = ({
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-white truncate">
-              {member.name}
+              {member.user?.full_name || member.user_id}
             </span>
             {isLeader && (
               <Badge variant="primary" className="text-[9px] py-0 px-2">
@@ -42,22 +42,26 @@ export const TeamMemberRow: React.FC<TeamMemberRowProps> = ({
           </div>
           <div className="flex items-center gap-2 text-xs text-[rgba(255,255,255,0.45)] mt-0.5">
             <Mail size={12} className="flex-shrink-0" />
-            <span className="truncate">{member.email}</span>
-            <span>•</span>
-            <span className="truncate">{member.department} ({member.year})</span>
+            <span className="truncate">{member.user?.email || '—'}</span>
+            {member.user?.department && (
+              <>
+                <span>•</span>
+                <span className="truncate">{member.user.department}</span>
+              </>
+            )}
           </div>
         </div>
       </div>
 
       {/* Right status & Actions */}
       <div className="flex items-center gap-3 flex-shrink-0">
-        <Badge variant={member.status === 'active' ? 'success' : 'warning'}>
-          {member.status}
+        <Badge variant="success" className="capitalize">
+          {member.role_in_team}
         </Badge>
 
         {isCurrentLeader && !isLeader && onRemove ? (
           <button
-            onClick={() => onRemove(member.id)}
+            onClick={() => onRemove(member.user_id)}
             title="Remove member"
             className="p-2 rounded-xl bg-danger/10 border border-danger/20 text-danger hover:bg-danger hover:text-white transition-all duration-300"
           >
