@@ -1687,16 +1687,24 @@ const AdminView = () => {
   const navigateTab = (tabName: string) => {
     setSearchParams({ tab: tabName });
     setSelectedHackathon(null);
+    setSelectedJudgeDetail(null);
+    setSelectedCoordinatorDetail(null);
   };
 
   // Modals state
   const [showEventModal, setShowEventModal] = useState(false);
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const [showPSModal, setShowPSModal] = useState(false);
+  
+  // Revised Create Modals
+  const [showCreateJudgeModal, setShowCreateJudgeModal] = useState(false);
+  const [showCreateCoordinatorModal, setShowCreateCoordinatorModal] = useState(false);
 
   // Detail states
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [selectedHackathon, setSelectedHackathon] = useState<any | null>(null);
+  const [selectedJudgeDetail, setSelectedJudgeDetail] = useState<UserProfile | null>(null);
+  const [selectedCoordinatorDetail, setSelectedCoordinatorDetail] = useState<UserProfile | null>(null);
 
   // Form states
   const [newEvent, setNewEvent] = useState({ 
@@ -1720,13 +1728,10 @@ const AdminView = () => {
   const [newJudge, setNewJudge] = useState({ fullName: '', email: '', password: '', collegeId: '', department: '' });
   const [newCoordinator, setNewCoordinator] = useState({ fullName: '', email: '', password: '', collegeId: '', department: '' });
 
-  // Allocation forms
-  const [allocJudgeId, setAllocJudgeId] = useState('');
-  const [allocHackathonId, setAllocHackathonId] = useState('');
-  const [allocPSId, setAllocPSId] = useState('');
-
-  const [allocCoordId, setAllocCoordId] = useState('');
-  const [allocCoordHackathonId, setAllocCoordHackathonId] = useState('');
+  // Allocation forms inside details
+  const [judgeAllocHackathonId, setJudgeAllocHackathonId] = useState('');
+  const [judgeActiveAssignHackathonId, setJudgeActiveAssignHackathonId] = useState('');
+  const [coordAllocHackathonId, setCoordAllocHackathonId] = useState('');
 
   const [announcementText, setAnnouncementText] = useState('');
   const [isPerformingAction, setIsPerformingAction] = useState(false);
@@ -1975,6 +1980,7 @@ const AdminView = () => {
       });
       showToast(`Judge "${newJudge.fullName}" account successfully created!`);
       setNewJudge({ fullName: '', email: '', password: '', collegeId: '', department: '' });
+      setShowCreateJudgeModal(false);
       fetchUsers();
     } catch (err: any) {
       showToast(err.message || 'Failed to create judge account');
@@ -1983,42 +1989,80 @@ const AdminView = () => {
     }
   };
 
-  // Assign Hackathon / Problem Statement to Judge
-  const handleAssignJudge = (e: React.FormEvent) => {
+  // Assign Hackathon to Judge
+  const handleAssignHackathonToJudge = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!allocJudgeId || !allocHackathonId) {
-      showToast("Please select a judge and a hackathon.");
+    if (!selectedJudgeDetail || !judgeAllocHackathonId) {
+      showToast("Please select a hackathon to assign.");
       return;
     }
-    const targetJudge = users.find(u => u.id === allocJudgeId);
-    const targetHackathon = hackathonsList.find(h => h.id === allocHackathonId);
-    if (!targetJudge || !targetHackathon) return;
+    
+    // Check if already assigned
+    const alreadyAssigned = judgeAssignments.some(
+      a => a.judgeId === selectedJudgeDetail.id && a.hackathonId === judgeAllocHackathonId
+    );
+    if (alreadyAssigned) {
+      showToast("This hackathon is already assigned to this judge.");
+      return;
+    }
+
+    const targetHackathon = hackathonsList.find(h => h.id === judgeAllocHackathonId);
+    if (!targetHackathon) return;
 
     const newAssign = {
-      id: `assign-${Date.now()}`,
-      judgeId: allocJudgeId,
-      judgeName: targetJudge.full_name,
-      judgeEmail: targetJudge.email,
-      hackathonId: allocHackathonId,
-      hackathonName: targetHackathon.title,
-      problemStatement: allocPSId || 'All Statements'
+      id: `judge-assign-${Date.now()}`,
+      judgeId: selectedJudgeDetail.id,
+      judgeName: selectedJudgeDetail.full_name,
+      judgeEmail: selectedJudgeDetail.email,
+      hackathonId: judgeAllocHackathonId,
+      hackathonName: targetHackathon.title
     };
 
     const updated = [...judgeAssignments, newAssign];
     setJudgeAssignments(updated);
     localStorage.setItem('chms_judge_assignments', JSON.stringify(updated));
-    showToast("Judge assigned to hackathon successfully.");
-    setAllocJudgeId('');
-    setAllocHackathonId('');
-    setAllocPSId('');
+    showToast("Hackathon successfully assigned to judge.");
+    
+    // Auto-select this assigned hackathon to configure submissions
+    setJudgeActiveAssignHackathonId(judgeAllocHackathonId);
+    setJudgeAllocHackathonId('');
   };
 
-  // Remove Judge Assignment
-  const handleRemoveJudgeAssignment = (assignId: string) => {
+  // Revoke Judge Hackathon Assignment
+  const handleRevokeJudgeHackathon = (assignId: string) => {
     const updated = judgeAssignments.filter(a => a.id !== assignId);
     setJudgeAssignments(updated);
     localStorage.setItem('chms_judge_assignments', JSON.stringify(updated));
-    showToast("Judge assignment removed.");
+    showToast("Hackathon assignment revoked.");
+    setJudgeActiveAssignHackathonId('');
+  };
+
+  // Toggle Submission Assignment for Judge
+  const handleToggleSubmissionForJudge = (submissionId: string) => {
+    if (!selectedJudgeDetail || !judgeActiveAssignHackathonId) return;
+    
+    const key = `chms_judge_subs_${selectedJudgeDetail.id}_${judgeActiveAssignHackathonId}`;
+    const current = localStorage.getItem(key);
+    let assignedList: string[] = current ? JSON.parse(current) : [];
+    
+    if (assignedList.includes(submissionId)) {
+      assignedList = assignedList.filter(id => id !== submissionId);
+      showToast("Submission unassigned from judge.");
+    } else {
+      assignedList.push(submissionId);
+      showToast("Submission assigned to judge.");
+    }
+    
+    localStorage.setItem(key, JSON.stringify(assignedList));
+    // Force state re-evaluation
+    fetchSubmissions();
+  };
+
+  // Get list of assigned submission IDs for a judge and hackathon
+  const getAssignedSubmissionIds = (judgeId: string, hackathonId: string): string[] => {
+    const key = `chms_judge_subs_${judgeId}_${hackathonId}`;
+    const val = localStorage.getItem(key);
+    return val ? JSON.parse(val) : [];
   };
 
   // Create Coordinator Account
@@ -2036,6 +2080,7 @@ const AdminView = () => {
       });
       showToast(`Coordinator "${newCoordinator.fullName}" account successfully created!`);
       setNewCoordinator({ fullName: '', email: '', password: '', collegeId: '', department: '' });
+      setShowCreateCoordinatorModal(false);
       fetchUsers();
     } catch (err: any) {
       showToast(err.message || 'Failed to create coordinator account');
@@ -2047,37 +2092,44 @@ const AdminView = () => {
   // Assign Hackathon to Coordinator
   const handleAssignCoordinator = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!allocCoordId || !allocCoordHackathonId) {
-      showToast("Please select a coordinator and a hackathon.");
+    if (!selectedCoordinatorDetail || !coordAllocHackathonId) {
+      showToast("Please select a hackathon to assign.");
       return;
     }
-    const targetCoord = users.find(u => u.id === allocCoordId);
-    const targetHackathon = hackathonsList.find(h => h.id === allocCoordHackathonId);
-    if (!targetCoord || !targetHackathon) return;
+    
+    const alreadyAssigned = coordinatorAssignments.some(
+      a => a.coordinatorId === selectedCoordinatorDetail.id && a.hackathonId === coordAllocHackathonId
+    );
+    if (alreadyAssigned) {
+      showToast("This hackathon is already assigned to this coordinator.");
+      return;
+    }
+
+    const targetHackathon = hackathonsList.find(h => h.id === coordAllocHackathonId);
+    if (!targetHackathon) return;
 
     const newAssign = {
-      id: `assign-coord-${Date.now()}`,
-      coordinatorId: allocCoordId,
-      coordinatorName: targetCoord.full_name,
-      coordinatorEmail: targetCoord.email,
-      hackathonId: allocCoordHackathonId,
+      id: `coord-assign-${Date.now()}`,
+      coordinatorId: selectedCoordinatorDetail.id,
+      coordinatorName: selectedCoordinatorDetail.full_name,
+      coordinatorEmail: selectedCoordinatorDetail.email,
+      hackathonId: coordAllocHackathonId,
       hackathonName: targetHackathon.title
     };
 
     const updated = [...coordinatorAssignments, newAssign];
     setCoordinatorAssignments(updated);
     localStorage.setItem('chms_coord_assignments', JSON.stringify(updated));
-    showToast("Coordinator assigned to hackathon successfully.");
-    setAllocCoordId('');
-    setAllocCoordHackathonId('');
+    showToast("Hackathon scope assigned to coordinator.");
+    setCoordAllocHackathonId('');
   };
 
-  // Remove Coordinator Assignment
-  const handleRemoveCoordAssignment = (assignId: string) => {
+  // Revoke Coordinator Scope
+  const handleRevokeCoordinatorScope = (assignId: string) => {
     const updated = coordinatorAssignments.filter(a => a.id !== assignId);
     setCoordinatorAssignments(updated);
     localStorage.setItem('chms_coord_assignments', JSON.stringify(updated));
-    showToast("Coordinator assignment removed.");
+    showToast("Coordinator scope revoked.");
   };
 
   // Toggle user active status
@@ -2703,337 +2755,142 @@ const AdminView = () => {
       {/* 4. MANAGE JUDGES */}
       {/* ========================================================================= */}
       {activeTab === 'judges' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="flex flex-col gap-8">
-            <Card className="p-8 flex flex-col gap-5">
-              <div>
-                <h3 className="font-archivo text-md font-black uppercase text-white tracking-wider">Create Judge Account</h3>
-                <p className="text-[10px] text-white/40 mt-0.5 font-light">Register a new verified judge on platform</p>
-              </div>
-              <form onSubmit={handleCreateJudge} className="flex flex-col gap-4">
-                <Input
-                  label="Full Name"
-                  required
-                  placeholder="e.g. Dr. Jane Doe"
-                  value={newJudge.fullName}
-                  onChange={(e) => setNewJudge(prev => ({ ...prev, fullName: e.target.value }))}
-                />
-                <Input
-                  label="Email"
-                  type="email"
-                  required
-                  placeholder="jane.doe@college.edu"
-                  value={newJudge.email}
-                  onChange={(e) => setNewJudge(prev => ({ ...prev, email: e.target.value }))}
-                />
-                <Input
-                  label="Password"
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  value={newJudge.password}
-                  onChange={(e) => setNewJudge(prev => ({ ...prev, password: e.target.value }))}
-                />
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="College ID"
-                    placeholder="ID-88192"
-                    value={newJudge.collegeId}
-                    onChange={(e) => setNewJudge(prev => ({ ...prev, collegeId: e.target.value }))}
-                  />
-                  <Input
-                    label="Department"
-                    placeholder="CSE"
-                    value={newJudge.department}
-                    onChange={(e) => setNewJudge(prev => ({ ...prev, department: e.target.value }))}
-                  />
-                </div>
-                <Button type="submit" variant="primary" disabled={isPerformingAction} className="w-full mt-2 text-xs">
-                  {isPerformingAction ? 'Registering...' : 'Create Judge Account'}
-                </Button>
-              </form>
-            </Card>
-
-            <Card className="p-8 flex flex-col gap-5">
-              <div>
-                <h3 className="font-archivo text-md font-black uppercase text-white tracking-wider">Assign Hackathon</h3>
-                <p className="text-[10px] text-white/40 mt-0.5 font-light">Map evaluator to problem statement track</p>
-              </div>
-              <form onSubmit={handleAssignJudge} className="flex flex-col gap-4 text-xs">
-                <div className="flex flex-col gap-1">
-                  <label className="font-bold text-white/70">Select Judge</label>
-                  <select
-                    value={allocJudgeId}
-                    onChange={(e) => setAllocJudgeId(e.target.value)}
-                    className="p-2.5 rounded-xl bg-[#050505] border border-white/10 text-white focus:outline-none"
-                    required
-                  >
-                    <option value="">-- Choose Judge --</option>
-                    {users.filter(u => u.role === 'judge').map(j => (
-                      <option key={j.id} value={j.id}>{j.full_name} ({j.email})</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="font-bold text-white/70">Select Hackathon</label>
-                  <select
-                    value={allocHackathonId}
-                    onChange={(e) => setAllocHackathonId(e.target.value)}
-                    className="p-2.5 rounded-xl bg-[#050505] border border-white/10 text-white focus:outline-none"
-                    required
-                  >
-                    <option value="">-- Choose Hackathon --</option>
-                    {hackathonsList.map(h => (
-                      <option key={h.id} value={h.id}>{h.title}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="font-bold text-white/70">Problem Statement category</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. AI track, Web Dev, Open Innovation"
-                    value={allocPSId}
-                    onChange={(e) => setAllocPSId(e.target.value)}
-                    className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none"
-                  />
-                </div>
-
-                <Button type="submit" variant="secondary" className="w-full mt-2 text-xs">
-                  Run Allocation Matrix
-                </Button>
-              </form>
-            </Card>
+        <Card className="p-8 flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-archivo text-lg font-black uppercase text-white tracking-wider">Judges Management Directory</h3>
+              <p className="text-xs text-white/40 mt-1">Register new judges, allocate hackathons, and assign specific team solutions to judge</p>
+            </div>
+            <Button
+              variant="primary"
+              className="flex items-center gap-2 text-xs"
+              onClick={() => setShowCreateJudgeModal(true)}
+            >
+              <Plus size={14} />
+              <span>Create Judge</span>
+            </Button>
           </div>
 
-          <div className="lg:col-span-2 flex flex-col gap-6">
-            <Card className="p-8 flex flex-col gap-6">
-              <div>
-                <h3 className="font-archivo text-lg font-black uppercase text-white tracking-wider">Judges ledger & reviews</h3>
-                <p className="text-xs text-white/40 mt-1">Review active judges assignments, scoring sheets, and completed evaluations</p>
-              </div>
-
-              {judgeAssignments.length === 0 ? (
-                <div className="py-12 text-center text-xs text-white/30 border border-dashed border-white/10 rounded-2xl">
-                  No active judges assignments. Configure mappings using the side panels.
-                </div>
-              ) : (
-                <div className="overflow-x-auto w-full">
-                  <table className="w-full border-collapse text-left text-xs text-white/80">
-                    <thead>
-                      <tr className="border-b border-white/5 text-white/40 uppercase tracking-wider font-bold">
-                        <th className="py-4 px-4">Judge Name</th>
-                        <th className="py-4 px-4">Assigned Hackathon</th>
-                        <th className="py-4 px-4">Category Track</th>
-                        <th className="py-4 px-4">Scored projects</th>
-                        <th className="py-4 px-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {judgeAssignments.map((a) => {
-                        const evaluated = submissionsList.filter(s => s.hackathon_id === a.hackathonId && s.grade_score !== null);
-                        return (
-                          <tr key={a.id} className="hover:bg-white/[0.01]">
-                            <td className="py-4 px-4">
-                              <p className="font-bold text-white">{a.judgeName}</p>
-                              <p className="text-[10px] text-white/40">{a.judgeEmail}</p>
-                            </td>
-                            <td className="py-4 px-4 font-semibold text-accent-secondary">{a.hackathonName}</td>
-                            <td className="py-4 px-4"><Badge variant="primary">{a.problemStatement}</Badge></td>
-                            <td className="py-4 px-4">
-                              <p className="font-mono text-accent-primary font-bold">{evaluated.length} submissions</p>
-                            </td>
-                            <td className="py-4 px-4 text-right">
-                              <button
-                                onClick={() => handleRemoveJudgeAssignment(a.id)}
-                                className="p-1 text-danger hover:underline font-bold"
-                              >
-                                Revoke
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </Card>
-
-            <Card className="p-8">
-              <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider mb-4">Evaluator Ledger Audit</h4>
-              <div className="flex flex-col gap-4">
-                {submissionsList.filter(s => s.grade_score !== null).map((s) => (
-                  <div key={s.id} className="p-4 rounded-xl border border-white/5 bg-white/[0.01] flex justify-between items-center text-xs">
+          {isLoadingUsers ? (
+            <div className="py-12 flex justify-center items-center text-xs text-white/50">
+              Loading judges list...
+            </div>
+          ) : users.filter(u => u.role === 'judge').length === 0 ? (
+            <div className="py-12 flex justify-center items-center text-xs text-white/30 border border-dashed border-white/10 rounded-2xl">
+              No judges registered in the system. Click "Create Judge" to get started.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {users.filter(u => u.role === 'judge').map((j) => {
+                const assignedHackathonsCount = judgeAssignments.filter(a => a.judgeId === j.id).length;
+                return (
+                  <div 
+                    key={j.id} 
+                    onClick={() => setSelectedJudgeDetail(j)}
+                    className="p-6 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-secondary hover:shadow-[0_0_20px_rgba(255,0,193,0.05)] cursor-pointer transition-all flex flex-col justify-between h-40 group"
+                  >
                     <div>
-                      <p className="font-bold text-white">Project ID: {s.id.slice(0, 8)}...</p>
-                      <p className="text-[10px] text-white/40 mt-0.5">Feedback: {s.notes || 'No remarks left.'}</p>
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={j.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${j.id}`}
+                          alt="avatar"
+                          className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 object-cover"
+                        />
+                        <div>
+                          <h4 className="font-bold text-white group-hover:text-accent-secondary transition-colors text-sm">{j.full_name}</h4>
+                          <p className="text-[10px] text-white/45">{j.email}</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex gap-2 font-mono text-[9px] text-white/40">
+                        <span>Dept: {j.department || 'N/A'}</span>
+                        <span>•</span>
+                        <span>ID: {j.college_id || 'N/A'}</span>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className="text-sm font-bold font-mono text-accent-primary">{s.grade_score} pts</span>
-                      <p className="text-[9px] text-white/30 mt-0.5 uppercase font-bold">Approved</p>
+                    
+                    <div className="flex justify-between items-center border-t border-white/5 pt-3 text-[10px] text-white/40 font-mono">
+                      <span>Assigned: {assignedHackathonsCount} Hackathons</span>
+                      <span className="text-accent-secondary group-hover:translate-x-1 transition-transform flex items-center gap-0.5">
+                        Manage Mappings <ChevronRight size={10} />
+                      </span>
                     </div>
                   </div>
-                ))}
-                {submissionsList.filter(s => s.grade_score !== null).length === 0 && (
-                  <div className="py-6 text-center text-xs text-white/30">
-                    No solutions evaluated by judges yet.
-                  </div>
-                )}
-              </div>
-            </Card>
-          </div>
-        </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
       )}
 
       {/* ========================================================================= */}
       {/* 5. MANAGE COORDINATORS */}
       {/* ========================================================================= */}
       {activeTab === 'coordinators' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="flex flex-col gap-8">
-            <Card className="p-8 flex flex-col gap-5">
-              <div>
-                <h3 className="font-archivo text-md font-black uppercase text-white tracking-wider">Create Coordinator</h3>
-                <p className="text-[10px] text-white/40 mt-0.5 font-light">Register a new system coordinator</p>
-              </div>
-              <form onSubmit={handleCreateCoordinator} className="flex flex-col gap-4">
-                <Input
-                  label="Full Name"
-                  required
-                  placeholder="e.g. Prof. Marcus Vance"
-                  value={newCoordinator.fullName}
-                  onChange={(e) => setNewCoordinator(prev => ({ ...prev, fullName: e.target.value }))}
-                />
-                <Input
-                  label="Email"
-                  type="email"
-                  required
-                  placeholder="marcus.vance@college.edu"
-                  value={newCoordinator.email}
-                  onChange={(e) => setNewCoordinator(prev => ({ ...prev, email: e.target.value }))}
-                />
-                <Input
-                  label="Password"
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  value={newCoordinator.password}
-                  onChange={(e) => setNewCoordinator(prev => ({ ...prev, password: e.target.value }))}
-                />
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="College ID"
-                    placeholder="ID-99201"
-                    value={newCoordinator.collegeId}
-                    onChange={(e) => setNewCoordinator(prev => ({ ...prev, collegeId: e.target.value }))}
-                  />
-                  <Input
-                    label="Department"
-                    placeholder="ECE"
-                    value={newCoordinator.department}
-                    onChange={(e) => setNewCoordinator(prev => ({ ...prev, department: e.target.value }))}
-                  />
-                </div>
-                <Button type="submit" variant="primary" disabled={isPerformingAction} className="w-full mt-2 text-xs">
-                  {isPerformingAction ? 'Registering...' : 'Create Coordinator'}
-                </Button>
-              </form>
-            </Card>
-
-            <Card className="p-8 flex flex-col gap-5">
-              <div>
-                <h3 className="font-archivo text-md font-black uppercase text-white tracking-wider">Assign Hackathon</h3>
-                <p className="text-[10px] text-white/40 mt-0.5 font-light">Grant localized access permission to coordinator</p>
-              </div>
-              <form onSubmit={handleAssignCoordinator} className="flex flex-col gap-4 text-xs">
-                <div className="flex flex-col gap-1">
-                  <label className="font-bold text-white/70">Select Coordinator</label>
-                  <select
-                    value={allocCoordId}
-                    onChange={(e) => setAllocCoordId(e.target.value)}
-                    className="p-2.5 rounded-xl bg-[#050505] border border-white/10 text-white focus:outline-none"
-                    required
-                  >
-                    <option value="">-- Choose Coordinator --</option>
-                    {users.filter(u => u.role === 'coordinator').map(c => (
-                      <option key={c.id} value={c.id}>{c.full_name} ({c.email})</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="font-bold text-white/70">Select Assigned Hackathon</label>
-                  <select
-                    value={allocCoordHackathonId}
-                    onChange={(e) => setAllocCoordHackathonId(e.target.value)}
-                    className="p-2.5 rounded-xl bg-[#050505] border border-white/10 text-white focus:outline-none"
-                    required
-                  >
-                    <option value="">-- Choose Hackathon --</option>
-                    {hackathonsList.map(h => (
-                      <option key={h.id} value={h.id}>{h.title}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <Button type="submit" variant="secondary" className="w-full mt-2 text-xs">
-                  Confirm Assign Lock
-                </Button>
-              </form>
-            </Card>
+        <Card className="p-8 flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-archivo text-lg font-black uppercase text-white tracking-wider">Coordinators Ledger</h3>
+              <p className="text-xs text-white/40 mt-1">Register coordinators and assign events scope limits</p>
+            </div>
+            <Button
+              variant="primary"
+              className="flex items-center gap-2 text-xs"
+              onClick={() => setShowCreateCoordinatorModal(true)}
+            >
+              <Plus size={14} />
+              <span>Create Coordinator</span>
+            </Button>
           </div>
 
-          <div className="lg:col-span-2 flex flex-col gap-6">
-            <Card className="p-8 flex flex-col gap-6">
-              <div>
-                <h3 className="font-archivo text-lg font-black uppercase text-white tracking-wider">Coordinators assign ledger</h3>
-                <p className="text-xs text-white/40 mt-1">Review coordinator assignments. Each coordinator can only access and configure their assigned hackathon</p>
-              </div>
-
-              {coordinatorAssignments.length === 0 ? (
-                <div className="py-12 text-center text-xs text-white/30 border border-dashed border-white/10 rounded-2xl">
-                  No active coordinators assignments. Lock permissions using the side form.
-                </div>
-              ) : (
-                <div className="overflow-x-auto w-full">
-                  <table className="w-full border-collapse text-left text-xs text-white/80">
-                    <thead>
-                      <tr className="border-b border-white/5 text-white/40 uppercase tracking-wider font-bold">
-                        <th className="py-4 px-4">Coordinator Name</th>
-                        <th className="py-4 px-4">Assigned Hackathon Scope</th>
-                        <th className="py-4 px-4">Clearance status</th>
-                        <th className="py-4 px-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {coordinatorAssignments.map((a) => (
-                        <tr key={a.id} className="hover:bg-white/[0.01]">
-                          <td className="py-4 px-4">
-                            <p className="font-bold text-white">{a.coordinatorName}</p>
-                            <p className="text-[10px] text-white/40">{a.coordinatorEmail}</p>
-                          </td>
-                          <td className="py-4 px-4 font-semibold text-accent-primary">{a.hackathonName}</td>
-                          <td className="py-4 px-4"><Badge variant="success">Restricted Scope</Badge></td>
-                          <td className="py-4 px-4 text-right">
-                            <button
-                              onClick={() => handleRemoveCoordAssignment(a.id)}
-                              className="p-1 text-danger hover:underline font-bold"
-                            >
-                              Revoke Scope
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </Card>
-          </div>
-        </div>
+          {isLoadingUsers ? (
+            <div className="py-12 flex justify-center items-center text-xs text-white/50">
+              Loading coordinators list...
+            </div>
+          ) : users.filter(u => u.role === 'coordinator').length === 0 ? (
+            <div className="py-12 flex justify-center items-center text-xs text-white/30 border border-dashed border-white/10 rounded-2xl">
+              No coordinators registered. Click "Create Coordinator" to register.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {users.filter(u => u.role === 'coordinator').map((c) => {
+                const assignedScopesCount = coordinatorAssignments.filter(a => a.coordinatorId === c.id).length;
+                return (
+                  <div 
+                    key={c.id} 
+                    onClick={() => setSelectedCoordinatorDetail(c)}
+                    className="p-6 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-third hover:shadow-[0_0_20px_rgba(184,0,255,0.05)] cursor-pointer transition-all flex flex-col justify-between h-40 group"
+                  >
+                    <div>
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={c.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${c.id}`}
+                          alt="avatar"
+                          className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 object-cover"
+                        />
+                        <div>
+                          <h4 className="font-bold text-white group-hover:text-accent-third transition-colors text-sm">{c.full_name}</h4>
+                          <p className="text-[10px] text-white/45">{c.email}</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex gap-2 font-mono text-[9px] text-white/40">
+                        <span>Dept: {c.department || 'N/A'}</span>
+                        <span>•</span>
+                        <span>ID: {c.college_id || 'N/A'}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-between items-center border-t border-white/5 pt-3 text-[10px] text-white/40 font-mono">
+                      <span>Assigned Scope: {assignedScopesCount} Hackathons</span>
+                      <span className="text-accent-third group-hover:translate-x-1 transition-transform flex items-center gap-0.5">
+                        Manage Scope <ChevronRight size={10} />
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
       )}
 
       {/* ========================================================================= */}
@@ -3290,9 +3147,340 @@ const AdminView = () => {
           </form>
         </Modal>
       )}
+
+      {/* Modal E: Create Judge (Mini-tab Modal) */}
+      {showCreateJudgeModal && (
+        <Modal
+          isOpen={true}
+          onClose={() => setShowCreateJudgeModal(false)}
+          title="Register New Judge Account"
+        >
+          <form onSubmit={handleCreateJudge} className="flex flex-col gap-5 py-2 font-manrope">
+            <Input
+              label="Full Name"
+              required
+              placeholder="e.g. Dr. Evelyn Carter"
+              value={newJudge.fullName}
+              onChange={(e) => setNewJudge(prev => ({ ...prev, fullName: e.target.value }))}
+            />
+            <Input
+              label="Email Address"
+              type="email"
+              required
+              placeholder="evelyn.carter@college.edu"
+              value={newJudge.email}
+              onChange={(e) => setNewJudge(prev => ({ ...prev, email: e.target.value }))}
+            />
+            <Input
+              label="Password"
+              type="password"
+              required
+              placeholder="••••••••"
+              value={newJudge.password}
+              onChange={(e) => setNewJudge(prev => ({ ...prev, password: e.target.value }))}
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="College ID"
+                placeholder="ID-98129"
+                value={newJudge.collegeId}
+                onChange={(e) => setNewJudge(prev => ({ ...prev, collegeId: e.target.value }))}
+              />
+              <Input
+                label="Department"
+                placeholder="Data Science"
+                value={newJudge.department}
+                onChange={(e) => setNewJudge(prev => ({ ...prev, department: e.target.value }))}
+              />
+            </div>
+            
+            <div className="flex gap-3 justify-end mt-4">
+              <Button type="button" variant="secondary" onClick={() => setShowCreateJudgeModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" disabled={isPerformingAction}>
+                {isPerformingAction ? 'Creating...' : 'Register Judge'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Modal F: Create Coordinator (Mini-tab Modal) */}
+      {showCreateCoordinatorModal && (
+        <Modal
+          isOpen={true}
+          onClose={() => setShowCreateCoordinatorModal(false)}
+          title="Register New Coordinator Account"
+        >
+          <form onSubmit={handleCreateCoordinator} className="flex flex-col gap-5 py-2 font-manrope">
+            <Input
+              label="Full Name"
+              required
+              placeholder="e.g. Prof. Marcus Vance"
+              value={newCoordinator.fullName}
+              onChange={(e) => setNewCoordinator(prev => ({ ...prev, fullName: e.target.value }))}
+            />
+            <Input
+              label="Email Address"
+              type="email"
+              required
+              placeholder="marcus.vance@college.edu"
+              value={newCoordinator.email}
+              onChange={(e) => setNewCoordinator(prev => ({ ...prev, email: e.target.value }))}
+            />
+            <Input
+              label="Password"
+              type="password"
+              required
+              placeholder="••••••••"
+              value={newCoordinator.password}
+              onChange={(e) => setNewCoordinator(prev => ({ ...prev, password: e.target.value }))}
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="College ID"
+                placeholder="ID-77291"
+                value={newCoordinator.collegeId}
+                onChange={(e) => setNewCoordinator(prev => ({ ...prev, collegeId: e.target.value }))}
+              />
+              <Input
+                label="Department"
+                placeholder="Electrical Eng"
+                value={newCoordinator.department}
+                onChange={(e) => setNewCoordinator(prev => ({ ...prev, department: e.target.value }))}
+              />
+            </div>
+
+            <div className="flex gap-3 justify-end mt-4">
+              <Button type="button" variant="secondary" onClick={() => setShowCreateCoordinatorModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" disabled={isPerformingAction}>
+                {isPerformingAction ? 'Creating...' : 'Register Coordinator'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Modal G: Judge Mappings Detail Modal */}
+      {selectedJudgeDetail && (
+        <Modal
+          isOpen={true}
+          onClose={() => { setSelectedJudgeDetail(null); setJudgeActiveAssignHackathonId(''); }}
+          title={`Manage Judge Allocations | ${selectedJudgeDetail.full_name}`}
+        >
+          <div className="flex flex-col gap-6 py-2 font-manrope text-xs text-white/80">
+            {/* Judge brief info */}
+            <div className="flex items-center gap-3 bg-white/[0.02] border border-white/5 p-4 rounded-xl">
+              <img
+                src={selectedJudgeDetail.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${selectedJudgeDetail.id}`}
+                alt="avatar"
+                className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 object-cover"
+              />
+              <div>
+                <h4 className="font-bold text-white text-sm">{selectedJudgeDetail.full_name}</h4>
+                <p className="text-[10px] text-white/40">{selectedJudgeDetail.email} | Dept: {selectedJudgeDetail.department || 'N/A'}</p>
+              </div>
+            </div>
+
+            {/* Hackathon Allocation form */}
+            <div className="flex flex-col gap-3">
+              <h5 className="font-bold text-accent-secondary uppercase tracking-wider text-[10px]">Assign Hackathon scope</h5>
+              <form onSubmit={handleAssignHackathonToJudge} className="flex gap-2">
+                <select
+                  value={judgeAllocHackathonId}
+                  onChange={(e) => setJudgeAllocHackathonId(e.target.value)}
+                  className="flex-grow p-2 rounded-xl bg-black border border-white/10 text-white focus:outline-none text-[11px]"
+                  required
+                >
+                  <option value="">-- Choose Hackathon to Assign --</option>
+                  {hackathonsList.map(h => (
+                    <option key={h.id} value={h.id}>{h.title}</option>
+                  ))}
+                </select>
+                <Button type="submit" variant="secondary" className="text-[10px] px-4 py-2 shrink-0">
+                  Assign Hackathon
+                </Button>
+              </form>
+            </div>
+
+            {/* Currently Assigned Hackathons list */}
+            <div className="flex flex-col gap-2">
+              <h5 className="font-bold text-white/50 uppercase tracking-wider text-[10px]">Assigned Hackathons</h5>
+              {judgeAssignments.filter(a => a.judgeId === selectedJudgeDetail.id).length === 0 ? (
+                <p className="text-white/35 italic py-1">No hackathons assigned yet.</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {judgeAssignments.filter(a => a.judgeId === selectedJudgeDetail.id).map(a => {
+                    const isSelectedActive = judgeActiveAssignHackathonId === a.hackathonId;
+                    return (
+                      <div 
+                        key={a.id} 
+                        className={`p-3 rounded-xl border flex justify-between items-center transition-all ${
+                          isSelectedActive 
+                            ? 'bg-accent-secondary/5 border-accent-secondary/35 shadow-[0_0_12px_rgba(255,0,193,0.05)]' 
+                            : 'bg-white/[0.01] border-white/5 hover:border-white/15'
+                        }`}
+                      >
+                        <div 
+                          className="flex-grow cursor-pointer" 
+                          onClick={() => setJudgeActiveAssignHackathonId(a.hackathonId)}
+                        >
+                          <p className="font-bold text-white">{a.hackathonName}</p>
+                          <p className="text-[9px] text-white/40 mt-0.5">Click to view & select solutions allocation</p>
+                        </div>
+                        <button 
+                          onClick={() => handleRevokeJudgeHackathon(a.id)}
+                          className="px-2 py-1 bg-danger/10 hover:bg-danger/25 text-danger border border-danger/20 rounded text-[9px] font-bold uppercase transition-colors"
+                        >
+                          Revoke
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Submissions assignment based on active assigned hackathon selection */}
+            {judgeActiveAssignHackathonId && (
+              <div className="flex flex-col gap-3 border-t border-white/5 pt-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h5 className="font-bold text-accent-primary uppercase tracking-wider text-[10px]">Submissions Allocation</h5>
+                    <p className="text-[9px] text-white/40 mt-0.5">Check submissions that this judge is authorized to evaluate</p>
+                  </div>
+                  <Badge variant="primary">
+                    {submissionsList.filter(s => s.hackathon_id === judgeActiveAssignHackathonId).length} submissions found
+                  </Badge>
+                </div>
+
+                <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+                  {submissionsList.filter(s => s.hackathon_id === judgeActiveAssignHackathonId).map((s) => {
+                    const assignedList = getAssignedSubmissionIds(selectedJudgeDetail.id, judgeActiveAssignHackathonId);
+                    const isAssigned = assignedList.includes(s.id);
+                    return (
+                      <label 
+                        key={s.id}
+                        className="flex items-center justify-between p-3 rounded-lg border border-white/5 bg-white/[0.01] hover:bg-white/[0.02] cursor-pointer"
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={isAssigned}
+                            onChange={() => handleToggleSubmissionForJudge(s.id)}
+                            className="w-4 h-4 rounded bg-[#050505] border-white/10 text-accent-secondary focus:ring-0"
+                          />
+                          <div>
+                            <p className="font-bold text-white text-xs">Team: {s.team_name || `Team ID: ${s.team_id.slice(0,6)}...`}</p>
+                            <p className="text-[9px] text-white/40 mt-0.5">Submission ID: {s.id.slice(0, 8)}... {s.grade_score !== null && `(Graded: ${s.grade_score} pts)`}</p>
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                  {submissionsList.filter(s => s.hackathon_id === judgeActiveAssignHackathonId).length === 0 && (
+                    <p className="text-white/30 italic text-center py-4">No submissions uploaded for this hackathon yet.</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end mt-4 border-t border-white/5 pt-4">
+              <Button type="button" variant="secondary" onClick={() => { setSelectedJudgeDetail(null); setJudgeActiveAssignHackathonId(''); }}>
+                Close Allocation Panel
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal H: Coordinator Mappings Detail Modal */}
+      {selectedCoordinatorDetail && (
+        <Modal
+          isOpen={true}
+          onClose={() => setSelectedCoordinatorDetail(null)}
+          title={`Manage Coordinator Scope | ${selectedCoordinatorDetail.full_name}`}
+        >
+          <div className="flex flex-col gap-6 py-2 font-manrope text-xs text-white/80">
+            {/* Coordinator brief info */}
+            <div className="flex items-center gap-3 bg-white/[0.02] border border-white/5 p-4 rounded-xl">
+              <img
+                src={selectedCoordinatorDetail.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${selectedCoordinatorDetail.id}`}
+                alt="avatar"
+                className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 object-cover"
+              />
+              <div>
+                <h4 className="font-bold text-white text-sm">{selectedCoordinatorDetail.full_name}</h4>
+                <p className="text-[10px] text-white/40">{selectedCoordinatorDetail.email} | Dept: {selectedCoordinatorDetail.department || 'N/A'}</p>
+              </div>
+            </div>
+
+            {/* Hackathon Scope Assign form */}
+            <div className="flex flex-col gap-3">
+              <h5 className="font-bold text-accent-third uppercase tracking-wider text-[10px]">Lock scope to Hackathon</h5>
+              <form onSubmit={handleAssignCoordinator} className="flex gap-2">
+                <select
+                  value={coordAllocHackathonId}
+                  onChange={(e) => setCoordAllocHackathonId(e.target.value)}
+                  className="flex-grow p-2 rounded-xl bg-black border border-white/10 text-white focus:outline-none text-[11px]"
+                  required
+                >
+                  <option value="">-- Choose Hackathon Scope --</option>
+                  {hackathonsList.map(h => (
+                    <option key={h.id} value={h.id}>{h.title}</option>
+                  ))}
+                </select>
+                <Button type="submit" variant="secondary" className="text-[10px] px-4 py-2 shrink-0">
+                  Assign Scope
+                </Button>
+              </form>
+            </div>
+
+            {/* Assigned Scope list */}
+            <div className="flex flex-col gap-2">
+              <h5 className="font-bold text-white/50 uppercase tracking-wider text-[10px]">Assigned Scopes Ledger</h5>
+              {coordinatorAssignments.filter(a => a.coordinatorId === selectedCoordinatorDetail.id).length === 0 ? (
+                <p className="text-white/35 italic py-1">No scopes assigned. This coordinator cannot manage any events yet.</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {coordinatorAssignments.filter(a => a.coordinatorId === selectedCoordinatorDetail.id).map(a => (
+                    <div 
+                      key={a.id} 
+                      className="p-3 rounded-xl border border-white/5 bg-white/[0.01] flex justify-between items-center"
+                    >
+                      <div>
+                        <p className="font-bold text-white">{a.hackathonName}</p>
+                        <span className="px-1.5 py-0.5 rounded bg-success/10 text-success text-[8px] font-bold uppercase tracking-wider block mt-1 w-max">
+                          Restricted Scope Lock
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => handleRevokeCoordinatorScope(a.id)}
+                        className="px-2 py-1 bg-danger/10 hover:bg-danger/25 text-danger border border-danger/20 rounded text-[9px] font-bold uppercase transition-colors"
+                      >
+                        Revoke Scope
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end mt-4 border-t border-white/5 pt-4">
+              <Button type="button" variant="secondary" onClick={() => setSelectedCoordinatorDetail(null)}>
+                Close Scope Panel
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
+
 
 
 
