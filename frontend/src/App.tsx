@@ -1769,7 +1769,46 @@ const AdminView = () => {
   const [judgeAssignments, setJudgeAssignments] = useState<any[]>([]);
   const [coordinatorAssignments, setCoordinatorAssignments] = useState<any[]>([]);
 
-  // Mock registered teams
+  // Fallback mock submissions (so the user always has submissions to assign and test if database is empty)
+  const getSubmissionsForHackathon = (hackathonId: string) => {
+    const realSubs = submissionsList.filter(s => s.hackathon_id === hackathonId);
+    if (realSubs.length > 0) return realSubs;
+    
+    return [
+      {
+        id: `sub-mock-1-${hackathonId}`,
+        hackathon_id: hackathonId,
+        team_name: 'Alpha Coders',
+        team_id: 'team-mock-1',
+        title: 'Decentralized Finance Portal',
+        repo_url: 'https://github.com/alpha-coders/defi',
+        file_name: 'defi_architecture.pdf',
+        grade_score: null
+      },
+      {
+        id: `sub-mock-2-${hackathonId}`,
+        hackathon_id: hackathonId,
+        team_name: 'Quantum Thinkers',
+        team_id: 'team-mock-2',
+        title: 'Smart Crop Analytics Tool',
+        repo_url: 'https://github.com/quantum/crop-analytics',
+        file_name: 'crop_analytics_pitch.pptx',
+        grade_score: 92
+      },
+      {
+        id: `sub-mock-3-${hackathonId}`,
+        hackathon_id: hackathonId,
+        team_name: 'Neural Hawks',
+        team_id: 'team-mock-3',
+        title: 'AI Resume Screener & Parser',
+        repo_url: 'https://github.com/neural-hawks/parser',
+        file_name: 'resume_parser.pptx',
+        grade_score: 85
+      }
+    ];
+  };
+
+  // Mock registered teams for Hackathon view
   const mockTeams = [
     {
       id: 'team-1',
@@ -3270,128 +3309,132 @@ const AdminView = () => {
           isOpen={true}
           onClose={() => { setSelectedJudgeDetail(null); setJudgeActiveAssignHackathonId(''); }}
           title={`Manage Judge Allocations | ${selectedJudgeDetail.full_name}`}
+          size="lg"
         >
-          <div className="flex flex-col gap-6 py-2 font-manrope text-xs text-white/80">
-            {/* Judge brief info */}
-            <div className="flex items-center gap-3 bg-white/[0.02] border border-white/5 p-4 rounded-xl">
-              <img
-                src={selectedJudgeDetail.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${selectedJudgeDetail.id}`}
-                alt="avatar"
-                className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 object-cover"
-              />
-              <div>
-                <h4 className="font-bold text-white text-sm">{selectedJudgeDetail.full_name}</h4>
-                <p className="text-[10px] text-white/40">{selectedJudgeDetail.email} | Dept: {selectedJudgeDetail.department || 'N/A'}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-2 font-manrope text-xs text-white/80 max-h-[70vh] overflow-y-auto pr-2">
+            {/* Left Column: Judge Profile & Hackathon Allocation */}
+            <div className="flex flex-col gap-6">
+              {/* Judge brief info */}
+              <div className="flex items-center gap-3 bg-white/[0.02] border border-white/5 p-4 rounded-xl">
+                <img
+                  src={selectedJudgeDetail.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${selectedJudgeDetail.id}`}
+                  alt="avatar"
+                  className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 object-cover"
+                />
+                <div>
+                  <h4 className="font-bold text-white text-sm">{selectedJudgeDetail.full_name}</h4>
+                  <p className="text-[10px] text-white/40">{selectedJudgeDetail.email} | Dept: {selectedJudgeDetail.department || 'N/A'}</p>
+                </div>
+              </div>
+
+              {/* Hackathon Allocation form */}
+              <div className="flex flex-col gap-3">
+                <h5 className="font-bold text-accent-secondary uppercase tracking-wider text-[10px]">Assign Hackathon scope</h5>
+                <form onSubmit={handleAssignHackathonToJudge} className="flex gap-2">
+                  <select
+                    value={judgeAllocHackathonId}
+                    onChange={(e) => setJudgeAllocHackathonId(e.target.value)}
+                    className="flex-grow p-2.5 rounded-xl bg-black border border-white/10 text-white focus:outline-none text-[11px]"
+                    required
+                  >
+                    <option value="">-- Choose Hackathon to Assign --</option>
+                    {hackathonsList.map(h => (
+                      <option key={h.id} value={h.id}>{h.title}</option>
+                    ))}
+                  </select>
+                  <Button type="submit" variant="secondary" className="text-[10px] px-4 py-2 shrink-0">
+                    Assign
+                  </Button>
+                </form>
+              </div>
+
+              {/* Currently Assigned Hackathons list */}
+              <div className="flex flex-col gap-2">
+                <h5 className="font-bold text-white/50 uppercase tracking-wider text-[10px]">Assigned Hackathons</h5>
+                {judgeAssignments.filter(a => a.judgeId === selectedJudgeDetail.id).length === 0 ? (
+                  <p className="text-white/35 italic py-1">No hackathons assigned yet.</p>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {judgeAssignments.filter(a => a.judgeId === selectedJudgeDetail.id).map(a => {
+                      const isSelectedActive = judgeActiveAssignHackathonId === a.hackathonId;
+                      return (
+                        <div 
+                          key={a.id} 
+                          className={`p-3 rounded-xl border flex justify-between items-center transition-all ${
+                            isSelectedActive 
+                              ? 'bg-accent-secondary/5 border-accent-secondary/35 shadow-[0_0_12px_rgba(255,0,193,0.05)]' 
+                              : 'bg-white/[0.01] border-white/5 hover:border-white/15'
+                          }`}
+                        >
+                          <div 
+                            className="flex-grow cursor-pointer" 
+                            onClick={() => setJudgeActiveAssignHackathonId(a.hackathonId)}
+                          >
+                            <p className="font-bold text-white">{a.hackathonName}</p>
+                            <p className="text-[9px] text-white/40 mt-0.5">Click to view & allocate team solutions</p>
+                          </div>
+                          <button 
+                            onClick={() => handleRevokeJudgeHackathon(a.id)}
+                            className="px-2 py-1 bg-danger/10 hover:bg-danger/25 text-danger border border-danger/20 rounded text-[9px] font-bold uppercase transition-colors"
+                          >
+                            Revoke
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Hackathon Allocation form */}
-            <div className="flex flex-col gap-3">
-              <h5 className="font-bold text-accent-secondary uppercase tracking-wider text-[10px]">Assign Hackathon scope</h5>
-              <form onSubmit={handleAssignHackathonToJudge} className="flex gap-2">
-                <select
-                  value={judgeAllocHackathonId}
-                  onChange={(e) => setJudgeAllocHackathonId(e.target.value)}
-                  className="flex-grow p-2 rounded-xl bg-black border border-white/10 text-white focus:outline-none text-[11px]"
-                  required
-                >
-                  <option value="">-- Choose Hackathon to Assign --</option>
-                  {hackathonsList.map(h => (
-                    <option key={h.id} value={h.id}>{h.title}</option>
-                  ))}
-                </select>
-                <Button type="submit" variant="secondary" className="text-[10px] px-4 py-2 shrink-0">
-                  Assign Hackathon
-                </Button>
-              </form>
-            </div>
+            {/* Right Column: Submissions allocation based on active assigned hackathon selection */}
+            <div className="flex flex-col gap-4 border-l border-white/5 pl-6">
+              {judgeActiveAssignHackathonId ? (
+                <div className="flex flex-col gap-3">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h5 className="font-bold text-accent-primary uppercase tracking-wider text-[10px]">Solutions Allocation</h5>
+                      <p className="text-[9px] text-white/40 mt-0.5">Check team projects this judge must evaluate</p>
+                    </div>
+                    <Badge variant="primary">
+                      {getSubmissionsForHackathon(judgeActiveAssignHackathonId).length} solutions
+                    </Badge>
+                  </div>
 
-            {/* Currently Assigned Hackathons list */}
-            <div className="flex flex-col gap-2">
-              <h5 className="font-bold text-white/50 uppercase tracking-wider text-[10px]">Assigned Hackathons</h5>
-              {judgeAssignments.filter(a => a.judgeId === selectedJudgeDetail.id).length === 0 ? (
-                <p className="text-white/35 italic py-1">No hackathons assigned yet.</p>
+                  <div className="flex flex-col gap-2 max-h-96 overflow-y-auto pr-1">
+                    {getSubmissionsForHackathon(judgeActiveAssignHackathonId).map((s) => {
+                      const assignedList = getAssignedSubmissionIds(selectedJudgeDetail.id, judgeActiveAssignHackathonId);
+                      const isAssigned = assignedList.includes(s.id);
+                      return (
+                        <label 
+                          key={s.id}
+                          className="flex items-center justify-between p-3 rounded-lg border border-white/5 bg-white/[0.01] hover:bg-white/[0.02] cursor-pointer"
+                        >
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              checked={isAssigned}
+                              onChange={() => handleToggleSubmissionForJudge(s.id)}
+                              className="w-4 h-4 rounded bg-[#050505] border-white/10 text-accent-secondary focus:ring-0"
+                            />
+                            <div>
+                              <p className="font-bold text-white text-xs">Team: {s.team_name}</p>
+                              <p className="text-[9px] text-white/40 mt-0.5">Project: {s.title}</p>
+                              <p className="text-[9px] text-white/40 font-mono mt-0.5">ID: {s.id.slice(0, 8)}... {s.grade_score !== null && `(Graded: ${s.grade_score} pts)`}</p>
+                            </div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
               ) : (
-                <div className="flex flex-col gap-2">
-                  {judgeAssignments.filter(a => a.judgeId === selectedJudgeDetail.id).map(a => {
-                    const isSelectedActive = judgeActiveAssignHackathonId === a.hackathonId;
-                    return (
-                      <div 
-                        key={a.id} 
-                        className={`p-3 rounded-xl border flex justify-between items-center transition-all ${
-                          isSelectedActive 
-                            ? 'bg-accent-secondary/5 border-accent-secondary/35 shadow-[0_0_12px_rgba(255,0,193,0.05)]' 
-                            : 'bg-white/[0.01] border-white/5 hover:border-white/15'
-                        }`}
-                      >
-                        <div 
-                          className="flex-grow cursor-pointer" 
-                          onClick={() => setJudgeActiveAssignHackathonId(a.hackathonId)}
-                        >
-                          <p className="font-bold text-white">{a.hackathonName}</p>
-                          <p className="text-[9px] text-white/40 mt-0.5">Click to view & select solutions allocation</p>
-                        </div>
-                        <button 
-                          onClick={() => handleRevokeJudgeHackathon(a.id)}
-                          className="px-2 py-1 bg-danger/10 hover:bg-danger/25 text-danger border border-danger/20 rounded text-[9px] font-bold uppercase transition-colors"
-                        >
-                          Revoke
-                        </button>
-                      </div>
-                    );
-                  })}
+                <div className="h-full flex flex-col items-center justify-center text-center text-white/30 py-12">
+                  <Cpu size={24} className="text-white/20 mb-2" />
+                  <p className="font-bold">No Hackathon Selected</p>
+                  <p className="text-[10px] mt-1">Select an assigned hackathon on the left column to configure dynamic solutions allocation.</p>
                 </div>
               )}
-            </div>
-
-            {/* Submissions assignment based on active assigned hackathon selection */}
-            {judgeActiveAssignHackathonId && (
-              <div className="flex flex-col gap-3 border-t border-white/5 pt-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h5 className="font-bold text-accent-primary uppercase tracking-wider text-[10px]">Submissions Allocation</h5>
-                    <p className="text-[9px] text-white/40 mt-0.5">Check submissions that this judge is authorized to evaluate</p>
-                  </div>
-                  <Badge variant="primary">
-                    {submissionsList.filter(s => s.hackathon_id === judgeActiveAssignHackathonId).length} submissions found
-                  </Badge>
-                </div>
-
-                <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
-                  {submissionsList.filter(s => s.hackathon_id === judgeActiveAssignHackathonId).map((s) => {
-                    const assignedList = getAssignedSubmissionIds(selectedJudgeDetail.id, judgeActiveAssignHackathonId);
-                    const isAssigned = assignedList.includes(s.id);
-                    return (
-                      <label 
-                        key={s.id}
-                        className="flex items-center justify-between p-3 rounded-lg border border-white/5 bg-white/[0.01] hover:bg-white/[0.02] cursor-pointer"
-                      >
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="checkbox"
-                            checked={isAssigned}
-                            onChange={() => handleToggleSubmissionForJudge(s.id)}
-                            className="w-4 h-4 rounded bg-[#050505] border-white/10 text-accent-secondary focus:ring-0"
-                          />
-                          <div>
-                            <p className="font-bold text-white text-xs">Team: {s.team_name || `Team ID: ${s.team_id.slice(0,6)}...`}</p>
-                            <p className="text-[9px] text-white/40 mt-0.5">Submission ID: {s.id.slice(0, 8)}... {s.grade_score !== null && `(Graded: ${s.grade_score} pts)`}</p>
-                          </div>
-                        </div>
-                      </label>
-                    );
-                  })}
-                  {submissionsList.filter(s => s.hackathon_id === judgeActiveAssignHackathonId).length === 0 && (
-                    <p className="text-white/30 italic text-center py-4">No submissions uploaded for this hackathon yet.</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div className="flex justify-end mt-4 border-t border-white/5 pt-4">
-              <Button type="button" variant="secondary" onClick={() => { setSelectedJudgeDetail(null); setJudgeActiveAssignHackathonId(''); }}>
-                Close Allocation Panel
-              </Button>
             </div>
           </div>
         </Modal>
@@ -3403,49 +3446,53 @@ const AdminView = () => {
           isOpen={true}
           onClose={() => setSelectedCoordinatorDetail(null)}
           title={`Manage Coordinator Scope | ${selectedCoordinatorDetail.full_name}`}
+          size="lg"
         >
-          <div className="flex flex-col gap-6 py-2 font-manrope text-xs text-white/80">
-            {/* Coordinator brief info */}
-            <div className="flex items-center gap-3 bg-white/[0.02] border border-white/5 p-4 rounded-xl">
-              <img
-                src={selectedCoordinatorDetail.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${selectedCoordinatorDetail.id}`}
-                alt="avatar"
-                className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 object-cover"
-              />
-              <div>
-                <h4 className="font-bold text-white text-sm">{selectedCoordinatorDetail.full_name}</h4>
-                <p className="text-[10px] text-white/40">{selectedCoordinatorDetail.email} | Dept: {selectedCoordinatorDetail.department || 'N/A'}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-2 font-manrope text-xs text-white/80 max-h-[70vh] overflow-y-auto pr-2">
+            {/* Left Column: Details & Assign Form */}
+            <div className="flex flex-col gap-6">
+              {/* Coordinator brief info */}
+              <div className="flex items-center gap-3 bg-white/[0.02] border border-white/5 p-4 rounded-xl">
+                <img
+                  src={selectedCoordinatorDetail.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${selectedCoordinatorDetail.id}`}
+                  alt="avatar"
+                  className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 object-cover"
+                />
+                <div>
+                  <h4 className="font-bold text-white text-sm">{selectedCoordinatorDetail.full_name}</h4>
+                  <p className="text-[10px] text-white/40">{selectedCoordinatorDetail.email} | Dept: {selectedCoordinatorDetail.department || 'N/A'}</p>
+                </div>
+              </div>
+
+              {/* Hackathon Scope Assign form */}
+              <div className="flex flex-col gap-3">
+                <h5 className="font-bold text-accent-third uppercase tracking-wider text-[10px]">Lock scope to Hackathon</h5>
+                <form onSubmit={handleAssignCoordinator} className="flex gap-2">
+                  <select
+                    value={coordAllocHackathonId}
+                    onChange={(e) => setCoordAllocHackathonId(e.target.value)}
+                    className="flex-grow p-2.5 rounded-xl bg-black border border-white/10 text-white focus:outline-none text-[11px]"
+                    required
+                  >
+                    <option value="">-- Choose Hackathon Scope --</option>
+                    {hackathonsList.map(h => (
+                      <option key={h.id} value={h.id}>{h.title}</option>
+                    ))}
+                  </select>
+                  <Button type="submit" variant="secondary" className="text-[10px] px-4 py-2 shrink-0">
+                    Assign Scope
+                  </Button>
+                </form>
               </div>
             </div>
 
-            {/* Hackathon Scope Assign form */}
-            <div className="flex flex-col gap-3">
-              <h5 className="font-bold text-accent-third uppercase tracking-wider text-[10px]">Lock scope to Hackathon</h5>
-              <form onSubmit={handleAssignCoordinator} className="flex gap-2">
-                <select
-                  value={coordAllocHackathonId}
-                  onChange={(e) => setCoordAllocHackathonId(e.target.value)}
-                  className="flex-grow p-2 rounded-xl bg-black border border-white/10 text-white focus:outline-none text-[11px]"
-                  required
-                >
-                  <option value="">-- Choose Hackathon Scope --</option>
-                  {hackathonsList.map(h => (
-                    <option key={h.id} value={h.id}>{h.title}</option>
-                  ))}
-                </select>
-                <Button type="submit" variant="secondary" className="text-[10px] px-4 py-2 shrink-0">
-                  Assign Scope
-                </Button>
-              </form>
-            </div>
-
-            {/* Assigned Scope list */}
-            <div className="flex flex-col gap-2">
+            {/* Right Column: Scope Mappings Ledger */}
+            <div className="flex flex-col gap-4 border-l border-white/5 pl-6">
               <h5 className="font-bold text-white/50 uppercase tracking-wider text-[10px]">Assigned Scopes Ledger</h5>
               {coordinatorAssignments.filter(a => a.coordinatorId === selectedCoordinatorDetail.id).length === 0 ? (
                 <p className="text-white/35 italic py-1">No scopes assigned. This coordinator cannot manage any events yet.</p>
               ) : (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 max-h-96 overflow-y-auto pr-1">
                   {coordinatorAssignments.filter(a => a.coordinatorId === selectedCoordinatorDetail.id).map(a => (
                     <div 
                       key={a.id} 
@@ -3468,18 +3515,13 @@ const AdminView = () => {
                 </div>
               )}
             </div>
-
-            <div className="flex justify-end mt-4 border-t border-white/5 pt-4">
-              <Button type="button" variant="secondary" onClick={() => setSelectedCoordinatorDetail(null)}>
-                Close Scope Panel
-              </Button>
-            </div>
           </div>
         </Modal>
       )}
     </div>
   );
 };
+
 
 
 
