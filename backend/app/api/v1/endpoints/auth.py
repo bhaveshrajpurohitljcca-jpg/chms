@@ -50,7 +50,7 @@ def signup_user(payload: UserRegister, db: Session = Depends(get_db)):
 
 @router.post("/login")
 def login_user(payload: UserLogin, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == payload.email).first()
+    user = db.query(User).filter(User.email == payload.email, User.is_deleted == False).first()
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -55,6 +55,11 @@ setup_exception_handlers(app)
 
 app.include_router(api_router, prefix="/api/v1")
 
+from fastapi.staticfiles import StaticFiles
+import os
+os.makedirs("static", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 @app.get("/", tags=["health"])
 async def root_health_check():
     return {

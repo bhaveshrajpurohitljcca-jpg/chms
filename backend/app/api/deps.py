@@ -33,7 +33,7 @@ def get_current_user(
         )
     
     user_id = payload["sub"]
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.id == user_id, User.is_deleted == False).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -52,20 +52,36 @@ def get_current_active_user(current_user: User = Depends(get_current_user)) -> U
         )
     return current_user
 
+ROLE_RANK = {
+    UserRole.STUDENT: 1,
+    UserRole.JUDGE: 2,
+    UserRole.COORDINATOR: 3,
+    UserRole.ADMIN: 4
+}
+
 class RoleChecker:
     """
     RBAC dependency factory that limits API access to a list of allowed roles.
+    Respects role hierarchy by default.
     """
-    def __init__(self, allowed_roles: List[UserRole]):
+    def __init__(self, allowed_roles: List[UserRole], allow_higher: bool = True):
         self.allowed_roles = allowed_roles
+        self.allow_higher = allow_higher
 
     def __call__(self, user: User = Depends(get_current_active_user)) -> User:
-        if user.role not in self.allowed_roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Access forbidden. Required roles: {[r.value for r in self.allowed_roles]}",
-            )
-        return user
+        if self.allow_higher:
+            min_rank = min(ROLE_RANK.get(role, 0) for role in self.allowed_roles)
+            user_rank = ROLE_RANK.get(user.role, 0)
+            if user_rank >= min_rank:
+                return user
+        else:
+            if user.role in self.allowed_roles:
+                return user
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden. Insufficient permissions.",
+        )
 
 def require_roles(*allowed_roles: UserRole):
     """

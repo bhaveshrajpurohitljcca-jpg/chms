@@ -24,3 +24,5 @@ class User(BaseTable):
     avatar_url = Column(String(500), nullable=True)
     bio = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
+    phone = Column(String(20), nullable=True)
+    is_deleted = Column(Boolean, default=False, nullable=False)
