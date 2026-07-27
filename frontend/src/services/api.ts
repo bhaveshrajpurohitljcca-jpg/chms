@@ -154,6 +154,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
     const data = await response.json();
     if (!response.ok) {
+      if (response.status === 401) {
+        removeStoredToken();
+        window.dispatchEvent(new CustomEvent('chms-unauthorized'));
+      }
       throw new Error(data.detail || data.message || `Request failed (${response.status})`);
     }
     return data;
@@ -184,6 +188,10 @@ async function requestFormData<T>(
 
     const data = await response.json();
     if (!response.ok) {
+      if (response.status === 401) {
+        removeStoredToken();
+        window.dispatchEvent(new CustomEvent('chms-unauthorized'));
+      }
       throw new Error(data.detail || data.message || 'File upload failed');
     }
     return data;
@@ -423,6 +431,31 @@ export const apiService = {
     return request<any>('/submissions/evaluate', {
       method: 'POST',
       body: JSON.stringify(payload),
+    });
+  },
+
+  // ─── Notifications ─────────────────────────────────────────
+  async listNotifications(page = 1, limit = 10, isRead?: boolean) {
+    let query = `?page=${page}&limit=${limit}`;
+    if (isRead !== undefined) {
+      query += `&is_read=${isRead}`;
+    }
+    return request<any>(`/notifications${query}`);
+  },
+
+  async getUnreadNotificationsCount() {
+    return request<any>('/notifications/unread-count');
+  },
+
+  async markNotificationRead(notificationId: string) {
+    return request<any>(`/notifications/${notificationId}/read`, {
+      method: 'PUT',
+    });
+  },
+
+  async markAllNotificationsRead() {
+    return request<any>('/notifications/read-all', {
+      method: 'PUT',
     });
   },
 };
