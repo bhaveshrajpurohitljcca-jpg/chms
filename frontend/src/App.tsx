@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   BrowserRouter as Router, 
   Routes, 
@@ -30,8 +30,12 @@ import {
   Check,
   Code,
   Users,
-  Megaphone
+  Megaphone,
+  Shield,
+  Trash2
 } from 'lucide-react';
+import { apiService } from '@/services/api';
+import type { UserProfile } from '@/services/api';
 import ThreeParticleBg from '@/components/ui/ThreeParticleBg';
 import StatusPulseBadge from '@/components/ui/StatusPulseBadge';
 import GlassProductCard from '@/components/ui/GlassProductCard';
@@ -1675,22 +1679,168 @@ const CoordinatorView = () => {
 
 // 11. ADMIN VIEW
 const AdminView = () => {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'hackathons'>('dashboard');
   const [showEventModal, setShowEventModal] = useState(false);
   const [showJudgeModal, setShowJudgeModal] = useState(false);
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
 
+  // Users and Hackathons state lists
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [hackathonsList, setHackathonsList] = useState<any[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [isLoadingHackathons, setIsLoadingHackathons] = useState(false);
+  const [userRoleFilter, setUserRoleFilter] = useState<string>('all');
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+
   // Form states
-  const [newEvent, setNewEvent] = useState({ title: '', startDate: '', endDate: '', psCount: 1 });
+  const [newEvent, setNewEvent] = useState({ 
+    title: '', 
+    slug: '', 
+    tagline: '', 
+    description: '', 
+    startDate: '', 
+    endDate: '', 
+    maxTeamSize: 4 
+  });
   const [announcementText, setAnnouncementText] = useState('');
   const [isPerformingAction, setIsPerformingAction] = useState(false);
   const [toastText, setToastText] = useState('');
 
-  // Analytics mock
+  // Toast handler
+  const showToast = (text: string) => {
+    setToastText(text);
+    setTimeout(() => setToastText(''), 3000);
+  };
+
+  // Fetch Users from API
+  const fetchUsers = async () => {
+    try {
+      setIsLoadingUsers(true);
+      const params: any = {};
+      if (userRoleFilter !== 'all') {
+        params.role = userRoleFilter;
+      }
+      if (userSearchQuery.trim().length >= 2) {
+        params.search = userSearchQuery;
+      }
+      const res = await apiService.listUsers(params);
+      const data = res.data;
+      if (data && data.users && Array.isArray(data.users)) {
+        setUsers(data.users);
+      } else if (Array.isArray(data)) {
+        setUsers(data);
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Failed to fetch users list');
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  // Fetch Hackathons from API
+  const fetchHackathons = async () => {
+    try {
+      setIsLoadingHackathons(true);
+      const res = await apiService.listHackathons();
+      if (res && res.data) {
+        setHackathonsList(res.data);
+      } else if (Array.isArray(res)) {
+        setHackathonsList(res);
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Failed to fetch hackathons list');
+    } finally {
+      setIsLoadingHackathons(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'users') {
+      fetchUsers();
+    } else if (activeTab === 'hackathons') {
+      fetchHackathons();
+    }
+  }, [activeTab, userRoleFilter, userSearchQuery]);
+
+  // Handle Event Creation (API integration!)
+  const handleCreateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsPerformingAction(true);
+    try {
+      await apiService.createHackathon({
+        title: newEvent.title,
+        slug: newEvent.slug || newEvent.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        tagline: newEvent.tagline,
+        description: newEvent.description,
+        start_date: newEvent.startDate ? new Date(newEvent.startDate).toISOString() : undefined,
+        end_date: newEvent.endDate ? new Date(newEvent.endDate).toISOString() : undefined,
+        max_team_size: newEvent.maxTeamSize
+      });
+      showToast(`Hackathon "${newEvent.title}" successfully created on ledger!`);
+      setNewEvent({ title: '', slug: '', tagline: '', description: '', startDate: '', endDate: '', maxTeamSize: 4 });
+      setShowEventModal(false);
+      if (activeTab === 'hackathons') {
+        fetchHackathons();
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Failed to initialize event');
+    } finally {
+      setIsPerformingAction(false);
+    }
+  };
+
+  // Handle toggle User Active status
+  const handleToggleUserStatus = async (userId: string, currentStatus: boolean) => {
+    try {
+      await apiService.updateUserStatus(userId, !currentStatus);
+      showToast(`User status updated successfully.`);
+      fetchUsers();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to toggle status');
+    }
+  };
+
+  // Handle change user role
+  const handleChangeUserRole = async (userId: string, newRole: string) => {
+    try {
+      await apiService.updateUserRole(userId, newRole);
+      showToast(`User role successfully changed to ${newRole.toUpperCase()}.`);
+      fetchUsers();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to change role');
+    }
+  };
+
+  // Handle delete user (soft-delete)
+  const handleDeleteUser = async (userId: string) => {
+    if (!window.confirm("Are you sure you want to soft-delete this user?")) return;
+    try {
+      await apiService.deleteUser(userId);
+      showToast(`User successfully archived.`);
+      fetchUsers();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to archive user');
+    }
+  };
+
+  // Broadcast Alert
+  const handlePublishAnnouncement = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsPerformingAction(true);
+    setTimeout(() => {
+      setIsPerformingAction(false);
+      setShowAnnouncementModal(false);
+      showToast(`Announcement published to student screens.`);
+      setAnnouncementText('');
+    }, 1000);
+  };
+
+  // KPI calculations (combining stats)
   const kpiStats = [
-    { title: 'Total Submissions', value: '18', detail: '+4 from yesterday', icon: Code, color: 'text-accent-primary' },
-    { title: 'Pending Reviews', value: '5', detail: 'Assigned to 3 judges', icon: Clock, color: 'text-accent-secondary' },
-    { title: 'Active Judges', value: '8', detail: '2 evaluators online', icon: Users, color: 'text-accent-third' },
-    { title: 'Average Score', value: '86.4', detail: 'Standard deviation: 4.8', icon: Star, color: 'text-success' }
+    { title: 'Submissions', value: '18', detail: 'Real-time project ledger', icon: Code, color: 'text-accent-primary' },
+    { title: 'Active Hackathons', value: hackathonsList.length || '3', detail: 'Dynamic registrations enabled', icon: Star, color: 'text-accent-secondary' },
+    { title: 'Users Directory', value: users.length || '12', detail: 'Active nodes inside database', icon: Users, color: 'text-accent-third' },
+    { title: 'System Engine', value: 'OK', detail: 'FastAPI health check validated', icon: Shield, color: 'text-success' }
   ];
 
   // SVG Chart Mock Data - Submissions velocity
@@ -1705,38 +1855,10 @@ const AdminView = () => {
   ];
 
   const recentActivities = [
-    { id: 1, user: 'Dr. Evelyn Carter', action: 'graded team Zero_Gravity', detail: 'ZeroG LLM Quantizer: 96 pts', time: '12 mins ago' },
-    { id: 2, user: 'Prof. Sarah Jenkins', action: 'verified registration for', detail: 'Team Volt_Tech', time: '1 hr ago' },
-    { id: 3, user: 'Dean Marcus Vance', action: 'published official standings', detail: 'AI Genesis 2026 results', time: '4 hrs ago' },
-    { id: 4, user: 'System Bot', action: 'triggered automated backup', detail: 'Railway database instance synced', time: '8 hrs ago' }
+    { id: 1, user: 'System Alert', action: 'database migration executed', detail: 'Notifications Table live', time: '12 mins ago' },
+    { id: 2, user: 'Auth Manager', action: 'intercepted login request', detail: 'Token claims decoded', time: '1 hr ago' },
+    { id: 3, user: 'Event Engine', action: 'fetched active registries', detail: 'CORS origins parsed', time: '4 hrs ago' },
   ];
-
-  const showToast = (text: string) => {
-    setToastText(text);
-    setTimeout(() => setToastText(''), 3000);
-  };
-
-  const handleCreateEvent = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsPerformingAction(true);
-    setTimeout(() => {
-      setIsPerformingAction(false);
-      setShowEventModal(false);
-      showToast(`Hackathon "${newEvent.title}" initialized on ledger.`);
-      setNewEvent({ title: '', startDate: '', endDate: '', psCount: 1 });
-    }, 1200);
-  };
-
-  const handlePublishAnnouncement = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsPerformingAction(true);
-    setTimeout(() => {
-      setIsPerformingAction(false);
-      setShowAnnouncementModal(false);
-      showToast(`Announcement published to student screens.`);
-      setAnnouncementText('');
-    }, 1000);
-  };
 
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto w-full select-none pointer-events-auto relative">
@@ -1783,159 +1905,339 @@ const AdminView = () => {
         </div>
       </div>
 
-      {/* Stats KPI tiles */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {kpiStats.map((kpi, idx) => {
-          const Icon = kpi.icon;
-          return (
-            <Card key={idx} hoverable className="p-6 flex flex-col justify-between h-36">
-              <div className="flex justify-between items-start">
-                <p className="text-xs uppercase tracking-wider font-bold text-white/45">{kpi.title}</p>
-                <div className={`p-1.5 rounded-lg bg-white/5 border border-white/10 ${kpi.color}`}>
-                  <Icon size={16} />
-                </div>
-              </div>
-              <div className="mt-2">
-                <h3 className="font-archivo text-3xl font-black text-white">{kpi.value}</h3>
-                <p className="text-[9px] text-white/40 mt-1 font-medium">{kpi.detail}</p>
-              </div>
-            </Card>
-          );
-        })}
+      {/* Tab Navigation */}
+      <div className="flex border-b border-white/5 gap-2 pb-2">
+        <button
+          onClick={() => setActiveTab('dashboard')}
+          className={`px-5 py-2.5 rounded-xl font-archivo text-xs uppercase tracking-wider font-bold transition-all ${
+            activeTab === 'dashboard'
+              ? 'bg-accent-primary/10 text-accent-primary border border-accent-primary/20 shadow-[0_0_15px_rgba(0,243,255,0.1)]'
+              : 'text-white/40 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          System Dashboard
+        </button>
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`px-5 py-2.5 rounded-xl font-archivo text-xs uppercase tracking-wider font-bold transition-all ${
+            activeTab === 'users'
+              ? 'bg-accent-secondary/10 text-accent-secondary border border-accent-secondary/20 shadow-[0_0_15px_rgba(255,0,193,0.1)]'
+              : 'text-white/40 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          User Directory ({users.length || '...'})
+        </button>
+        <button
+          onClick={() => setActiveTab('hackathons')}
+          className={`px-5 py-2.5 rounded-xl font-archivo text-xs uppercase tracking-wider font-bold transition-all ${
+            activeTab === 'hackathons'
+              ? 'bg-accent-third/10 text-accent-third border border-accent-third/20 shadow-[0_0_20px_rgba(184,0,255,0.1)]'
+              : 'text-white/40 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          Hackathon Sessions ({hackathonsList.length || '...'})
+        </button>
       </div>
 
-      {/* Charts & Activities layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Submissions velocity SVG chart */}
-        <Card className="lg:col-span-2 p-8 flex flex-col justify-between">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider">Submissions Velocity</h4>
-              <p className="text-[10px] text-white/40 mt-0.5">Project deliveries submitted over the week</p>
-            </div>
-            <Badge variant="primary">Weekly view</Badge>
+      {/* TAB CONTENT 1: DASHBOARD */}
+      {activeTab === 'dashboard' && (
+        <>
+          {/* Stats KPI tiles */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {kpiStats.map((kpi, idx) => {
+              const Icon = kpi.icon;
+              return (
+                <Card key={idx} hoverable className="p-6 flex flex-col justify-between h-36">
+                  <div className="flex justify-between items-start">
+                    <p className="text-xs uppercase tracking-wider font-bold text-white/45">{kpi.title}</p>
+                    <div className={`p-1.5 rounded-lg bg-white/5 border border-white/10 ${kpi.color}`}>
+                      <Icon size={16} />
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <h3 className="font-archivo text-3xl font-black text-white">{kpi.value}</h3>
+                    <p className="text-[9px] text-white/40 mt-1 font-medium">{kpi.detail}</p>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
 
-          {/* Sleek Custom SVG/HTML Bar Chart */}
-          <div className="h-56 flex items-end gap-5 px-4 pb-2 border-b border-white/10">
-            {chartData.map((data, idx) => (
-              <div key={idx} className="flex-1 flex flex-col items-center gap-3 group h-full justify-end cursor-pointer">
-                {/* Tooltip on hover */}
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white text-black text-[9px] font-mono font-bold px-2 py-0.5 rounded shadow absolute -translate-y-16">
-                  {data.count} projects
+          {/* Charts & Activities layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Submissions velocity SVG chart */}
+            <Card className="lg:col-span-2 p-8 flex flex-col justify-between">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider">Submissions Velocity</h4>
+                  <p className="text-[10px] text-white/40 mt-0.5">Project deliveries submitted over the week</p>
                 </div>
-                {/* Bar */}
-                <div className={`w-full rounded-t-lg transition-all duration-700 ease-out ${data.height} ${data.color}`} />
-                <span className="text-[10px] font-mono text-white/40">{data.day}</span>
+                <Badge variant="primary">Weekly view</Badge>
               </div>
-            ))}
-          </div>
-        </Card>
 
-        {/* Recent Audit Activities logs */}
-        <Card className="p-8 flex flex-col justify-between">
-          <div>
-            <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider mb-6">Recent Activities</h4>
-            <div className="flex flex-col gap-5">
-              {recentActivities.map((act) => (
-                <div key={act.id} className="flex items-start gap-3 text-xs leading-relaxed">
-                  <div className="w-1.5 h-1.5 rounded-full bg-accent-secondary mt-1.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white/80">
-                      <span className="font-bold text-white">{act.user}</span> {act.action}{' '}
-                      <span className="font-bold text-accent-primary">{act.detail}</span>
-                    </p>
-                    <span className="text-[9px] text-white/30 font-mono mt-0.5 block">{act.time}</span>
+              {/* Sleek Custom SVG/HTML Bar Chart */}
+              <div className="h-56 flex items-end gap-5 px-4 pb-2 border-b border-white/10">
+                {chartData.map((data, idx) => (
+                  <div key={idx} className="flex-1 flex flex-col items-center gap-3 group h-full justify-end cursor-pointer">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white text-black text-[9px] font-mono font-bold px-2 py-0.5 rounded shadow absolute -translate-y-16">
+                      {data.count} projects
+                    </div>
+                    <div className={`w-full rounded-t-lg transition-all duration-700 ease-out ${data.height} ${data.color}`} />
+                    <span className="text-[10px] font-mono text-white/40">{data.day}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            {/* Recent Audit Activities logs */}
+            <Card className="p-8 flex flex-col justify-between">
+              <div>
+                <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider mb-6">Recent Activities</h4>
+                <div className="flex flex-col gap-5">
+                  {recentActivities.map((act) => (
+                    <div key={act.id} className="flex items-start gap-3 text-xs leading-relaxed">
+                      <div className="w-1.5 h-1.5 rounded-full bg-accent-secondary mt-1.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white/80">
+                          <span className="font-bold text-white">{act.user}</span> {act.action}{' '}
+                          <span className="font-bold text-accent-primary">{act.detail}</span>
+                        </p>
+                        <span className="text-[9px] text-white/30 font-mono mt-0.5 block">{act.time}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <Link to="/submissions" className="mt-6 border-t border-white/5 pt-4 text-xs font-semibold text-accent-primary hover:text-white transition-colors flex items-center gap-1.5 group">
+                <span>View Submissions Ledger</span>
+                <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </Card>
+          </div>
+
+          {/* Operations panel */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <Card className="md:col-span-2 p-8">
+              <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider mb-6">Operations Hub</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <button 
+                  onClick={() => setShowEventModal(true)}
+                  className="p-4 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-primary hover:bg-accent-primary/5 transition-all text-left flex flex-col justify-between h-28 group"
+                >
+                  <Plus size={18} className="text-accent-primary group-hover:rotate-90 transition-transform duration-300" />
+                  <div>
+                    <p className="text-xs font-bold text-white">Create Hackathon</p>
+                    <p className="text-[10px] text-white/40 mt-0.5 font-medium">Scaffold new sprint events</p>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => setShowJudgeModal(true)}
+                  className="p-4 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-secondary hover:bg-accent-secondary/5 transition-all text-left flex flex-col justify-between h-28 group"
+                >
+                  <Users size={18} className="text-accent-secondary" />
+                  <div>
+                    <p className="text-xs font-bold text-white">Allocate Judges</p>
+                    <p className="text-[10px] text-white/40 mt-0.5 font-medium">Assign review matrices</p>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => setShowAnnouncementModal(true)}
+                  className="p-4 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-third hover:bg-accent-third/5 transition-all text-left flex flex-col justify-between h-28 group"
+                >
+                  <Megaphone size={18} className="text-accent-third" />
+                  <div>
+                    <p className="text-xs font-bold text-white">Publish Alert</p>
+                    <p className="text-[10px] text-white/40 mt-0.5 font-medium">Broadcast system alerts</p>
+                  </div>
+                </button>
+              </div>
+            </Card>
+
+            <Card className="p-8 flex flex-col justify-between">
+              <div>
+                <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider mb-6">Quick Links</h4>
+                <div className="flex flex-col gap-3 text-xs">
+                  <Link to="/submissions" className="p-3 rounded-xl border border-white/5 bg-[#050505] hover:border-white/20 transition-colors flex justify-between items-center text-white/80 hover:text-white">
+                    <span>Submissions Console</span>
+                    <ChevronRight size={14} />
+                  </Link>
+                  <Link to="/leaderboard" className="p-3 rounded-xl border border-white/5 bg-[#050505] hover:border-white/20 transition-colors flex justify-between items-center text-white/80 hover:text-white">
+                    <span>Leaderboard ledger</span>
+                    <ChevronRight size={14} />
+                  </Link>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </>
+      )}
+
+      {/* TAB CONTENT 2: USER ACCOUNT DIRECTORY */}
+      {activeTab === 'users' && (
+        <Card className="p-8 flex flex-col gap-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h3 className="font-archivo text-lg font-black uppercase text-white tracking-wider">User Account Management</h3>
+              <p className="text-xs text-white/40 mt-1">Change user roles, toggle account statuses, or soft-delete accounts</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                type="text"
+                placeholder="Search name or email..."
+                value={userSearchQuery}
+                onChange={(e) => setUserSearchQuery(e.target.value)}
+                className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-primary"
+              />
+              <select
+                value={userRoleFilter}
+                onChange={(e) => setUserRoleFilter(e.target.value)}
+                className="px-4 py-2 rounded-xl bg-black border border-white/10 text-xs text-white focus:outline-none focus:border-accent-primary"
+              >
+                <option value="all">All Roles</option>
+                <option value="student">Students</option>
+                <option value="coordinator">Coordinators</option>
+                <option value="judge">Judges</option>
+                <option value="admin">Admins</option>
+              </select>
+            </div>
+          </div>
+
+          {isLoadingUsers ? (
+            <div className="py-12 flex justify-center items-center text-xs text-white/50">
+              Loading users ledger...
+            </div>
+          ) : users.length === 0 ? (
+            <div className="py-12 flex justify-center items-center text-xs text-white/30">
+              No matching users found in database.
+            </div>
+          ) : (
+            <div className="overflow-x-auto w-full">
+              <table className="w-full border-collapse text-left text-xs text-white/80">
+                <thead>
+                  <tr className="border-b border-white/5 text-white/40 uppercase tracking-wider font-bold">
+                    <th className="py-4 px-4">User</th>
+                    <th className="py-4 px-4">College ID / Dept</th>
+                    <th className="py-4 px-4">Role System</th>
+                    <th className="py-4 px-4">Status</th>
+                    <th className="py-4 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {users.map((u) => (
+                    <tr key={u.id} className="hover:bg-white/[0.01] transition-all">
+                      <td className="py-4 px-4 flex items-center gap-3">
+                        <img
+                          src={u.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${u.id}`}
+                          alt="avatar"
+                          className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 object-cover"
+                        />
+                        <div>
+                          <p className="font-bold text-white">{u.full_name}</p>
+                          <p className="text-[10px] text-white/45">{u.email}</p>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <p className="font-mono">{u.college_id || 'N/A'}</p>
+                        <p className="text-[10px] text-white/40">{u.department || 'General'}</p>
+                      </td>
+                      <td className="py-4 px-4">
+                        <select
+                          value={u.role}
+                          onChange={(e) => handleChangeUserRole(u.id, e.target.value)}
+                          className="px-2 py-1 rounded bg-black border border-white/10 text-[10px] text-white focus:outline-none"
+                        >
+                          <option value="student">Student</option>
+                          <option value="coordinator">Coordinator</option>
+                          <option value="judge">Judge</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      </td>
+                      <td className="py-4 px-4">
+                        <button
+                          onClick={() => handleToggleUserStatus(u.id, u.is_active)}
+                          className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-all ${
+                            u.is_active
+                              ? 'bg-success/10 text-success border-success/20'
+                              : 'bg-danger/10 text-danger border-danger/20'
+                          }`}
+                        >
+                          {u.is_active ? 'Active' : 'Inactive'}
+                        </button>
+                      </td>
+                      <td className="py-4 px-4 text-right">
+                        <button
+                          onClick={() => handleDeleteUser(u.id)}
+                          className="p-1.5 rounded-lg border border-danger/30 text-danger bg-danger/5 hover:bg-danger/20 transition-all"
+                          title="Delete User"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* TAB CONTENT 3: HACKATHON SESSIONS */}
+      {activeTab === 'hackathons' && (
+        <Card className="p-8 flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-archivo text-lg font-black uppercase text-white tracking-wider">Active Hackathon Sessions</h3>
+              <p className="text-xs text-white/40 mt-1">Deploy, monitor, and configure active college-level hackathons</p>
+            </div>
+            <Button
+              variant="primary"
+              className="flex items-center gap-2"
+              onClick={() => setShowEventModal(true)}
+            >
+              <Plus size={14} />
+              <span>Deploy Hackathon</span>
+            </Button>
+          </div>
+
+          {isLoadingHackathons ? (
+            <div className="py-12 flex justify-center items-center text-xs text-white/50">
+              Loading sessions ledger...
+            </div>
+          ) : hackathonsList.length === 0 ? (
+            <div className="py-12 flex justify-center items-center text-xs text-white/30">
+              No hackathon sessions deployed. Click "Deploy Hackathon" to scaffold one.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {hackathonsList.map((h) => (
+                <div key={h.id} className="p-6 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-white/10 transition-all flex flex-col justify-between h-48">
+                  <div>
+                    <div className="flex justify-between items-start gap-4">
+                      <div>
+                        <h4 className="font-archivo text-md font-black text-white uppercase tracking-wider">{h.title}</h4>
+                        <p className="text-[10px] text-accent-primary font-mono mt-1">/{h.slug}</p>
+                      </div>
+                      <Badge variant={h.status === 'upcoming' ? 'primary' : h.status === 'active' ? 'success' : 'secondary'}>
+                        {h.status}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-white/60 mt-3 line-clamp-2 leading-relaxed">{h.description || 'No description provided.'}</p>
+                  </div>
+
+                  <div className="flex justify-between items-center border-t border-white/5 pt-4 text-[10px] text-white/40 font-mono">
+                    <span>Teams: {h.min_team_size} - {h.max_team_size} members</span>
+                    <span>Starts: {h.start_date ? new Date(h.start_date).toLocaleDateString() : 'N/A'}</span>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-
-          <Link to="/submissions" className="mt-6 border-t border-white/5 pt-4 text-xs font-semibold text-accent-primary hover:text-white transition-colors flex items-center gap-1.5 group">
-            <span>View Submissions Ledger</span>
-            <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
-          </Link>
+          )}
         </Card>
-
-        <Card hoverable className="bg-white/[0.02]">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-4">Platform Statistics</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <span className="text-[10px] text-white/40 uppercase block">Total Nodes</span>
-              <span className="text-xl font-bold font-mono text-glow-cyan text-accent-primary">124</span>
-            </div>
-            <div>
-              <span className="text-[10px] text-white/40 uppercase block">Active Events</span>
-              <span className="text-xl font-bold font-mono text-glow-magenta text-accent-secondary">1</span>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Quick operations hub & shortcuts */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Operations Panel */}
-        <Card className="md:col-span-2 p-8">
-          <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider mb-6">Operations Hub</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <button 
-              onClick={() => setShowEventModal(true)}
-              className="p-4 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-primary hover:bg-accent-primary/5 transition-all text-left flex flex-col justify-between h-28 group"
-            >
-              <Plus size={18} className="text-accent-primary group-hover:rotate-90 transition-transform duration-300" />
-              <div>
-                <p className="text-xs font-bold text-white">Create Hackathon</p>
-                <p className="text-[10px] text-white/40 mt-0.5 font-medium">Scaffold new sprint events</p>
-              </div>
-            </button>
-
-            <button 
-              onClick={() => setShowJudgeModal(true)}
-              className="p-4 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-secondary hover:bg-accent-secondary/5 transition-all text-left flex flex-col justify-between h-28 group"
-            >
-              <Users size={18} className="text-accent-secondary" />
-              <div>
-                <p className="text-xs font-bold text-white">Allocate Judges</p>
-                <p className="text-[10px] text-white/40 mt-0.5 font-medium">Assign review matrices</p>
-              </div>
-            </button>
-
-            <button 
-              onClick={() => setShowAnnouncementModal(true)}
-              className="p-4 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-third hover:bg-accent-third/5 transition-all text-left flex flex-col justify-between h-28 group"
-            >
-              <Megaphone size={18} className="text-accent-third" />
-              <div>
-                <p className="text-xs font-bold text-white">Publish Alert</p>
-                <p className="text-[10px] text-white/40 mt-0.5 font-medium">Broadcast system alerts</p>
-              </div>
-            </button>
-          </div>
-        </Card>
-
-        {/* Shortcuts Panel */}
-        <Card className="p-8 flex flex-col justify-between">
-          <div>
-            <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider mb-6">Quick Links</h4>
-            <div className="flex flex-col gap-3 text-xs">
-              <Link to="/submissions" className="p-3 rounded-xl border border-white/5 bg-[#050505] hover:border-white/20 transition-colors flex justify-between items-center text-white/80 hover:text-white">
-                <span>Submissions Console</span>
-                <ChevronRight size={14} />
-              </Link>
-              <Link to="/leaderboard" className="p-3 rounded-xl border border-white/5 bg-[#050505] hover:border-white/20 transition-colors flex justify-between items-center text-white/80 hover:text-white">
-                <span>Leaderboard ledger</span>
-                <ChevronRight size={14} />
-              </Link>
-              <Link to="/announcements" className="p-3 rounded-xl border border-white/5 bg-[#050505] hover:border-white/20 transition-colors flex justify-between items-center text-white/80 hover:text-white">
-                <span>Announcements desk</span>
-                <ChevronRight size={14} />
-              </Link>
-            </div>
-          </div>
-        </Card>
-      </div>
+      )}
 
       {/* Modal 1: Create Hackathon Event */}
       {showEventModal && (
@@ -1952,6 +2254,30 @@ const AdminView = () => {
               value={newEvent.title} 
               onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))} 
             />
+
+            <Input 
+              label="Hackathon Slug (URL-friendly)" 
+              placeholder="e.g. ai-genesis-2026" 
+              value={newEvent.slug} 
+              onChange={(e) => setNewEvent(prev => ({ ...prev, slug: e.target.value }))} 
+            />
+
+            <Input 
+              label="Tagline" 
+              placeholder="e.g. Unleashing cognitive architectures" 
+              value={newEvent.tagline} 
+              onChange={(e) => setNewEvent(prev => ({ ...prev, tagline: e.target.value }))} 
+            />
+
+            <div className="flex flex-col gap-1 text-xs">
+              <label className="font-bold text-white/70">Description</label>
+              <textarea 
+                placeholder="Details of the hackathon event guidelines..."
+                value={newEvent.description}
+                onChange={(e) => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
+                className="p-3 h-20 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-xs focus:outline-none focus:border-accent-primary"
+              />
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <Input 
@@ -1971,12 +2297,12 @@ const AdminView = () => {
             </div>
 
             <Input 
-              label="Initial Problem Statements count" 
+              label="Maximum Team Size" 
               type="number"
               min="1" max="10"
               required 
-              value={newEvent.psCount} 
-              onChange={(e) => setNewEvent(prev => ({ ...prev, psCount: parseInt(e.target.value) }))} 
+              value={newEvent.maxTeamSize} 
+              onChange={(e) => setNewEvent(prev => ({ ...prev, maxTeamSize: parseInt(e.target.value) }))} 
             />
 
             <div className="flex gap-3 justify-end mt-4">
