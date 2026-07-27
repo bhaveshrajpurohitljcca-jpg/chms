@@ -3,26 +3,31 @@ import Card from '@/components/ui/card';
 import Badge from '@/components/ui/badge';
 import Button from '@/components/ui/button';
 import { FileCode2, ArrowRight } from 'lucide-react';
-import type { StudentProblemStatement } from '@/mocks/studentMockData';
+import type { BackendProblemStatement } from '@/services/api';
 
 interface ProblemStatementCardProps {
-  problem: StudentProblemStatement;
-  onSelect?: (problem: StudentProblemStatement) => void;
+  problem: BackendProblemStatement;
+  onSelect?: (problem: BackendProblemStatement) => void;
   isSelected?: boolean;
   showSelectButton?: boolean;
 }
+
+const difficultyVariants: Record<string, 'success' | 'warning' | 'danger'> = {
+  Beginner: 'success',
+  Easy: 'success',
+  Medium: 'warning',
+  Intermediate: 'warning',
+  Hard: 'danger',
+  Advanced: 'danger',
+};
 
 export const ProblemStatementCard: React.FC<ProblemStatementCardProps> = ({
   problem,
   onSelect,
   isSelected = false,
-  showSelectButton = true
+  showSelectButton = true,
 }) => {
-  const difficultyVariants: Record<StudentProblemStatement['difficulty'], 'success' | 'warning' | 'danger'> = {
-    Beginner: 'success',
-    Intermediate: 'warning',
-    Advanced: 'danger'
-  };
+  const difficultyVariant = difficultyVariants[problem.difficulty] || 'warning';
 
   return (
     <Card
@@ -39,10 +44,10 @@ export const ProblemStatementCard: React.FC<ProblemStatementCardProps> = ({
               <FileCode2 size={14} />
             </span>
             <span className="text-xs font-mono font-bold text-accent-primary">
-              {problem.id.toUpperCase()}
+              {problem.id.slice(0, 8).toUpperCase()}
             </span>
           </div>
-          <Badge variant={difficultyVariants[problem.difficulty]}>
+          <Badge variant={difficultyVariant}>
             {problem.difficulty}
           </Badge>
         </div>
@@ -57,9 +62,9 @@ export const ProblemStatementCard: React.FC<ProblemStatementCardProps> = ({
           Category: {problem.category}
         </p>
 
-        {/* Short description */}
-        <p className="text-xs text-[rgba(255,255,255,0.65)] font-light leading-relaxed mb-4">
-          {problem.shortDescription}
+        {/* Description */}
+        <p className="text-xs text-[rgba(255,255,255,0.65)] font-light leading-relaxed mb-4 line-clamp-3">
+          {problem.description}
         </p>
       </div>
 

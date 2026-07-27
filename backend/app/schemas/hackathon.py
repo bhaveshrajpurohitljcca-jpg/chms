@@ -21,6 +21,7 @@ class ProblemStatementResponse(BaseModel):
     created_at: datetime
 
     class Config:
+        orm_mode = True
         from_attributes = True
 
 class HackathonCreate(BaseModel):
@@ -53,4 +54,5 @@ class HackathonResponse(BaseModel):
     created_at: datetime
 
     class Config:
+        orm_mode = True
         from_attributes = True

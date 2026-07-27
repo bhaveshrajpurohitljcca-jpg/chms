@@ -1,5 +1,5 @@
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User, UserRole
@@ -67,4 +67,35 @@ def update_user_role(
         success=True,
         message=f"User role updated to {payload.role.value}.",
         data=UserResponse.from_orm(target_user)
+    )
+
+
+@router.get("/search", response_model=StandardResponse[List[UserResponse]])
+def search_users(
+    email: Optional[str] = Query(None, description="Partial email to search"),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Search for users by email prefix — accessible by any authenticated user.
+    Used by team leaders to find invitees. Returns max 10 results.
+    """
+    if not email or len(email.strip()) < 3:
+        return StandardResponse(
+            success=True,
+            message="Please enter at least 3 characters to search.",
+            data=[]
+        )
+
+    users = (
+        db.query(User)
+        .filter(User.email.ilike(f"%{email.strip()}%"), User.is_active == True)
+        .limit(10)
+        .all()
+    )
+    results = [UserResponse.from_orm(u) for u in users]
+    return StandardResponse(
+        success=True,
+        message=f"Found {len(results)} user(s).",
+        data=results
     )

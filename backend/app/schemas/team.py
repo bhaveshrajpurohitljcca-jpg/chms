@@ -19,6 +19,7 @@ class TeamMemberResponse(BaseModel):
     user: Optional[UserResponse] = None
 
     class Config:
+        orm_mode = True
         from_attributes = True
 
 class TeamResponse(BaseModel):
@@ -33,4 +34,5 @@ class TeamResponse(BaseModel):
     created_at: datetime
 
     class Config:
+        orm_mode = True
         from_attributes = True

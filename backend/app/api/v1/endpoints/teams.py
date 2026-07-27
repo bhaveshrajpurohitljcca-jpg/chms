@@ -6,11 +6,14 @@ from app.database import get_db
 from app.models.team import Team, TeamMember, TeamStatus, MemberRole
 from app.models.hackathon import Hackathon
 from app.models.user import User
+from app.models.invitation import TeamInvitation, InvitationStatus
 from app.schemas.team import TeamCreate, TeamJoin, TeamResponse
+from app.schemas.invitation import InvitationCreate, InvitationResponse
 from app.schemas.response import StandardResponse
 from app.api.deps import get_current_active_user
 
 router = APIRouter(prefix="/teams", tags=["Teams"])
+
 
 @router.get("", response_model=StandardResponse[List[TeamResponse]])
 def list_teams(
@@ -29,6 +32,7 @@ def list_teams(
         data=results
     )
 
+
 @router.get("/my-teams", response_model=StandardResponse[List[TeamResponse]])
 def get_my_teams(
     current_user: User = Depends(get_current_active_user),
@@ -45,6 +49,7 @@ def get_my_teams(
         message="User teams retrieved.",
         data=results
     )
+
 
 @router.post("", response_model=StandardResponse[TeamResponse])
 def create_team(
@@ -82,6 +87,7 @@ def create_team(
         data=TeamResponse.from_orm(team)
     )
 
+
 @router.post("/join", response_model=StandardResponse[TeamResponse])
 def join_team(
     payload: TeamJoin,
@@ -112,4 +118,212 @@ def join_team(
         success=True,
         message=f"Successfully joined team '{team.name}'!",
         data=TeamResponse.from_orm(team)
+    )
+
+
+# ==========================================
+# TEAM INVITATIONS
+# ==========================================
+
+@router.post("/{team_id}/invitations", response_model=StandardResponse[InvitationResponse])
+def send_invitation(
+    team_id: str,
+    payload: InvitationCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Team Leader sends an invitation to a student by email."""
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found.")
+
+    # Only the team leader can send invitations
+    if team.leader_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the team leader can send invitations.")
+
+    # Cannot invite yourself
+    if payload.invitee_email.lower() == current_user.email.lower():
+        raise HTTPException(status_code=400, detail="You cannot invite yourself.")
+
+    # Check invitee exists in the system
+    invitee = db.query(User).filter(User.email == payload.invitee_email).first()
+    if not invitee:
+        raise HTTPException(status_code=404, detail="No student account found with this email address.")
+
+    # Check if invitee is already a member of this team
+    existing_member = db.query(TeamMember).filter(
+        TeamMember.team_id == team.id,
+        TeamMember.user_id == invitee.id
+    ).first()
+    if existing_member:
+        raise HTTPException(status_code=400, detail="This student is already a member of your team.")
+
+    # Check team capacity from hackathon rules
+    current_member_count = db.query(TeamMember).filter(TeamMember.team_id == team.id).count()
+    hackathon = team.hackathon
+    if current_member_count >= hackathon.max_team_size:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Team has reached the maximum capacity of {hackathon.max_team_size} members."
+        )
+
+    # Check for existing pending invitation
+    existing_invite = db.query(TeamInvitation).filter(
+        TeamInvitation.team_id == team.id,
+        TeamInvitation.invitee_email == payload.invitee_email.lower(),
+        TeamInvitation.status == InvitationStatus.PENDING
+    ).first()
+    if existing_invite:
+        raise HTTPException(
+            status_code=409,
+            detail="A pending invitation has already been sent to this email address."
+        )
+
+    invitation = TeamInvitation(
+        team_id=team.id,
+        invited_by_id=current_user.id,
+        invitee_email=payload.invitee_email.lower(),
+        status=InvitationStatus.PENDING
+    )
+    db.add(invitation)
+    db.commit()
+    db.refresh(invitation)
+
+    return StandardResponse(
+        success=True,
+        message=f"Invitation sent to {payload.invitee_email}.",
+        data=InvitationResponse.from_orm(invitation)
+    )
+
+
+@router.get("/invitations/received", response_model=StandardResponse[List[InvitationResponse]])
+def get_received_invitations(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Student views all invitations sent to their email."""
+    invitations = db.query(TeamInvitation).filter(
+        TeamInvitation.invitee_email == current_user.email.lower()
+    ).order_by(TeamInvitation.created_at.desc()).all()
+
+    results = [InvitationResponse.from_orm(inv) for inv in invitations]
+    return StandardResponse(
+        success=True,
+        message="Received invitations retrieved.",
+        data=results
+    )
+
+
+@router.get("/invitations/sent", response_model=StandardResponse[List[InvitationResponse]])
+def get_sent_invitations(
+    team_id: str = None,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Team leader views all invitations sent from their team(s)."""
+    query = db.query(TeamInvitation).filter(TeamInvitation.invited_by_id == current_user.id)
+    if team_id:
+        query = query.filter(TeamInvitation.team_id == team_id)
+    invitations = query.order_by(TeamInvitation.created_at.desc()).all()
+
+    results = [InvitationResponse.from_orm(inv) for inv in invitations]
+    return StandardResponse(
+        success=True,
+        message="Sent invitations retrieved.",
+        data=results
+    )
+
+
+@router.post("/invitations/{invitation_id}/accept", response_model=StandardResponse[TeamResponse])
+def accept_invitation(
+    invitation_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Student accepts a team invitation and becomes a team member."""
+    invitation = db.query(TeamInvitation).filter(TeamInvitation.id == invitation_id).first()
+    if not invitation:
+        raise HTTPException(status_code=404, detail="Invitation not found.")
+
+    # Verify this invitation belongs to the current user
+    if invitation.invitee_email.lower() != current_user.email.lower():
+        raise HTTPException(status_code=403, detail="This invitation is not addressed to you.")
+
+    if invitation.status != InvitationStatus.PENDING:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invitation has already been {invitation.status.value}."
+        )
+
+    team = db.query(Team).filter(Team.id == invitation.team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team no longer exists.")
+
+    # Check capacity again at acceptance time
+    current_member_count = db.query(TeamMember).filter(TeamMember.team_id == team.id).count()
+    if current_member_count >= team.hackathon.max_team_size:
+        invitation.status = InvitationStatus.REJECTED
+        db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail="Team is now full. The invitation could not be accepted."
+        )
+
+    # Check if already a member (edge case)
+    already_member = db.query(TeamMember).filter(
+        TeamMember.team_id == team.id,
+        TeamMember.user_id == current_user.id
+    ).first()
+    if already_member:
+        invitation.status = InvitationStatus.ACCEPTED
+        db.commit()
+        raise HTTPException(status_code=400, detail="You are already a member of this team.")
+
+    # Add to team
+    new_member = TeamMember(
+        team_id=team.id,
+        user_id=current_user.id,
+        role_in_team=MemberRole.MEMBER
+    )
+    db.add(new_member)
+
+    invitation.status = InvitationStatus.ACCEPTED
+    db.commit()
+    db.refresh(team)
+
+    return StandardResponse(
+        success=True,
+        message=f"You have joined team '{team.name}'!",
+        data=TeamResponse.from_orm(team)
+    )
+
+
+@router.post("/invitations/{invitation_id}/reject", response_model=StandardResponse[InvitationResponse])
+def reject_invitation(
+    invitation_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Student rejects a team invitation."""
+    invitation = db.query(TeamInvitation).filter(TeamInvitation.id == invitation_id).first()
+    if not invitation:
+        raise HTTPException(status_code=404, detail="Invitation not found.")
+
+    if invitation.invitee_email.lower() != current_user.email.lower():
+        raise HTTPException(status_code=403, detail="This invitation is not addressed to you.")
+
+    if invitation.status != InvitationStatus.PENDING:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invitation has already been {invitation.status.value}."
+        )
+
+    invitation.status = InvitationStatus.REJECTED
+    db.commit()
+    db.refresh(invitation)
+
+    return StandardResponse(
+        success=True,
+        message="Invitation rejected.",
+        data=InvitationResponse.from_orm(invitation)
     )

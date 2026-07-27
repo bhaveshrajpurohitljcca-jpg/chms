@@ -32,6 +32,7 @@ class EvaluationResponse(BaseModel):
     judge: Optional[UserResponse] = None
 
     class Config:
+        orm_mode = True
         from_attributes = True
 
 class SubmissionResponse(BaseModel):
@@ -48,4 +49,5 @@ class SubmissionResponse(BaseModel):
     evaluations: List[EvaluationResponse] = []
 
     class Config:
+        orm_mode = True
         from_attributes = True

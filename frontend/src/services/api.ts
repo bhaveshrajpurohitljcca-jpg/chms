@@ -1,5 +1,9 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
+// ==========================================
+// INTERFACES — matching backend API responses
+// ==========================================
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -26,12 +30,94 @@ export interface StandardApiResponse<T> {
   data?: T;
 }
 
-// Token helper
+// Hackathon & Problem Statement (matches backend HackathonResponse / ProblemStatementResponse)
+export interface BackendProblemStatement {
+  id: string;
+  hackathon_id: string;
+  title: string;
+  description: string;
+  category: string;
+  difficulty: string;
+  max_teams: number;
+  created_at: string;
+}
+
+export interface BackendHackathon {
+  id: string;
+  title: string;
+  slug: string;
+  tagline?: string;
+  description?: string;
+  start_date?: string;
+  end_date?: string;
+  registration_deadline?: string;
+  max_team_size: number;
+  min_team_size: number;
+  status: 'draft' | 'upcoming' | 'active' | 'ended';
+  banner_url?: string;
+  problem_statements: BackendProblemStatement[];
+  created_at: string;
+}
+
+// Team (matches backend TeamResponse / TeamMemberResponse)
+export interface BackendTeamMember {
+  id: string;
+  team_id: string;
+  user_id: string;
+  role_in_team: 'leader' | 'member';
+  user?: UserProfile;
+}
+
+export interface BackendTeam {
+  id: string;
+  hackathon_id: string;
+  name: string;
+  join_code: string;
+  leader_id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  leader?: UserProfile;
+  members: BackendTeamMember[];
+  created_at: string;
+}
+
+// Team Invitation (matches backend InvitationResponse)
+export interface BackendInvitation {
+  id: string;
+  team_id: string;
+  invited_by_id: string;
+  invitee_email: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  invited_by?: UserProfile;
+  created_at: string;
+}
+
+// Registration (matches backend RegistrationResponse)
+export interface BackendRegistration {
+  id: string;
+  team_id: string;
+  hackathon_id: string;
+  problem_statement_id?: string;
+  registered_by_id: string;
+  status: 'registered' | 'cancelled';
+  team?: BackendTeam;
+  hackathon?: BackendHackathon;
+  problem_statement?: BackendProblemStatement;
+  registered_by?: UserProfile;
+  created_at: string;
+}
+
+// ==========================================
+// TOKEN HELPERS
+// ==========================================
+
 export const getStoredToken = (): string | null => localStorage.getItem('chms_access_token');
 export const setStoredToken = (token: string) => localStorage.setItem('chms_access_token', token);
 export const removeStoredToken = () => localStorage.removeItem('chms_access_token');
 
-// Generic fetch wrapper
+// ==========================================
+// GENERIC FETCH WRAPPER (with JWT injection)
+// ==========================================
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<StandardApiResponse<T>> {
   const token = getStoredToken();
   const headers: Record<string, string> = {
@@ -51,17 +137,23 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.detail || data.message || 'API request failed');
+      // Prefer backend detail message, then message, then generic
+      throw new Error(data.detail || data.message || `Request failed (${response.status})`);
     }
     return data;
   } catch (error: any) {
-    console.warn(`[API Call Error: ${endpoint}]`, error.message);
+    console.warn(`[API Error: ${endpoint}]`, error.message);
     throw error;
   }
 }
 
+// ==========================================
+// API SERVICE
+// ==========================================
+
 export const apiService = {
-  // Auth
+
+  // ---- AUTH ----
   async login(credentials: { email: string; password: string }) {
     return request<AuthResponseData>('/auth/login', {
       method: 'POST',
@@ -88,7 +180,7 @@ export const apiService = {
     return request<UserProfile>('/auth/me');
   },
 
-  // Users
+  // ---- USERS ----
   async updateProfile(payload: {
     full_name?: string;
     department?: string;
@@ -113,40 +205,98 @@ export const apiService = {
     });
   },
 
-  // Hackathons
-  async listHackathons() {
-    return request<any[]>('/hackathons');
+  /** Search users by email (min 3 chars). Accessible to all authenticated users. */
+  async searchUsers(email: string) {
+    return request<UserProfile[]>(`/users/search?email=${encodeURIComponent(email)}`);
+  },
+
+  // ---- HACKATHONS ----
+  async listHackathons(statusFilter?: string) {
+    const query = statusFilter ? `?status_filter=${statusFilter}` : '';
+    return request<BackendHackathon[]>(`/hackathons${query}`);
   },
 
   async getHackathon(idOrSlug: string) {
-    return request<any>(`/hackathons/${idOrSlug}`);
+    return request<BackendHackathon>(`/hackathons/${idOrSlug}`);
   },
 
-  // Teams
+  // ---- TEAMS ----
   async listTeams(hackathonId?: string) {
     const query = hackathonId ? `?hackathon_id=${hackathonId}` : '';
-    return request<any[]>(`/teams${query}`);
+    return request<BackendTeam[]>(`/teams${query}`);
   },
 
   async getMyTeams() {
-    return request<any[]>('/teams/my-teams');
+    return request<BackendTeam[]>('/teams/my-teams');
   },
 
   async createTeam(payload: { hackathon_id: string; name: string }) {
-    return request<any>('/teams', {
+    return request<BackendTeam>('/teams', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
   },
 
   async joinTeam(join_code: string) {
-    return request<any>('/teams/join', {
+    return request<BackendTeam>('/teams/join', {
       method: 'POST',
       body: JSON.stringify({ join_code }),
     });
   },
 
-  // Submissions
+  // ---- TEAM INVITATIONS ----
+  /** Team leader sends invitation to student by email */
+  async sendInvitation(teamId: string, invitee_email: string) {
+    return request<BackendInvitation>(`/teams/${teamId}/invitations`, {
+      method: 'POST',
+      body: JSON.stringify({ invitee_email }),
+    });
+  },
+
+  /** Get invitations received by the current user */
+  async getReceivedInvitations() {
+    return request<BackendInvitation[]>('/teams/invitations/received');
+  },
+
+  /** Get invitations sent by the current user */
+  async getSentInvitations(teamId?: string) {
+    const query = teamId ? `?team_id=${teamId}` : '';
+    return request<BackendInvitation[]>(`/teams/invitations/sent${query}`);
+  },
+
+  /** Student accepts an invitation — returns the team they joined */
+  async acceptInvitation(invitationId: string) {
+    return request<BackendTeam>(`/teams/invitations/${invitationId}/accept`, {
+      method: 'POST',
+    });
+  },
+
+  /** Student rejects an invitation */
+  async rejectInvitation(invitationId: string) {
+    return request<BackendInvitation>(`/teams/invitations/${invitationId}/reject`, {
+      method: 'POST',
+    });
+  },
+
+  // ---- REGISTRATIONS ----
+  /** Register a team for a hackathon with a problem statement */
+  async createRegistration(payload: {
+    team_id: string;
+    hackathon_id: string;
+    problem_statement_id?: string;
+  }) {
+    return request<BackendRegistration>('/registrations', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** Get all registrations for teams the current user belongs to */
+  async getMyRegistrations() {
+    return request<BackendRegistration[]>('/registrations/my');
+  },
+
+  // ---- SUBMISSIONS (Sprint 3) ----
   async listSubmissions(hackathonId?: string) {
     const query = hackathonId ? `?hackathon_id=${hackathonId}` : '';
     return request<any[]>(`/submissions${query}`);
