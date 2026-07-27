@@ -297,6 +297,19 @@ export const apiService = {
     return request<BackendHackathon[]>(`/hackathons${query}`);
   },
 
+  async addProblemStatement(hackathonId: string, payload: {
+    title: string;
+    description: string;
+    category?: string;
+    difficulty?: string;
+    max_teams?: number;
+  }) {
+    return request<any>(`/hackathons/${hackathonId}/problem-statements`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
   async createHackathon(payload: {
     title: string;
     slug: string;
