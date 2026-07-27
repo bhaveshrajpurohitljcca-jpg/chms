@@ -4,6 +4,14 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.models.base import BaseTable
 
+class SubmissionStatus:
+    DRAFT = "draft"
+    SUBMITTED = "submitted"
+    UNDER_REVIEW = "under_review"
+    GRADED = "graded"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+
 class Submission(BaseTable):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     team_id = Column(String(36), ForeignKey("team.id", ondelete="CASCADE"), nullable=False)
@@ -14,6 +22,10 @@ class Submission(BaseTable):
     repo_url = Column(String(500), nullable=False)
     demo_url = Column(String(500), nullable=True)
     video_url = Column(String(500), nullable=True)
+    additional_notes = Column(Text, nullable=True)
+    file_url = Column(String(500), nullable=True)
+    file_name = Column(String(255), nullable=True)
+    status = Column(String(50), default=SubmissionStatus.SUBMITTED, nullable=False)
     submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     team = relationship("Team", back_populates="submissions")

@@ -1,7 +1,9 @@
+import os
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.api.v1.router import api_router
 from app.middleware.exception_handler import setup_exception_handlers
@@ -17,6 +19,9 @@ logger = logging.getLogger("chms.main")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Ensure uploads directory exists
+    os.makedirs("uploads", exist_ok=True)
+    logger.info("Uploads directory verified.")
     # Initialize DB & Seed Data
     logger.info("Initializing database schemas and checking seed data...")
     db = SessionLocal()
@@ -57,8 +62,12 @@ app.include_router(api_router, prefix="/api/v1")
 
 from fastapi.staticfiles import StaticFiles
 import os
+
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.get("/", tags=["health"])
 async def root_health_check():
