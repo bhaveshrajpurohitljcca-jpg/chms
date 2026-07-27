@@ -48,6 +48,8 @@ import { TeamManagementPage } from '@/pages/student/TeamManagementPage';
 import { CreateTeamPage } from '@/pages/student/CreateTeamPage';
 import { RegistrationPage } from '@/pages/student/RegistrationPage';
 import StudentSubmissionPage from '@/pages/student/StudentSubmissionPage';
+import JudgeDashboardPage from '@/pages/judge/JudgeDashboardPage';
+import JudgeAssignmentPage from '@/pages/admin/JudgeAssignmentPage';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { ProfilePage } from '@/pages/ProfilePage';
@@ -1201,8 +1203,8 @@ const AnnouncementsView = () => {
   );
 };
 
-// 9. JUDGE PANEL
-const JudgeView = () => {
+// 9. JUDGE PANEL (Legacy UI preserved for reference)
+export const JudgeView = () => {
   // Assigned submissions mock state
   const [submissions, setSubmissions] = useState([
     {
@@ -2113,7 +2115,7 @@ function App() {
 
           {/* Judge Protected Portal */}
           <Route path="/judge" element={<RoleLayout allowedRoles={['judge']} />}>
-            <Route index element={<JudgeView />} />
+            <Route index element={<JudgeDashboardPage />} />
             <Route path="history" element={<LeaderboardView />} />
             <Route path="profile" element={<ProfileSettings />} />
           </Route>
@@ -2122,6 +2124,7 @@ function App() {
           <Route path="/coordinator" element={<RoleLayout allowedRoles={['coordinator']} />}>
             <Route index element={<CoordinatorView />} />
             <Route path="submissions" element={<SubmissionsView />} />
+            <Route path="assignments" element={<JudgeAssignmentPage />} />
             <Route path="announcements" element={<AnnouncementsView />} />
             <Route path="profile" element={<ProfileSettings />} />
           </Route>
@@ -2129,6 +2132,7 @@ function App() {
           {/* Admin Protected Portal */}
           <Route path="/admin" element={<RoleLayout allowedRoles={['admin']} />}>
             <Route index element={<AdminView />} />
+            <Route path="assignments" element={<JudgeAssignmentPage />} />
             <Route path="users" element={<LeaderboardView />} />
             <Route path="settings" element={<AnnouncementsView />} />
             <Route path="profile" element={<ProfileSettings />} />

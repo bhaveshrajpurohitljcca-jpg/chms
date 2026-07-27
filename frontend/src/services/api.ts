@@ -109,6 +109,35 @@ export interface BackendRegistration {
   created_at: string;
 }
 
+export interface JudgeAssignmentRecord {
+  id: string;
+  submission_id: string;
+  judge_id: string;
+  assigned_by_id?: string;
+  assigned_at: string;
+  judge?: UserProfile;
+}
+
+export interface EvaluationRecord {
+  id: string;
+  submission_id: string;
+  judge_id: string;
+  score_innovation: number;
+  score_technical: number;
+  score_uiux: number;
+  score_impact: number;
+  score_presentation: number;
+  total_score: number;
+  feedback?: string;
+  strengths?: string;
+  weaknesses?: string;
+  suggestions?: string;
+  recommendation: 'pending' | 'shortlist' | 'accepted' | 'rejected';
+  is_draft: boolean;
+  submitted_at?: string;
+  judge?: UserProfile;
+}
+
 export interface SubmissionRecord {
   id: string;
   team_id: string;
@@ -124,7 +153,9 @@ export interface SubmissionRecord {
   file_name?: string;
   status: string;
   submitted_at: string;
-  evaluations?: any[];
+  evaluations?: EvaluationRecord[];
+  judge_assignments?: JudgeAssignmentRecord[];
+  team?: BackendTeam;
 }
 
 export { STATIC_BASE };
@@ -412,7 +443,7 @@ export const apiService = {
     });
   },
 
-  /** Submit a judge evaluation score for a submission */
+  /** Submit a judge evaluation score for a submission (legacy) */
   async evaluateSubmission(payload: {
     submission_id: string;
     score_innovation: number;
@@ -424,5 +455,120 @@ export const apiService = {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  },
+
+  // ─── Sprint 3: Judge Assignment & Evaluation ─────────────────
+
+  /** Assign a judge to a submission (Admin/Coordinator) */
+  async assignJudge(submissionId: string, judgeId: string) {
+    return request<JudgeAssignmentRecord>('/evaluations/assign', {
+      method: 'POST',
+      body: JSON.stringify({ submission_id: submissionId, judge_id: judgeId }),
+    });
+  },
+
+  /** Remove a judge assignment (Admin/Coordinator) */
+  async removeAssignment(assignmentId: string) {
+    return request<Record<string, unknown>>(`/evaluations/assign/${assignmentId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  /** List judge assignments (Admin/Coordinator) */
+  async listAssignments(submissionId?: string, judgeId?: string) {
+    const params = new URLSearchParams();
+    if (submissionId) params.append('submission_id', submissionId);
+    if (judgeId) params.append('judge_id', judgeId);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return request<JudgeAssignmentRecord[]>(`/evaluations/assignments${query}`);
+  },
+
+  /** Get submissions assigned to the logged-in judge */
+  async getMyAssignments() {
+    return request<SubmissionRecord[]>('/evaluations/my-assignments');
+  },
+
+  /** List users with JUDGE role (for dropdown) */
+  async listJudges() {
+    return request<Array<{ id: string; full_name: string; email: string; department?: string }>>(
+      '/evaluations/judges'
+    );
+  },
+
+  /** Get evaluation for a submission */
+  async getEvaluation(submissionId: string) {
+    return request<EvaluationRecord | null>(`/evaluations/submission/${submissionId}`);
+  },
+
+  /** Save a draft evaluation (Judge) */
+  async saveDraftEvaluation(payload: {
+    submission_id: string;
+    score_innovation: number;
+    score_technical: number;
+    score_uiux: number;
+    score_impact: number;
+    score_presentation: number;
+    feedback?: string;
+    strengths?: string;
+    weaknesses?: string;
+    suggestions?: string;
+    recommendation?: string;
+  }) {
+    return request<EvaluationRecord>('/evaluations/draft', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** Final submit an evaluation (Judge) */
+  async submitFinalEvaluation(payload: {
+    submission_id: string;
+    score_innovation: number;
+    score_technical: number;
+    score_uiux: number;
+    score_impact: number;
+    score_presentation: number;
+    feedback: string;
+    strengths?: string;
+    weaknesses?: string;
+    suggestions?: string;
+    recommendation?: string;
+  }) {
+    return request<EvaluationRecord>('/evaluations/submit', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** Edit an evaluation (Admin only) */
+  async adminUpdateEvaluation(
+    evaluationId: string,
+    payload: {
+      submission_id: string;
+      score_innovation: number;
+      score_technical: number;
+      score_uiux: number;
+      score_impact: number;
+      score_presentation: number;
+      feedback: string;
+      strengths?: string;
+      weaknesses?: string;
+      suggestions?: string;
+      recommendation?: string;
+    }
+  ) {
+    return request<EvaluationRecord>(`/evaluations/${evaluationId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** Get full evaluation history (Admin/Coordinator) */
+  async getEvaluationHistory(submissionId?: string, judgeId?: string) {
+    const params = new URLSearchParams();
+    if (submissionId) params.append('submission_id', submissionId);
+    if (judgeId) params.append('judge_id', judgeId);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return request<EvaluationRecord[]>(`/evaluations/history${query}`);
   },
 };
