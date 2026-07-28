@@ -560,4 +560,30 @@ export const apiService = {
       method: 'PUT',
     });
   },
+
+  // ─── Sprint 5 Leaderboard, Stats & Certificates ────────────
+  async publishResults(hackathonId: string) {
+    return request<any>(`/hackathons/${hackathonId}/publish-results`, {
+      method: 'PUT',
+    });
+  },
+
+  async unpublishResults(hackathonId: string) {
+    return request<any>(`/hackathons/${hackathonId}/unpublish-results`, {
+      method: 'PUT',
+    });
+  },
+
+  async getLeaderboard(hackathonId: string) {
+    return request<any[]>(`/hackathons/${hackathonId}/leaderboard`);
+  },
+
+  async getCertificateEligibility(hackathonId: string) {
+    return request<any>(`/hackathons/${hackathonId}/certificates/eligibility`);
+  },
+
+  async getHackathonStats(hackathonId: string) {
+    return request<any>(`/hackathons/${hackathonId}/stats`);
+  },
 };
+

@@ -535,27 +535,58 @@ const GalleryView = () => {
 
 // 4. VIEW LEADER BOARD
 const LeaderboardView = () => {
-  const [selectedHackathon, setSelectedHackathon] = useState('AI Genesis 2026');
+  const [hackathons, setHackathons] = useState<any[]>([]);
+  const [selectedHackathonId, setSelectedHackathonId] = useState<string>('');
+  const [activeLeaderboard, setActiveLeaderboard] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Realistic mock ranking databases
-  const leaderboardDb: Record<string, any[]> = {
-    'AI Genesis 2026': [
-      { rank: 1, team: 'Zero_Gravity', project: 'ZeroG LLM Quantizer', problemStatement: 'PS-01: Generative LLM Interface', score: 96, branch: 'Computer Science', status: 'Graded', feedback: 'Stunning 3D WebGL particle rendering with smooth LERPs and robust quantizers.' },
-      { rank: 2, team: 'Neural_Knights', project: 'Synthetix Routing Node', problemStatement: 'PS-04: Dynamic Database Indices', score: 92, branch: 'Information Technology', status: 'Graded', feedback: 'Very solid backend routing tables. Exception middleware structured cleanly.' },
-      { rank: 3, team: 'Volt_Tech', project: 'Eco-Glow Controller', problemStatement: 'PS-03: College Carbon Offsets', score: 85, branch: 'Electronics', status: 'Graded', feedback: 'Excellent integration of wearable bio-sensors with an elegant low-energy dashboard.' },
-      { rank: 4, team: 'Cyber_Pioneers', project: 'Packet-Guard Firewall', problemStatement: 'PS-02: Local Port Scanner', score: 83, branch: 'Computer Science', status: 'Graded', feedback: 'Strong custom routing structures and exception catching.' },
-      { rank: 5, team: 'Code_Crusaders', project: 'Docu-Crypt Vault', problemStatement: 'PS-01: Generative LLM Interface', score: 79, branch: 'Information Technology', status: 'Graded', feedback: 'Good file encryption structures, frontend layouts lack consistent glass styles.' }
-    ],
-    'Green-Tech Innovations': [
-      { rank: 1, team: 'Aqua_Tech', project: 'Hydro-Net Sensor', problemStatement: 'PS-05: Water Quality Telemetry', score: 94, branch: 'Civil Engineering', status: 'Graded', feedback: 'Outstanding distributed floating telemetry pods streaming live over LoRaWAN.' },
-      { rank: 2, team: 'Green_Alphas', project: 'Solar-Grid Optimizer', problemStatement: 'PS-07: Campus Energy Grid', score: 89, branch: 'Electrical Engineering', status: 'Graded', feedback: 'Excellent predictive logic for solar panel yields.' },
-      { rank: 3, team: 'Eco_Runners', project: 'Bio-Waste Digester', problemStatement: 'PS-08: Campus Compost Index', score: 82, branch: 'Biotechnology', status: 'Graded', feedback: 'Innovative biochemical telemetry capture.' }
-    ]
-  };
+  useEffect(() => {
+    const loadHackathons = async () => {
+      try {
+        const res = await apiService.listHackathons();
+        if (res && res.data) {
+          setHackathons(res.data);
+          if (res.data.length > 0) {
+            setSelectedHackathonId(res.data[0].id);
+          }
+        }
+      } catch (err: any) {
+        console.warn("Failed to load hackathons", err.message);
+      }
+    };
+    loadHackathons();
+  }, []);
 
-  const activeLeaderboard = leaderboardDb[selectedHackathon] || [];
+  useEffect(() => {
+    const loadLeaderboard = async () => {
+      if (!selectedHackathonId) return;
+      try {
+        setIsLoading(true);
+        const res = await apiService.getLeaderboard(selectedHackathonId);
+        if (res && res.data) {
+          const mapped = res.data.map((item: any) => ({
+            rank: item.rank,
+            team: item.team_name,
+            project: item.project_title,
+            branch: 'Academic Standings',
+            problemStatement: 'Problem Statement Solution',
+            score: item.score,
+            feedback: 'Graded performance metrics'
+          }));
+          setActiveLeaderboard(mapped);
+        } else {
+          setActiveLeaderboard([]);
+        }
+      } catch (err: any) {
+        console.warn("Failed to load leaderboard", err.message);
+        setActiveLeaderboard([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadLeaderboard();
+  }, [selectedHackathonId]);
 
-  // Split top 3 and remainder
   const podiumWinners = activeLeaderboard.slice(0, 3);
 
   // Re-order podium for layout purposes: [2nd, 1st, 3rd]
@@ -583,157 +614,173 @@ const LeaderboardView = () => {
         {/* Hackathon select list */}
         <div className="relative">
           <select
-            value={selectedHackathon}
-            onChange={(e) => setSelectedHackathon(e.target.value)}
+            value={selectedHackathonId}
+            onChange={(e) => setSelectedHackathonId(e.target.value)}
             className="h-11 px-4 pr-10 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-white focus:outline-none focus:border-accent-secondary cursor-pointer appearance-none"
           >
-            <option value="AI Genesis 2026" className="bg-[#050505] text-white">AI Genesis 2026</option>
-            <option value="Green-Tech Innovations" className="bg-[#050505] text-white">Green-Tech Innovations</option>
+            {hackathons.map((h) => (
+              <option key={h.id} value={h.id} className="bg-[#050505] text-white">
+                {h.title}
+              </option>
+            ))}
           </select>
         </div>
       </div>
 
-      {/* Top 3 Podium Cards */}
-      {podiumWinners.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end px-4 py-8">
-          {reorderedPodium.map((winner) => {
-            const isFirst = winner.rank === 1;
-            const isSecond = winner.rank === 2;
-            const isThird = winner.rank === 3;
-
-            let cardHeight = 'h-72'; // 2nd / 3rd
-            let accentBorder = 'border-[rgba(255,255,255,0.08)]';
-            let glowShadow = '';
-            let medalColor = 'text-white/40';
-
-            if (isFirst) {
-              cardHeight = 'h-88 md:-translate-y-4';
-              accentBorder = 'border-accent-primary';
-              glowShadow = 'shadow-[0_0_30px_rgba(0,243,255,0.15)]';
-              medalColor = 'text-accent-primary';
-            } else if (isSecond) {
-              accentBorder = 'border-accent-secondary';
-              medalColor = 'text-accent-secondary';
-            } else if (isThird) {
-              accentBorder = 'border-accent-third';
-              medalColor = 'text-accent-third';
-            }
-
-            return (
-              <div 
-                key={winner.team} 
-                className={`glass-card rounded-[40px] border p-8 flex flex-col justify-between items-center text-center relative ${cardHeight} ${accentBorder} ${glowShadow}`}
-              >
-                {/* Ranking Medals Badge */}
-                <div className={`w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-archivo text-lg font-black ${medalColor} mb-2`}>
-                  #{winner.rank}
-                </div>
-
-                <div className="flex flex-col gap-1 w-full">
-                  <h4 className="font-archivo text-xl font-black text-white truncate max-w-full">
-                    {winner.team}
-                  </h4>
-                  <p className="text-xs text-white/50 truncate max-w-full font-semibold">{winner.project}</p>
-                  <p className="text-[10px] text-white/30 uppercase tracking-widest font-mono mt-1">{winner.branch}</p>
-                </div>
-
-                {/* Score badge */}
-                <div className="flex flex-col items-center">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-white/40">Total Score</span>
-                  <span className="font-mono text-3xl font-black text-white mt-1">
-                    {winner.score}<span className="text-xs font-light text-white/40"> pts</span>
-                  </span>
-                </div>
-
-                {/* Background podium placement graphics */}
-                <div className="absolute bottom-4 inset-x-4 flex justify-center gap-1.5 opacity-10">
-                  <span className={`w-3 h-3 rounded-full bg-white ${isFirst ? 'bg-accent-primary' : ''}`} />
-                  <span className={`w-3 h-3 rounded-full bg-white ${isSecond ? 'bg-accent-secondary' : ''}`} />
-                  <span className={`w-3 h-3 rounded-full bg-white ${isThird ? 'bg-accent-third' : ''}`} />
-                </div>
-              </div>
-            );
-          })}
+      {isLoading ? (
+        <div className="flex items-center justify-center p-12 text-sm text-white/50">
+          Loading leaderboard standings...
         </div>
+      ) : activeLeaderboard.length === 0 ? (
+        <div className="glass-card rounded-[40px] border border-white/5 p-12 text-center text-sm text-white/40">
+          No graded standings published for this hackathon yet.
+        </div>
+      ) : (
+        <>
+          {/* Top 3 Podium Cards */}
+          {podiumWinners.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end px-4 py-8">
+              {reorderedPodium.map((winner) => {
+                const isFirst = winner.rank === 1;
+                const isSecond = winner.rank === 2;
+                const isThird = winner.rank === 3;
+
+                let cardHeight = 'h-72';
+                let accentBorder = 'border-[rgba(255,255,255,0.08)]';
+                let glowShadow = '';
+                let medalColor = 'text-white/40';
+
+                if (isFirst) {
+                  cardHeight = 'h-88 md:-translate-y-4';
+                  accentBorder = 'border-accent-primary';
+                  glowShadow = 'shadow-[0_0_30px_rgba(0,243,255,0.15)]';
+                  medalColor = 'text-accent-primary';
+                } else if (isSecond) {
+                  accentBorder = 'border-accent-secondary';
+                  medalColor = 'text-accent-secondary';
+                } else if (isThird) {
+                  accentBorder = 'border-accent-third';
+                  medalColor = 'text-accent-third';
+                }
+
+                return (
+                  <div 
+                    key={winner.team} 
+                    className={`glass-card rounded-[40px] border p-8 flex flex-col justify-between items-center text-center relative ${cardHeight} ${accentBorder} ${glowShadow}`}
+                  >
+                    {/* Ranking Medals Badge */}
+                    <div className={`w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-archivo text-lg font-black ${medalColor} mb-2`}>
+                      #{winner.rank}
+                    </div>
+
+                    <div className="flex flex-col gap-1 w-full">
+                      <h4 className="font-archivo text-xl font-black text-white truncate max-w-full">
+                        {winner.team}
+                      </h4>
+                      <p className="text-xs text-white/50 truncate max-w-full font-semibold">{winner.project}</p>
+                      <p className="text-[10px] text-white/30 uppercase tracking-widest font-mono mt-1">{winner.branch}</p>
+                    </div>
+
+                    {/* Score badge */}
+                    <div className="flex flex-col items-center">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-white/40">Total Score</span>
+                      <span className="font-mono text-3xl font-black text-white mt-1">
+                        {winner.score}<span className="text-xs font-light text-white/40"> pts</span>
+                      </span>
+                    </div>
+
+                    {/* Background podium placement graphics */}
+                    <div className="absolute bottom-4 inset-x-4 flex justify-center gap-1.5 opacity-10">
+                      <span className={`w-3 h-3 rounded-full bg-white ${isFirst ? 'bg-accent-primary' : ''}`} />
+                      <span className={`w-3 h-3 rounded-full bg-white ${isSecond ? 'bg-accent-secondary' : ''}`} />
+                      <span className={`w-3 h-3 rounded-full bg-white ${isThird ? 'bg-accent-third' : ''}`} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Ledger Rankings List */}
+          <Card className="p-8">
+            <h3 className="font-archivo text-lg font-black uppercase text-white tracking-wider mb-6">
+              Ranking Ledger
+            </h3>
+
+            <div className="overflow-x-auto">
+              <Table headers={['Rank', 'Team & Project', 'Academic Branch', 'Problem Statement', 'Evaluated Score', 'Feedback Comments']}>
+                {activeLeaderboard.map((team) => (
+                  <TableRow key={team.team} className="hover:bg-white/[0.01] transition-all">
+                    {/* Rank */}
+                    <TableCell className="font-mono text-md font-bold text-center">
+                      <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-black ${
+                        team.rank === 1 
+                          ? 'bg-accent-primary/10 border border-accent-primary text-accent-primary shadow-[0_0_10px_rgba(0,243,255,0.2)]'
+                          : team.rank === 2
+                          ? 'bg-accent-secondary/10 border border-accent-secondary text-accent-secondary'
+                          : team.rank === 3
+                          ? 'bg-accent-third/10 border border-accent-third text-accent-third'
+                          : 'bg-white/5 border border-white/10 text-white/60'
+                      }`}>
+                        {team.rank}
+                      </span>
+                    </TableCell>
+
+                    {/* Team Info */}
+                    <TableCell>
+                      <div>
+                        <h4 className="text-sm font-bold text-white">{team.team}</h4>
+                        <p className="text-xs text-white/40 font-mono mt-0.5">{team.project}</p>
+                      </div>
+                    </TableCell>
+
+                    {/* Academic Branch */}
+                    <TableCell className="text-xs text-white/80 font-semibold font-mono">
+                      {team.branch}
+                    </TableCell>
+
+                    {/* Problem Statement */}
+                    <TableCell className="text-xs text-white/60">
+                      {team.problemStatement}
+                    </TableCell>
+
+                    {/* Visual score bars */}
+                    <TableCell>
+                      <div className="flex flex-col gap-1.5 min-w-[120px]">
+                        <div className="flex justify-between font-mono text-xs font-bold text-accent-primary">
+                          <span>{team.score}</span>
+                          <span className="text-white/30">/100</span>
+                        </div>
+                        <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-[1000ms] ${
+                              team.rank === 1 
+                                ? 'bg-accent-primary shadow-[0_0_10px_rgba(0,243,255,0.4)]'
+                                : team.rank === 2
+                                ? 'bg-accent-secondary'
+                                : 'bg-accent-third'
+                            }`}
+                            style={{ width: `${team.score}%` }}
+                          />
+                        </div>
+                      </div>
+                    </TableCell>
+
+                    {/* Feedback */}
+                    <TableCell className="text-xs text-white/40 italic max-w-sm leading-relaxed truncate hover:text-white/60 transition-colors">
+                      "{team.feedback}"
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </Table>
+            </div>
+          </Card>
+        </>
       )}
-
-      {/* Ledger Rankings List */}
-      <Card className="p-8">
-        <h3 className="font-archivo text-lg font-black uppercase text-white tracking-wider mb-6">
-          Ranking Ledger
-        </h3>
-
-        <div className="overflow-x-auto">
-          <Table headers={['Rank', 'Team & Project', 'Academic Branch', 'Problem Statement', 'Evaluated Score', 'Feedback Comments']}>
-            {activeLeaderboard.map((team) => (
-              <TableRow key={team.team} className="hover:bg-white/[0.01] transition-all">
-                {/* Rank */}
-                <TableCell className="font-mono text-md font-bold text-center">
-                  <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-black ${
-                    team.rank === 1 
-                      ? 'bg-accent-primary/10 border border-accent-primary text-accent-primary shadow-[0_0_10px_rgba(0,243,255,0.2)]'
-                      : team.rank === 2
-                      ? 'bg-accent-secondary/10 border border-accent-secondary text-accent-secondary'
-                      : team.rank === 3
-                      ? 'bg-accent-third/10 border border-accent-third text-accent-third'
-                      : 'bg-white/5 border border-white/10 text-white/60'
-                  }`}>
-                    {team.rank}
-                  </span>
-                </TableCell>
-
-                {/* Team Info */}
-                <TableCell>
-                  <div>
-                    <h4 className="text-sm font-bold text-white">{team.team}</h4>
-                    <p className="text-xs text-white/40 font-mono mt-0.5">{team.project}</p>
-                  </div>
-                </TableCell>
-
-                {/* Academic Branch */}
-                <TableCell className="text-xs text-white/80 font-semibold font-mono">
-                  {team.branch}
-                </TableCell>
-
-                {/* Problem Statement */}
-                <TableCell className="text-xs text-white/60">
-                  {team.problemStatement}
-                </TableCell>
-
-                {/* Visual score bars */}
-                <TableCell>
-                  <div className="flex flex-col gap-1.5 min-w-[120px]">
-                    <div className="flex justify-between font-mono text-xs font-bold text-accent-primary">
-                      <span>{team.score}</span>
-                      <span className="text-white/30">/100</span>
-                    </div>
-                    <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-[1000ms] ${
-                          team.rank === 1 
-                            ? 'bg-accent-primary shadow-[0_0_10px_rgba(0,243,255,0.4)]'
-                            : team.rank === 2
-                            ? 'bg-accent-secondary'
-                            : 'bg-accent-third'
-                        }`}
-                        style={{ width: `${team.score}%` }}
-                      />
-                    </div>
-                  </div>
-                </TableCell>
-
-                {/* Feedback */}
-                <TableCell className="text-xs text-white/40 italic max-w-sm leading-relaxed truncate hover:text-white/60 transition-colors">
-                  "{team.feedback}"
-                </TableCell>
-              </TableRow>
-            ))}
-          </Table>
-        </div>
-      </Card>
     </div>
   );
 };
+
 
 
 

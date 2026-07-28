@@ -1,6 +1,6 @@
 import enum
 import uuid
-from sqlalchemy import Column, String, Text, DateTime, Integer, Enum as SQLEnum, ForeignKey
+from sqlalchemy import Column, String, Text, DateTime, Integer, Enum as SQLEnum, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from app.models.base import BaseTable
 
@@ -30,6 +30,8 @@ class Hackathon(BaseTable):
     min_team_size = Column(Integer, default=1, nullable=False)
     status = Column(SQLEnum(HackathonStatus), default=HackathonStatus.UPCOMING, nullable=False)
     banner_url = Column(String(500), nullable=True)
+    results_published = Column(Boolean, default=False, nullable=False)
+
 
     problem_statements = relationship("ProblemStatement", back_populates="hackathon", cascade="all, delete-orphan")
     teams = relationship("Team", back_populates="hackathon", cascade="all, delete-orphan")

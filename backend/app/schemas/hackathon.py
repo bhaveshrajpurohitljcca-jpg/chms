@@ -50,6 +50,7 @@ class HackathonResponse(BaseModel):
     min_team_size: int
     status: HackathonStatus
     banner_url: Optional[str] = None
+    results_published: bool = False
     problem_statements: List[ProblemStatementResponse] = []
     created_at: datetime
 
