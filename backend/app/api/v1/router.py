@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, hackathons, teams, submissions, registrations, notifications
+from app.api.v1.endpoints import auth, users, hackathons, teams, submissions, registrations, notifications, assignments
 
 api_router = APIRouter()
 
@@ -11,3 +11,5 @@ api_router.include_router(teams.router)
 api_router.include_router(submissions.router)
 api_router.include_router(registrations.router)
 api_router.include_router(notifications.router)
+api_router.include_router(assignments.router)
+

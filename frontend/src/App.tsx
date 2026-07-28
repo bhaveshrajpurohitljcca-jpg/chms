@@ -1840,14 +1840,39 @@ const AdminView = () => {
     setTimeout(() => setToastText(''), 3000);
   };
 
-  // Load assignments on boot
-  useEffect(() => {
-    const savedJudges = localStorage.getItem('chms_judge_assignments');
-    if (savedJudges) setJudgeAssignments(JSON.parse(savedJudges));
+  const fetchAssignments = async () => {
+    try {
+      const judgeRes = await apiService.listJudgeAssignments();
+      if (judgeRes && judgeRes.data) {
+        const mappedJudges = judgeRes.data.map((a: any) => ({
+          id: a.id,
+          judgeId: a.judge_id,
+          judgeName: a.judge_name,
+          judgeEmail: a.judge_email,
+          hackathonId: a.hackathon_id,
+          hackathonName: a.hackathon_name,
+          submissionId: a.submission_id
+        }));
+        setJudgeAssignments(mappedJudges);
+      }
+      
+      const coordRes = await apiService.listCoordinatorAssignments();
+      if (coordRes && coordRes.data) {
+        const mappedCoords = coordRes.data.map((a: any) => ({
+          id: a.id,
+          coordinatorId: a.coordinator_id,
+          coordinatorName: a.coordinator_name,
+          coordinatorEmail: a.coordinator_email,
+          hackathonId: a.hackathon_id,
+          hackathonName: a.hackathon_name
+        }));
+        setCoordinatorAssignments(mappedCoords);
+      }
+    } catch (err: any) {
+      console.warn("Failed to load assignments", err.message);
+    }
+  };
 
-    const savedCoords = localStorage.getItem('chms_coord_assignments');
-    if (savedCoords) setCoordinatorAssignments(JSON.parse(savedCoords));
-  }, []);
 
   // Fetch Users
   const fetchUsers = async () => {
@@ -1910,7 +1935,9 @@ const AdminView = () => {
     fetchUsers();
     fetchHackathons();
     fetchSubmissions();
+    fetchAssignments();
   }, [activeTab, userRoleFilter, userSearchQuery]);
+
 
   // Load configurations for selected hackathon
   useEffect(() => {
@@ -2029,7 +2056,7 @@ const AdminView = () => {
   };
 
   // Assign Hackathon to Judge
-  const handleAssignHackathonToJudge = (e: React.FormEvent) => {
+  const handleAssignHackathonToJudge = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedJudgeDetail || !judgeAllocHackathonId) {
       showToast("Please select a hackathon to assign.");
@@ -2038,70 +2065,68 @@ const AdminView = () => {
     
     // Check if already assigned
     const alreadyAssigned = judgeAssignments.some(
-      a => a.judgeId === selectedJudgeDetail.id && a.hackathonId === judgeAllocHackathonId
+      a => a.judgeId === selectedJudgeDetail.id && a.hackathonId === judgeAllocHackathonId && !a.submissionId
     );
     if (alreadyAssigned) {
       showToast("This hackathon is already assigned to this judge.");
       return;
     }
 
-    const targetHackathon = hackathonsList.find(h => h.id === judgeAllocHackathonId);
-    if (!targetHackathon) return;
-
-    const newAssign = {
-      id: `judge-assign-${Date.now()}`,
-      judgeId: selectedJudgeDetail.id,
-      judgeName: selectedJudgeDetail.full_name,
-      judgeEmail: selectedJudgeDetail.email,
-      hackathonId: judgeAllocHackathonId,
-      hackathonName: targetHackathon.title
-    };
-
-    const updated = [...judgeAssignments, newAssign];
-    setJudgeAssignments(updated);
-    localStorage.setItem('chms_judge_assignments', JSON.stringify(updated));
-    showToast("Hackathon successfully assigned to judge.");
-    
-    // Auto-select this assigned hackathon to configure submissions
-    setJudgeActiveAssignHackathonId(judgeAllocHackathonId);
-    setJudgeAllocHackathonId('');
+    try {
+      await apiService.createJudgeAssignment(selectedJudgeDetail.id, judgeAllocHackathonId);
+      showToast("Hackathon successfully assigned to judge.");
+      fetchAssignments();
+      setJudgeActiveAssignHackathonId(judgeAllocHackathonId);
+      setJudgeAllocHackathonId('');
+    } catch (err: any) {
+      showToast(err.message || "Failed to assign hackathon.");
+    }
   };
 
   // Revoke Judge Hackathon Assignment
-  const handleRevokeJudgeHackathon = (assignId: string) => {
-    const updated = judgeAssignments.filter(a => a.id !== assignId);
-    setJudgeAssignments(updated);
-    localStorage.setItem('chms_judge_assignments', JSON.stringify(updated));
-    showToast("Hackathon assignment revoked.");
-    setJudgeActiveAssignHackathonId('');
+  const handleRevokeJudgeHackathon = async (assignId: string) => {
+    const assignment = judgeAssignments.find(a => a.id === assignId);
+    if (!assignment) return;
+    try {
+      await apiService.deleteJudgeAssignment(assignment.judgeId, assignment.hackathonId);
+      showToast("Hackathon assignment revoked.");
+      fetchAssignments();
+      setJudgeActiveAssignHackathonId('');
+    } catch (err: any) {
+      showToast(err.message || "Failed to revoke assignment.");
+    }
   };
 
   // Toggle Submission Assignment for Judge
-  const handleToggleSubmissionForJudge = (submissionId: string) => {
+  const handleToggleSubmissionForJudge = async (submissionId: string) => {
     if (!selectedJudgeDetail || !judgeActiveAssignHackathonId) return;
+    const activeHackathonId = judgeActiveAssignHackathonId;
     
-    const key = `chms_judge_subs_${selectedJudgeDetail.id}_${judgeActiveAssignHackathonId}`;
-    const current = localStorage.getItem(key);
-    let assignedList: string[] = current ? JSON.parse(current) : [];
+    const isAssigned = judgeAssignments.some(
+      a => a.judgeId === selectedJudgeDetail.id && 
+           a.hackathonId === activeHackathonId && 
+           a.submissionId === submissionId
+    );
     
-    if (assignedList.includes(submissionId)) {
-      assignedList = assignedList.filter(id => id !== submissionId);
-      showToast("Submission unassigned from judge.");
-    } else {
-      assignedList.push(submissionId);
-      showToast("Submission assigned to judge.");
+    try {
+      if (isAssigned) {
+        await apiService.deleteJudgeAssignment(selectedJudgeDetail.id, activeHackathonId, submissionId);
+        showToast("Submission unassigned from judge.");
+      } else {
+        await apiService.createJudgeAssignment(selectedJudgeDetail.id, activeHackathonId, submissionId);
+        showToast("Submission assigned to judge.");
+      }
+      fetchAssignments();
+    } catch (err: any) {
+      showToast(err.message || "Failed to toggle submission assignment.");
     }
-    
-    localStorage.setItem(key, JSON.stringify(assignedList));
-    // Force state re-evaluation
-    fetchSubmissions();
   };
 
   // Get list of assigned submission IDs for a judge and hackathon
   const getAssignedSubmissionIds = (judgeId: string, hackathonId: string): string[] => {
-    const key = `chms_judge_subs_${judgeId}_${hackathonId}`;
-    const val = localStorage.getItem(key);
-    return val ? JSON.parse(val) : [];
+    return judgeAssignments
+      .filter(a => a.judgeId === judgeId && a.hackathonId === hackathonId && a.submissionId)
+      .map(a => a.submissionId);
   };
 
   // Create Coordinator Account
@@ -2129,7 +2154,7 @@ const AdminView = () => {
   };
 
   // Assign Hackathon to Coordinator
-  const handleAssignCoordinator = (e: React.FormEvent) => {
+  const handleAssignCoordinator = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCoordinatorDetail || !coordAllocHackathonId) {
       showToast("Please select a hackathon to assign.");
@@ -2144,32 +2169,29 @@ const AdminView = () => {
       return;
     }
 
-    const targetHackathon = hackathonsList.find(h => h.id === coordAllocHackathonId);
-    if (!targetHackathon) return;
-
-    const newAssign = {
-      id: `coord-assign-${Date.now()}`,
-      coordinatorId: selectedCoordinatorDetail.id,
-      coordinatorName: selectedCoordinatorDetail.full_name,
-      coordinatorEmail: selectedCoordinatorDetail.email,
-      hackathonId: coordAllocHackathonId,
-      hackathonName: targetHackathon.title
-    };
-
-    const updated = [...coordinatorAssignments, newAssign];
-    setCoordinatorAssignments(updated);
-    localStorage.setItem('chms_coord_assignments', JSON.stringify(updated));
-    showToast("Hackathon scope assigned to coordinator.");
-    setCoordAllocHackathonId('');
+    try {
+      await apiService.createCoordinatorAssignment(selectedCoordinatorDetail.id, coordAllocHackathonId);
+      showToast("Hackathon scope assigned to coordinator.");
+      setCoordAllocHackathonId('');
+      fetchAssignments();
+    } catch (err: any) {
+      showToast(err.message || "Failed to assign coordinator.");
+    }
   };
 
   // Revoke Coordinator Scope
-  const handleRevokeCoordinatorScope = (assignId: string) => {
-    const updated = coordinatorAssignments.filter(a => a.id !== assignId);
-    setCoordinatorAssignments(updated);
-    localStorage.setItem('chms_coord_assignments', JSON.stringify(updated));
-    showToast("Coordinator scope revoked.");
+  const handleRevokeCoordinatorScope = async (assignId: string) => {
+    const assignment = coordinatorAssignments.find(a => a.id === assignId);
+    if (!assignment) return;
+    try {
+      await apiService.deleteCoordinatorAssignment(assignment.coordinatorId, assignment.hackathonId);
+      showToast("Coordinator scope revoked.");
+      fetchAssignments();
+    } catch (err: any) {
+      showToast(err.message || "Failed to revoke coordinator scope.");
+    }
   };
+
 
   // Toggle user active status
   const handleToggleUserStatus = async (userId: string, currentStatus: boolean) => {
@@ -3521,6 +3543,7 @@ const AdminView = () => {
     </div>
   );
 };
+
 
 
 

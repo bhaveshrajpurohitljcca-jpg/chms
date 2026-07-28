@@ -291,6 +291,52 @@ export const apiService = {
     });
   },
 
+  // ─── Assignments ───────────────────────────────────────────
+  async listJudgeAssignments() {
+    return request<any[]>('/assignments/judges');
+  },
+
+  async createJudgeAssignment(judgeId: string, hackathonId: string, submissionId?: string) {
+    return request<any>('/assignments/judges', {
+      method: 'POST',
+      body: JSON.stringify({
+        judge_id: judgeId,
+        hackathon_id: hackathonId,
+        submission_id: submissionId || null
+      }),
+    });
+  },
+
+  async deleteJudgeAssignment(judgeId: string, hackathonId: string, submissionId?: string) {
+    const url = submissionId 
+      ? `/assignments/judges/${judgeId}/${hackathonId}/${submissionId}`
+      : `/assignments/judges/${judgeId}/${hackathonId}`;
+    return request<any>(url, {
+      method: 'DELETE',
+    });
+  },
+
+  async listCoordinatorAssignments() {
+    return request<any[]>('/assignments/coordinators');
+  },
+
+  async createCoordinatorAssignment(coordinatorId: string, hackathonId: string) {
+    return request<any>('/assignments/coordinators', {
+      method: 'POST',
+      body: JSON.stringify({
+        coordinator_id: coordinatorId,
+        hackathon_id: hackathonId
+      }),
+    });
+  },
+
+  async deleteCoordinatorAssignment(coordinatorId: string, hackathonId: string) {
+    return request<any>(`/assignments/coordinators/${coordinatorId}/${hackathonId}`, {
+      method: 'DELETE',
+    });
+  },
+
+
   // ─── Hackathons ────────────────────────────────────────────
   async listHackathons(statusFilter?: string) {
     const query = statusFilter ? `?status_filter=${statusFilter}` : '';

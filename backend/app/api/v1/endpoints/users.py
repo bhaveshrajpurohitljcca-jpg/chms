@@ -290,3 +290,35 @@ def search_users(
         message=f"Found {len(results)} user(s).",
         data=results
     )
+
+
+@router.put("/{user_id}/role", response_model=StandardResponse[UserResponse])
+def update_user_role(
+    user_id: str,
+    payload: UserUpdateAdmin,
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(RoleChecker([UserRole.ADMIN]))
+):
+    """
+    Updates a user's role. Restricted to Admin.
+    """
+    db_user = user_service.get_user_by_id(db, user_id=user_id)
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found."
+        )
+    if payload.role is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Role parameter is required."
+        )
+    db_user.role = payload.role
+    db.commit()
+    db.refresh(db_user)
+    return StandardResponse(
+        success=True,
+        message="User role updated successfully.",
+        data=UserResponse.from_orm(db_user)
+    )
+

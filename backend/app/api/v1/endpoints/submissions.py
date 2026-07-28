@@ -56,11 +56,59 @@ def _ensure_team_membership(db: Session, team_id: str, user_id: str):
 @router.get("", response_model=StandardResponse[List[SubmissionResponse]])
 def list_submissions(
     hackathon_id: Optional[str] = Query(None),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """List all submissions, optionally filtered by hackathon."""
+    """List all submissions, filtered by roles and permissions."""
+    if current_user.role == UserRole.STUDENT:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Students cannot list all submissions."
+        )
+
     query = db.query(Submission)
-    if hackathon_id:
+    
+    if current_user.role == UserRole.COORDINATOR:
+        # Get assigned hackathons for this coordinator
+        assigned_ids = [a.hackathon_id for a in db.query(CoordinatorAssignment).filter(
+            CoordinatorAssignment.coordinator_id == current_user.id
+        ).all()]
+        if hackathon_id:
+            if hackathon_id not in assigned_ids:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied. This hackathon is not assigned to you."
+                )
+            query = query.filter(Submission.hackathon_id == hackathon_id)
+        else:
+            query = query.filter(Submission.hackathon_id.in_(assigned_ids))
+            
+    elif current_user.role == UserRole.JUDGE:
+        # Get judge assignments (specific submissions and hackathons)
+        assigned_subs = [a.submission_id for a in db.query(JudgeAssignment).filter(
+            JudgeAssignment.judge_id == current_user.id,
+            JudgeAssignment.submission_id.isnot(None)
+        ).all()]
+        assigned_hacks = [a.hackathon_id for a in db.query(JudgeAssignment).filter(
+            JudgeAssignment.judge_id == current_user.id,
+            JudgeAssignment.submission_id.is_(None)
+        ).all()]
+        
+        if hackathon_id:
+            if hackathon_id in assigned_hacks:
+                query = query.filter(Submission.hackathon_id == hackathon_id)
+            else:
+                query = query.filter(
+                    Submission.hackathon_id == hackathon_id,
+                    Submission.id.in_(assigned_subs)
+                )
+        else:
+            query = query.filter(
+                (Submission.hackathon_id.in_(assigned_hacks)) |
+                (Submission.id.in_(assigned_subs))
+            )
+            
+    elif hackathon_id:
         query = query.filter(Submission.hackathon_id == hackathon_id)
 
     subs = query.order_by(Submission.submitted_at.desc()).all()
@@ -70,6 +118,7 @@ def list_submissions(
         message="Submissions retrieved successfully.",
         data=results
     )
+
 
 
 # ─────────────────────────────────────────────────────────────
@@ -349,6 +398,20 @@ def evaluate_submission(
     submission = db.query(Submission).filter(Submission.id == payload.submission_id).first()
     if not submission:
         raise HTTPException(status_code=404, detail="Submission not found.")
+
+    if current_user.role == UserRole.JUDGE:
+        # A judge must not evaluate submissions that are not assigned to that judge
+        assigned = db.query(JudgeAssignment).filter(
+            JudgeAssignment.judge_id == current_user.id,
+            (JudgeAssignment.submission_id == payload.submission_id) |
+            ((JudgeAssignment.submission_id.is_(None)) & (JudgeAssignment.hackathon_id == submission.hackathon_id))
+        ).first()
+        if not assigned:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied. You are not assigned to evaluate this submission."
+            )
+
 
     existing_eval = db.query(Evaluation).filter(
         Evaluation.submission_id == payload.submission_id,

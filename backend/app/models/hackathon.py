@@ -47,3 +47,13 @@ class ProblemStatement(BaseTable):
     hackathon = relationship("Hackathon", back_populates="problem_statements")
     submissions = relationship("Submission", back_populates="problem_statement")
     registrations = relationship("Registration", back_populates="problem_statement")
+
+class CoordinatorAssignment(BaseTable):
+    __tablename__ = "coordinator_assignment"
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    coordinator_id = Column(String(36), ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
+    hackathon_id = Column(String(36), ForeignKey("hackathon.id", ondelete="CASCADE"), nullable=False)
+
+    coordinator = relationship("User")
+    hackathon = relationship("Hackathon")
+

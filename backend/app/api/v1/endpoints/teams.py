@@ -18,10 +18,26 @@ router = APIRouter(prefix="/teams", tags=["Teams"])
 @router.get("", response_model=StandardResponse[List[TeamResponse]])
 def list_teams(
     hackathon_id: str = None,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     query = db.query(Team)
-    if hackathon_id:
+    
+    if current_user.role == UserRole.COORDINATOR:
+        # Get assigned hackathons for this coordinator
+        assigned_ids = [a.hackathon_id for a in db.query(CoordinatorAssignment).filter(
+            CoordinatorAssignment.coordinator_id == current_user.id
+        ).all()]
+        if hackathon_id:
+            if hackathon_id not in assigned_ids:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied. This hackathon is not assigned to you."
+                )
+            query = query.filter(Team.hackathon_id == hackathon_id)
+        else:
+            query = query.filter(Team.hackathon_id.in_(assigned_ids))
+    elif hackathon_id:
         query = query.filter(Team.hackathon_id == hackathon_id)
     
     teams = query.order_by(Team.created_at.desc()).all()
@@ -31,6 +47,7 @@ def list_teams(
         message="Teams list retrieved.",
         data=results
     )
+
 
 
 @router.get("/my-teams", response_model=StandardResponse[List[TeamResponse]])
