@@ -1651,34 +1651,10 @@ export const JudgeView = () => {
   );
 };
 
-// 10. COORDINATOR HUB
-const CoordinatorView = () => {
-  return (
-    <div className="flex flex-col gap-8 w-full max-w-5xl">
-      <div>
-        <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-glow-cyan text-white">
-          Operations Console
-        </h2>
-        <p className="text-xs text-text-secondary mt-1 font-light">Track submissions progress, publish announcements, and verify team registrations.</p>
-      </div>
-      <Card hoverable className="bg-white/[0.02]">
-        <h3 className="text-sm font-bold text-white mb-4">Pending Registrations</h3>
-        <Table headers={['Team Name', 'Members Count', 'Chosen PS', 'Action']}>
-          <TableRow>
-            <TableCell className="font-semibold text-white">Zero_Gravity</TableCell>
-            <TableCell className="font-mono text-xs">2 Members</TableCell>
-            <TableCell className="text-xs text-white/60">PS-01: Generative LLM Interface</TableCell>
-            <TableCell>
-              <Button variant="success" className="h-8 text-xs font-bold" onClick={() => alert('Team Verified successfully!')}>
-                Verify Team
-              </Button>
-            </TableCell>
-          </TableRow>
-        </Table>
-      </Card>
-    </div>
-  );
-};
+// 10. COORDINATOR HUB (Full Operations & Hackathon Management Workspace)
+function CoordinatorView() {
+  return <AdminView />;
+}
 
 // 11. ADMIN VIEW
 const AdminView = () => {
