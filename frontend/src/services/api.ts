@@ -109,6 +109,19 @@ export interface BackendRegistration {
   created_at: string;
 }
 
+// Announcement (matches backend AnnouncementResponse)
+export interface BackendAnnouncement {
+  id: string;
+  title: string;
+  content: string;
+  announcement_type: 'info' | 'warning' | 'success' | 'urgent';
+  is_published: boolean;
+  hackathon_id?: string;
+  created_by_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface SubmissionRecord {
   id: string;
   team_id: string;
@@ -342,6 +355,150 @@ export const apiService = {
   /** Get all registrations for teams the current user belongs to */
   async getMyRegistrations() {
     return request<BackendRegistration[]>('/registrations/my');
+  },
+
+  // ─── Coordinator — Registrations ───────────────────────────────────
+  /** Coordinator/Admin: list all registrations with optional filters */
+  async listAllRegistrations(hackathonId?: string, statusFilter?: string) {
+    const params = new URLSearchParams();
+    if (hackathonId) params.append('hackathon_id', hackathonId);
+    if (statusFilter) params.append('status_filter', statusFilter);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return request<BackendRegistration[]>(`/registrations${query}`);
+  },
+
+  // ─── Coordinator — Hackathon CRUD ──────────────────────────────────
+  /** Create a new hackathon */
+  async createHackathon(payload: {
+    title: string;
+    slug: string;
+    tagline?: string;
+    description?: string;
+    start_date?: string;
+    end_date?: string;
+    registration_deadline?: string;
+    max_team_size?: number;
+    min_team_size?: number;
+    status?: string;
+    banner_url?: string;
+  }) {
+    return request<BackendHackathon>('/hackathons', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** Update an existing hackathon */
+  async updateHackathon(hackathonId: string, payload: Partial<{
+    title: string;
+    slug: string;
+    tagline: string;
+    description: string;
+    start_date: string;
+    end_date: string;
+    registration_deadline: string;
+    max_team_size: number;
+    min_team_size: number;
+    status: string;
+    banner_url: string;
+  }>) {
+    return request<BackendHackathon>(`/hackathons/${hackathonId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** Delete or cancel a hackathon */
+  async deleteHackathon(hackathonId: string, force = false) {
+    return request<{ deleted?: boolean; cancelled?: boolean; registration_count?: number }>(
+      `/hackathons/${hackathonId}?force=${force}`,
+      { method: 'DELETE' }
+    );
+  },
+
+  // ─── Coordinator — Problem Statements ─────────────────────────────
+  /** Get problem statements for a hackathon */
+  async getProblemStatements(hackathonId: string) {
+    return request<BackendProblemStatement[]>(`/hackathons/${hackathonId}/problem-statements`);
+  },
+
+  /** Create a problem statement under a hackathon */
+  async createProblemStatement(hackathonId: string, payload: {
+    title: string;
+    description: string;
+    category?: string;
+    difficulty?: string;
+    max_teams?: number;
+  }) {
+    return request<BackendProblemStatement>(`/hackathons/${hackathonId}/problem-statements`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** Update a problem statement */
+  async updateProblemStatement(hackathonId: string, psId: string, payload: Partial<{
+    title: string;
+    description: string;
+    category: string;
+    difficulty: string;
+    max_teams: number;
+  }>) {
+    return request<BackendProblemStatement>(`/hackathons/${hackathonId}/problem-statements/${psId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** Delete a problem statement */
+  async deleteProblemStatement(hackathonId: string, psId: string) {
+    return request<{ deleted: boolean }>(`/hackathons/${hackathonId}/problem-statements/${psId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // ─── Announcements ─────────────────────────────────────────────────
+  /** List published announcements (optionally filtered by hackathon) */
+  async getAnnouncements(hackathonId?: string, publishedOnly = true) {
+    const params = new URLSearchParams();
+    if (hackathonId) params.append('hackathon_id', hackathonId);
+    params.append('published_only', String(publishedOnly));
+    return request<BackendAnnouncement[]>(`/announcements?${params.toString()}`);
+  },
+
+  /** Create a new announcement */
+  async createAnnouncement(payload: {
+    title: string;
+    content: string;
+    announcement_type?: string;
+    is_published?: boolean;
+    hackathon_id?: string;
+  }) {
+    return request<BackendAnnouncement>('/announcements', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** Update an announcement */
+  async updateAnnouncement(announcementId: string, payload: Partial<{
+    title: string;
+    content: string;
+    announcement_type: string;
+    is_published: boolean;
+    hackathon_id: string;
+  }>) {
+    return request<BackendAnnouncement>(`/announcements/${announcementId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** Delete an announcement */
+  async deleteAnnouncement(announcementId: string) {
+    return request<{ deleted: boolean }>(`/announcements/${announcementId}`, {
+      method: 'DELETE',
+    });
   },
 
   // ─── Submissions ───────────────────────────────────────────

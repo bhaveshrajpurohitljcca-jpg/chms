@@ -34,6 +34,7 @@ class Hackathon(BaseTable):
     problem_statements = relationship("ProblemStatement", back_populates="hackathon", cascade="all, delete-orphan")
     teams = relationship("Team", back_populates="hackathon", cascade="all, delete-orphan")
     registrations = relationship("Registration", back_populates="hackathon", cascade="all, delete-orphan")
+    announcements = relationship("Announcement", back_populates="hackathon", cascade="all, delete-orphan")
 
 class ProblemStatement(BaseTable):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))

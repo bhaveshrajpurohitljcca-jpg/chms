@@ -1,16 +1,44 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.registration import Registration, RegistrationStatus
 from app.models.team import Team, TeamMember
 from app.models.hackathon import Hackathon, ProblemStatement
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.registration import RegistrationCreate, RegistrationResponse
 from app.schemas.response import StandardResponse
-from app.api.deps import get_current_active_user
+from app.api.deps import get_current_active_user, RoleChecker
 
 router = APIRouter(prefix="/registrations", tags=["Registrations"])
+
+
+@router.get("", response_model=StandardResponse[List[RegistrationResponse]])
+def list_all_registrations(
+    hackathon_id: Optional[str] = None,
+    status_filter: Optional[RegistrationStatus] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(RoleChecker([UserRole.ADMIN, UserRole.COORDINATOR]))
+):
+    """
+    List all registrations. Coordinator/Admin only.
+    Optionally filter by hackathon_id or status.
+    """
+    query = db.query(Registration)
+
+    if hackathon_id:
+        query = query.filter(Registration.hackathon_id == hackathon_id)
+    if status_filter:
+        query = query.filter(Registration.status == status_filter)
+
+    registrations = query.order_by(Registration.created_at.desc()).all()
+    results = [RegistrationResponse.from_orm(r) for r in registrations]
+
+    return StandardResponse(
+        success=True,
+        message="All registrations retrieved.",
+        data=results
+    )
 
 
 @router.post("", response_model=StandardResponse[RegistrationResponse])

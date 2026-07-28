@@ -15,7 +15,7 @@ import {
   Mail
 } from 'lucide-react';
 import { apiService } from '@/services/api';
-import type { BackendHackathon, BackendTeam, BackendRegistration, BackendInvitation } from '@/services/api';
+import type { BackendHackathon, BackendTeam, BackendRegistration, BackendInvitation, BackendAnnouncement } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { HackathonCard } from '@/components/student/HackathonCard';
 import { LoadingState } from '@/components/student/StateContainer';
@@ -30,17 +30,19 @@ export const StudentDashboard: React.FC = () => {
   const [myTeam, setMyTeam] = useState<BackendTeam | null>(null);
   const [myRegistration, setMyRegistration] = useState<BackendRegistration | null>(null);
   const [pendingInvitations, setPendingInvitations] = useState<BackendInvitation[]>([]);
+  const [announcements, setAnnouncements] = useState<BackendAnnouncement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadDashboard() {
       try {
         setIsLoading(true);
-        const [hackathonsRes, teamsRes, registrationsRes, invitationsRes] = await Promise.allSettled([
+        const [hackathonsRes, teamsRes, registrationsRes, invitationsRes, announcementsRes] = await Promise.allSettled([
           apiService.listHackathons(),
           apiService.getMyTeams(),
           apiService.getMyRegistrations(),
           apiService.getReceivedInvitations(),
+          apiService.getAnnouncements(undefined, true),
         ]);
 
         if (hackathonsRes.status === 'fulfilled' && hackathonsRes.value.data) {
@@ -55,6 +57,9 @@ export const StudentDashboard: React.FC = () => {
         if (invitationsRes.status === 'fulfilled' && invitationsRes.value.data) {
           const pending = invitationsRes.value.data.filter(i => i.status === 'pending');
           setPendingInvitations(pending);
+        }
+        if (announcementsRes.status === 'fulfilled' && announcementsRes.value.data) {
+          setAnnouncements(announcementsRes.value.data);
         }
       } catch {
         // Silently fail — dashboard is non-critical; individual pages will retry
@@ -152,6 +157,36 @@ export const StudentDashboard: React.FC = () => {
         </Card>
 
         <Card hoverable className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-accent-third/10 border border-accent-third/30 flex items-center justify-center text-accent-third">
+            <Clock size={22} />
+          </div>
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-semibold block">Upcoming</span>
+            <span className="font-archivo text-2xl font-black text-white">{upcomingHackathons.length} Events</span>
+          </div>
+        </Card>
+
+      {/* 2.5 Broadcast Announcements Feed */}
+      {announcements.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-accent-primary">
+            <Megaphone size={14} />
+            <span>Coordinator Broadcasts</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {announcements.slice(0, 4).map(ann => (
+              <div key={ann.id} className="p-4 rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-md">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <h4 className="text-xs font-bold text-white uppercase font-archivo">{ann.title}</h4>
+                  <span className="text-[9px] font-mono text-white/40">{new Date(ann.created_at).toLocaleDateString()}</span>
+                </div>
+                <p className="text-xs text-white/60 font-light leading-relaxed">{ann.content}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+   <Card hoverable className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-accent-secondary/10 border border-accent-secondary/30 flex items-center justify-center text-accent-secondary">
             <Users size={22} />
           </div>

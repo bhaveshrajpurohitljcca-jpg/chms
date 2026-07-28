@@ -5,7 +5,6 @@ import {
   User as UserIcon, 
   LogOut, 
   LayoutDashboard, 
-  Terminal, 
   Calendar, 
   Users, 
   Code, 
@@ -92,8 +91,11 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
         ];
       case 'coordinator':
         return [
-          { label: 'Operations Console', path: '/coordinator', icon: Terminal },
-          { label: 'Announcements Board', path: '/coordinator/announcements', icon: Bell },
+          { label: 'Dashboard', path: '/coordinator', icon: LayoutDashboard },
+          { label: 'Hackathons', path: '/coordinator/hackathons', icon: Calendar },
+          { label: 'Problem Statements', path: '/coordinator/problem-statements', icon: Code },
+          { label: 'Registrations', path: '/coordinator/registrations', icon: Users },
+          { label: 'Announcements', path: '/coordinator/announcements', icon: Bell },
           { label: 'Profile Settings', path: '/coordinator/profile', icon: UserIcon }
         ];
       case 'admin':

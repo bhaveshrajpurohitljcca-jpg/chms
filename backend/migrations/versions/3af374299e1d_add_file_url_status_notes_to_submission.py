@@ -24,7 +24,7 @@ def upgrade() -> None:
     op.add_column('submission', sa.Column('additional_notes', sa.Text(), nullable=True))
     op.add_column('submission', sa.Column('file_url', sa.String(length=500), nullable=True))
     op.add_column('submission', sa.Column('file_name', sa.String(length=255), nullable=True))
-    op.add_column('submission', sa.Column('status', sa.String(length=50), nullable=False))
+    op.add_column('submission', sa.Column('status', sa.String(length=50), nullable=False, server_default='submitted'))
     # ### end Alembic commands ###
 
 

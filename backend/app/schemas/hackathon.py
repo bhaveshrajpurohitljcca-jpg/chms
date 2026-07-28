@@ -10,6 +10,13 @@ class ProblemStatementCreate(BaseModel):
     difficulty: Optional[str] = "Medium"
     max_teams: Optional[int] = 10
 
+class ProblemStatementUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[ProblemCategory] = None
+    difficulty: Optional[str] = None
+    max_teams: Optional[int] = None
+
 class ProblemStatementResponse(BaseModel):
     id: str
     hackathon_id: str
@@ -35,6 +42,19 @@ class HackathonCreate(BaseModel):
     max_team_size: Optional[int] = 4
     min_team_size: Optional[int] = 1
     status: Optional[HackathonStatus] = HackathonStatus.UPCOMING
+    banner_url: Optional[str] = None
+
+class HackathonUpdate(BaseModel):
+    title: Optional[str] = None
+    slug: Optional[str] = None
+    tagline: Optional[str] = None
+    description: Optional[str] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    registration_deadline: Optional[datetime] = None
+    max_team_size: Optional[int] = None
+    min_team_size: Optional[int] = None
+    status: Optional[HackathonStatus] = None
     banner_url: Optional[str] = None
 
 class HackathonResponse(BaseModel):
