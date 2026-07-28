@@ -185,6 +185,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
     const data = await response.json();
     if (!response.ok) {
+      if (response.status === 401 && getStoredToken()) {
+        removeStoredToken();
+        window.dispatchEvent(new CustomEvent('chms-unauthorized'));
+      }
       throw new Error(data.detail || data.message || `Request failed (${response.status})`);
     }
     return data;
@@ -215,6 +219,10 @@ async function requestFormData<T>(
 
     const data = await response.json();
     if (!response.ok) {
+      if (response.status === 401 && getStoredToken()) {
+        removeStoredToken();
+        window.dispatchEvent(new CustomEvent('chms-unauthorized'));
+      }
       throw new Error(data.detail || data.message || 'File upload failed');
     }
     return data;
@@ -273,8 +281,20 @@ export const apiService = {
     });
   },
 
-  async listUsers() {
-    return request<UserProfile[]>('/users');
+  async listUsers(params?: { search?: string; role?: string; is_active?: boolean }) {
+    let query = '';
+    if (params) {
+      const parts = [];
+      if (params.search) parts.push(`search=${encodeURIComponent(params.search)}`);
+      if (params.role) parts.push(`role=${params.role}`);
+      if (params.is_active !== undefined) parts.push(`is_active=${params.is_active}`);
+      // Bring in default limit 100 for admin console viewing
+      parts.push('limit=100');
+      if (parts.length) query = `?${parts.join('&')}`;
+    } else {
+      query = '?limit=100';
+    }
+    return request<any>(`/users${query}`);
   },
 
   async updateUserRole(userId: string, role: string) {
@@ -289,10 +309,54 @@ export const apiService = {
     return request<UserProfile[]>(`/users/search?email=${encodeURIComponent(email)}`);
   },
 
+  async updateUserStatus(userId: string, isActive: boolean) {
+    return request<any>(`/users/${userId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ is_active: isActive }),
+    });
+  },
+
+  async deleteUser(userId: string) {
+    return request<any>(`/users/${userId}`, {
+      method: 'DELETE',
+    });
+  },
+
   // ─── Hackathons ────────────────────────────────────────────
   async listHackathons(statusFilter?: string) {
     const query = statusFilter ? `?status_filter=${statusFilter}` : '';
     return request<BackendHackathon[]>(`/hackathons${query}`);
+  },
+
+  async addProblemStatement(hackathonId: string, payload: {
+    title: string;
+    description: string;
+    category?: string;
+    difficulty?: string;
+    max_teams?: number;
+  }) {
+    return request<any>(`/hackathons/${hackathonId}/problem-statements`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async createHackathon(payload: {
+    title: string;
+    slug: string;
+    tagline?: string;
+    description?: string;
+    start_date?: string;
+    end_date?: string;
+    registration_deadline?: string;
+    max_team_size?: number;
+    min_team_size?: number;
+    status?: string;
+  }) {
+    return request<any>('/hackathons', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   },
 
   async getHackathon(idOrSlug: string) {
@@ -457,6 +521,7 @@ export const apiService = {
     });
   },
 
+<<<<<<< HEAD
   // ─── Sprint 3: Judge Assignment & Evaluation ─────────────────
 
   /** Assign a judge to a submission (Admin/Coordinator) */
@@ -570,5 +635,30 @@ export const apiService = {
     if (judgeId) params.append('judge_id', judgeId);
     const query = params.toString() ? `?${params.toString()}` : '';
     return request<EvaluationRecord[]>(`/evaluations/history${query}`);
+  },
+
+  // ─── Notifications ─────────────────────────────────────────
+  async listNotifications(page = 1, limit = 10, isRead?: boolean) {
+    let query = `?page=${page}&limit=${limit}`;
+    if (isRead !== undefined) {
+      query += `&is_read=${isRead}`;
+    }
+    return request<any>(`/notifications${query}`);
+  },
+
+  async getUnreadNotificationsCount() {
+    return request<any>('/notifications/unread-count');
+  },
+
+  async markNotificationRead(notificationId: string) {
+    return request<any>(`/notifications/${notificationId}/read`, {
+      method: 'PUT',
+    });
+  },
+
+  async markAllNotificationsRead() {
+    return request<any>('/notifications/read-all', {
+      method: 'PUT',
+    });
   },
 };
