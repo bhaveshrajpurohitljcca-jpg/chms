@@ -92,9 +92,6 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
       case 'coordinator':
         return [
           { label: 'Operations Console', path: '/coordinator', icon: Terminal },
-          { label: 'Manage Hackathons', path: '/coordinator?tab=hackathons', icon: Calendar },
-          { label: 'Manage Submissions', path: '/coordinator?tab=submissions', icon: Code },
-          { label: 'Allocate Judges', path: '/coordinator/assignments', icon: Cpu },
           { label: 'Announcements Board', path: '/coordinator/announcements', icon: Bell },
           { label: 'Profile Settings', path: '/coordinator/profile', icon: UserIcon }
         ];
