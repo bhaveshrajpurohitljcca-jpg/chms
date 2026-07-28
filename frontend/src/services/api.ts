@@ -521,7 +521,6 @@ export const apiService = {
     });
   },
 
-<<<<<<< HEAD
   // ─── Sprint 3: Judge Assignment & Evaluation ─────────────────
 
   /** Assign a judge to a submission (Admin/Coordinator) */
