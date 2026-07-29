@@ -12,7 +12,6 @@ import {
   Bell,
   Cpu,
   BookOpen,
-  Settings,
   Shield,
   Loader2
 } from 'lucide-react';
@@ -101,9 +100,10 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
       case 'admin':
         return [
           { label: 'Command Console', path: '/admin', icon: Shield },
-          { label: 'User Directory', path: '/admin/users', icon: Users },
-          { label: 'System Settings', path: '/admin/settings', icon: Settings },
-          { label: 'Profile Settings', path: '/admin/profile', icon: UserIcon }
+          { label: 'Manage Hackathons', path: '/admin?tab=hackathons', icon: Calendar },
+          { label: 'Manage Users', path: '/admin?tab=users', icon: Users },
+          { label: 'Manage Judges', path: '/admin?tab=judges', icon: Cpu },
+          { label: 'Manage Coordinators', path: '/admin?tab=coordinators', icon: Terminal }
         ];
       default:
         return [];
@@ -165,7 +165,7 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
         <aside className="w-64 fixed left-0 top-20 bottom-0 bg-[#050505]/40 border-r border-[rgba(255,255,255,0.05)] p-4 flex flex-col gap-2 overflow-y-auto hidden md:block select-none">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            const isActive = location.pathname + location.search === item.path || (location.pathname === item.path && item.path === '/admin' && !location.search);
             return (
               <Link
                 key={item.path}

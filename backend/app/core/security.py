@@ -57,24 +57,37 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
     return f"{b64_header}.{b64_payload}.{b64_signature}"
 
+class TokenExpiredError(Exception):
+    pass
+
+class TokenInvalidError(Exception):
+    pass
+
 def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
     try:
-        from jose import jwt
-        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except Exception:
+        from jose import jwt, ExpiredSignatureError, JWTError
+        try:
+            return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        except ExpiredSignatureError:
+            raise TokenExpiredError("Token has expired")
+        except JWTError:
+            raise TokenInvalidError("Invalid signature or token structure")
+    except ImportError:
         pass
 
     try:
         parts = token.split('.')
         if len(parts) != 3:
-            return None
+            raise TokenInvalidError("Invalid token segments count")
         b64_payload = parts[1]
         padding = '=' * (4 - (len(b64_payload) % 4))
         payload_bytes = base64.urlsafe_b64decode(b64_payload + padding)
         payload = json.loads(payload_bytes.decode('utf-8'))
 
         if "exp" in payload and payload["exp"] < time.time():
-            return None
+            raise TokenExpiredError("Token has expired")
         return payload
+    except TokenExpiredError:
+        raise
     except Exception:
-        return None
+        raise TokenInvalidError("Invalid token format")

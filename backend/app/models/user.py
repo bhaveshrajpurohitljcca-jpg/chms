@@ -1,6 +1,7 @@
 import enum
 import uuid
 from sqlalchemy import Column, String, Enum as SQLEnum, Text, Boolean
+from sqlalchemy.orm import relationship
 from app.models.base import BaseTable
 
 class UserRole(str, enum.Enum):
@@ -26,3 +27,5 @@ class User(BaseTable):
     is_active = Column(Boolean, default=True, nullable=False)
     phone = Column(String(20), nullable=True)
     is_deleted = Column(Boolean, default=False, nullable=False)
+
+    notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")

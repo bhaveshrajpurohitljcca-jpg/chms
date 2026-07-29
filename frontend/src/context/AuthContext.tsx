@@ -105,6 +105,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
     initAuth();
+
+    const handleUnauthorized = () => {
+      removeStoredToken();
+      setToken(null);
+      setUser(null);
+      window.location.href = '/';
+    };
+
+    window.addEventListener('chms-unauthorized', handleUnauthorized);
+    return () => {
+      window.removeEventListener('chms-unauthorized', handleUnauthorized);
+    };
   }, []);
 
   const openAuthModal = () => setIsAuthModalOpen(true);

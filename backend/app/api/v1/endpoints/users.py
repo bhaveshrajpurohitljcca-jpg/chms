@@ -101,6 +101,8 @@ def update_profile(
     Updates the authenticated user's own profile details.
     """
     updated_user = user_service.update_profile(db=db, db_user=current_user, update_in=payload)
+    from app.services.notification_service import NotificationEventDispatcher
+    NotificationEventDispatcher.dispatch_profile_updated(db, current_user.id)
     return StandardResponse(
         success=True,
         message="Profile updated successfully.",
@@ -148,6 +150,8 @@ def upload_avatar(
         db_user=current_user, 
         update_in=UserProfileUpdate(avatar_url=avatar_url)
     )
+    from app.services.notification_service import NotificationEventDispatcher
+    NotificationEventDispatcher.dispatch_profile_updated(db, current_user.id)
     
     return StandardResponse(
         success=True,
@@ -177,6 +181,8 @@ def update_user_password(
             detail=str(e)
         )
         
+    from app.services.notification_service import NotificationEventDispatcher
+    NotificationEventDispatcher.dispatch_password_changed(db, current_user.id)
     return StandardResponse(
         success=True,
         message="Password changed successfully.",

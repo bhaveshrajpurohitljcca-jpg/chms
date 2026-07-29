@@ -6,6 +6,7 @@ from app.models.submission import Submission, Evaluation
 from app.models.invitation import TeamInvitation, InvitationStatus
 from app.models.registration import Registration, RegistrationStatus
 from app.models.announcement import Announcement, AnnouncementType
+from app.models.notification import Notification, NotificationType
 
 __all__ = [
     "Base",
@@ -28,4 +29,6 @@ __all__ = [
     "RegistrationStatus",
     "Announcement",
     "AnnouncementType",
+    "Notification",
+    "NotificationType",
 ]

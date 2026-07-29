@@ -32,6 +32,9 @@ def register_user(payload: UserRegister, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
 
+    from app.services.notification_service import NotificationEventDispatcher
+    NotificationEventDispatcher.dispatch_user_registration(db, new_user.id, new_user.full_name)
+
     token = create_access_token({"sub": new_user.id, "email": new_user.email, "role": new_user.role.value})
     user_resp = UserResponse.from_orm(new_user)
 
@@ -65,6 +68,9 @@ def login_user(payload: UserLogin, db: Session = Depends(get_db)):
 
     token = create_access_token({"sub": user.id, "email": user.email, "role": user.role.value})
     user_resp = UserResponse.from_orm(user)
+
+    from app.services.notification_service import NotificationEventDispatcher
+    NotificationEventDispatcher.dispatch_login_success(db, user.id)
 
     # Return a unified response supporting both the StandardResponse[TokenResponse] structure
     # and the root-level keys expected by alternative contexts.
