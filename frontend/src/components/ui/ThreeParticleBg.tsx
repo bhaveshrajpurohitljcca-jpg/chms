@@ -10,8 +10,8 @@ export const ThreeParticleBg = () => {
     // 1. Scene & Setup
     const scene = new THREE.Scene();
     
-    const width = containerRef.current.clientWidth;
-    const height = containerRef.current.clientHeight;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
     
     // 2. Camera Setup
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 100);
@@ -21,6 +21,16 @@ export const ThreeParticleBg = () => {
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 0);
+    
+    // Ensure the WebGL canvas stretches to occupy the full container
+    renderer.domElement.style.position = 'absolute';
+    renderer.domElement.style.top = '0';
+    renderer.domElement.style.left = '0';
+    renderer.domElement.style.width = '100%';
+    renderer.domElement.style.height = '100%';
+    renderer.domElement.style.display = 'block';
+    
     containerRef.current.appendChild(renderer.domElement);
 
     // 4. Geometry Setup: 3500 points
@@ -78,8 +88,8 @@ export const ThreeParticleBg = () => {
       targetY += (mouseY - targetY) * 0.08;
 
       // Apply base rotation + mouse responsive offset
-      particles.rotation.y = (elapsedTime * 0.03) + (targetX * 0.8);
-      particles.rotation.x = (elapsedTime * 0.015) + (targetY * 0.8);
+      particles.rotation.y = (elapsedTime * 0.05) + (targetX * 1.8);
+      particles.rotation.x = (elapsedTime * 0.025) + (targetY * 1.8);
 
       renderer.render(scene, camera);
     };
@@ -88,9 +98,8 @@ export const ThreeParticleBg = () => {
 
     // 8. Window Resize Handler
     const handleResize = () => {
-      if (!containerRef.current) return;
-      const w = containerRef.current.clientWidth;
-      const h = containerRef.current.clientHeight;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
@@ -119,7 +128,7 @@ export const ThreeParticleBg = () => {
   return (
     <div 
       ref={containerRef} 
-      className="absolute inset-0 pointer-events-none z-0 overflow-hidden bg-[#050505]"
+      className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
       style={{ mixBlendMode: 'screen' }}
     />
   );

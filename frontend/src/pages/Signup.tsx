@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { Zap, ShieldAlert, Check } from 'lucide-react';
+import { Zap, ShieldAlert, Check, Eye, EyeOff } from 'lucide-react';
 import Button from '../components/ui/button';
 import Input from '../components/ui/input';
 import Card from '../components/ui/card';
@@ -30,6 +30,8 @@ export default function Signup() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const {
     register,
@@ -131,21 +133,41 @@ export default function Signup() {
               )}
             </div>
 
-            <Input
-              label="Access Code (Password)"
-              placeholder="••••••••"
-              type="password"
-              error={errors.password?.message}
-              {...register('password')}
-            />
+            <div className="relative">
+              <Input
+                label="Access Code (Password)"
+                placeholder="••••••••"
+                type={showPassword ? 'text' : 'password'}
+                error={errors.password?.message}
+                className="pr-12"
+                {...register('password')}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-[38px] text-zinc-400 hover:text-white transition-colors z-10"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
 
-            <Input
-              label="Confirm Access Code"
-              placeholder="••••••••"
-              type="password"
-              error={errors.confirmPassword?.message}
-              {...register('confirmPassword')}
-            />
+            <div className="relative">
+              <Input
+                label="Confirm Access Code"
+                placeholder="••••••••"
+                type={showConfirmPassword ? 'text' : 'password'}
+                error={errors.confirmPassword?.message}
+                className="pr-12"
+                {...register('confirmPassword')}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3.5 top-[38px] text-zinc-400 hover:text-white transition-colors z-10"
+              >
+                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
 
             <Button
               type="submit"

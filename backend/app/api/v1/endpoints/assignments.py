@@ -55,7 +55,7 @@ class CoordinatorAssignmentResponse(BaseModel):
 @router.get("/coordinators", response_model=StandardResponse[List[CoordinatorAssignmentResponse]])
 def list_coordinator_assignments(
     db: Session = Depends(get_db),
-    admin_user: User = Depends(RoleChecker([UserRole.ADMIN]))
+    admin_user: User = Depends(RoleChecker([UserRole.ADMIN, UserRole.COORDINATOR]))
 ):
     """List all coordinator assignments in the system."""
     assigns = db.query(CoordinatorAssignment).all()
@@ -153,7 +153,7 @@ def revoke_coordinator_assignment(
 @router.get("/judges", response_model=StandardResponse[List[JudgeAssignmentResponse]])
 def list_judge_assignments(
     db: Session = Depends(get_db),
-    admin_user: User = Depends(RoleChecker([UserRole.ADMIN]))
+    admin_user: User = Depends(RoleChecker([UserRole.ADMIN, UserRole.COORDINATOR]))
 ):
     """List all judge assignments in the system."""
     assigns = db.query(JudgeAssignment).all()

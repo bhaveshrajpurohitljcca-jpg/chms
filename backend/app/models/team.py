@@ -29,6 +29,13 @@ class Team(BaseTable):
     invitations = relationship("TeamInvitation", back_populates="team", cascade="all, delete-orphan")
     registrations = relationship("Registration", back_populates="team", cascade="all, delete-orphan")
 
+    @property
+    def problem_statement_id(self):
+        if self.registrations and len(self.registrations) > 0:
+            return self.registrations[0].problem_statement_id
+        return None
+
+
 class TeamMember(BaseTable):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     team_id = Column(String(36), ForeignKey("team.id", ondelete="CASCADE"), nullable=False)

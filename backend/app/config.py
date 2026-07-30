@@ -19,7 +19,9 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "local"
     
     # CORS
-    CORS_ORIGINS: Union[str, List[str]] = ["http://localhost:5173", "http://localhost:3000"]
+    CORS_ORIGINS: Union[str, List[str]] = [
+        o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://localhost:5174").split(",")
+    ]
 
     # Database
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./test.db")

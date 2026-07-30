@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.team import Team, TeamMember, TeamStatus, MemberRole
-from app.models.hackathon import Hackathon
-from app.models.user import User
+from app.models.hackathon import Hackathon, CoordinatorAssignment
+from app.models.user import User, UserRole
 from app.models.invitation import TeamInvitation, InvitationStatus
 from app.schemas.team import TeamCreate, TeamJoin, TeamResponse
 from app.schemas.invitation import InvitationCreate, InvitationResponse
@@ -78,6 +78,20 @@ def create_team(
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found.")
 
+    # Prevent duplicate team participation in the same hackathon
+    member_records = db.query(TeamMember).filter(TeamMember.user_id == current_user.id).all()
+    team_ids = [m.team_id for m in member_records]
+    if team_ids:
+        already_joined = db.query(Team).filter(
+            Team.id.in_(team_ids),
+            Team.hackathon_id == hackathon.id
+        ).first()
+        if already_joined:
+            raise HTTPException(
+                status_code=400,
+                detail="You are already participating in a team for this hackathon."
+            )
+
     join_code = secrets.token_hex(4).upper()
     team = Team(
         hackathon_id=hackathon.id,
@@ -114,6 +128,20 @@ def join_team(
     team = db.query(Team).filter(Team.join_code == payload.join_code.strip().upper()).first()
     if not team:
         raise HTTPException(status_code=404, detail="Invalid team join code.")
+
+    # Prevent duplicate team participation in the same hackathon
+    member_records = db.query(TeamMember).filter(TeamMember.user_id == current_user.id).all()
+    team_ids = [m.team_id for m in member_records]
+    if team_ids:
+        already_joined = db.query(Team).filter(
+            Team.id.in_(team_ids),
+            Team.hackathon_id == team.hackathon_id
+        ).first()
+        if already_joined:
+            raise HTTPException(
+                status_code=400,
+                detail="You are already participating in a team for this hackathon."
+            )
 
     existing_member = db.query(TeamMember).filter(
         TeamMember.team_id == team.id,
@@ -275,6 +303,20 @@ def accept_invitation(
     team = db.query(Team).filter(Team.id == invitation.team_id).first()
     if not team:
         raise HTTPException(status_code=404, detail="Team no longer exists.")
+
+    # Prevent duplicate team participation in the same hackathon
+    member_records = db.query(TeamMember).filter(TeamMember.user_id == current_user.id).all()
+    team_ids = [m.team_id for m in member_records]
+    if team_ids:
+        already_joined = db.query(Team).filter(
+            Team.id.in_(team_ids),
+            Team.hackathon_id == team.hackathon_id
+        ).first()
+        if already_joined:
+            raise HTTPException(
+                status_code=400,
+                detail="You are already participating in a team for this hackathon."
+            )
 
     # Check capacity again at acceptance time
     current_member_count = db.query(TeamMember).filter(TeamMember.team_id == team.id).count()

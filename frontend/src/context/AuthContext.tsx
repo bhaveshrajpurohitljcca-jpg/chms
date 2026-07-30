@@ -13,6 +13,7 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthModalOpen: boolean;
+  authModalTab: 'login' | 'register';
   openAuthModal: (initialMode?: 'login' | 'register') => void;
   closeAuthModal: () => void;
   login: (email: string, password: string) => Promise<UserProfile>;
@@ -86,6 +87,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(getStoredToken());
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [authModalTab, setAuthModalTab] = useState<'login' | 'register'>('login');
 
   useEffect(() => {
     async function initAuth() {
@@ -119,7 +121,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const openAuthModal = () => setIsAuthModalOpen(true);
+  const openAuthModal = (initialMode: 'login' | 'register' = 'login') => {
+    setAuthModalTab(initialMode);
+    setIsAuthModalOpen(true);
+  };
   const closeAuthModal = () => setIsAuthModalOpen(false);
 
   const login = async (email: string, password: string): Promise<UserProfile> => {
@@ -244,6 +249,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         token,
         isLoading,
         isAuthModalOpen,
+        authModalTab,
         openAuthModal,
         closeAuthModal,
         login,

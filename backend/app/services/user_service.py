@@ -106,6 +106,11 @@ def update_user_admin(db: Session, db_user: User, update_in: UserUpdateAdmin) ->
     """
     Allows Admin to update any user profile field including role and active state.
     """
+    if update_in.email is not None:
+        db_user.email = update_in.email
+    if update_in.password is not None and update_in.password.strip() != "":
+        from app.core.security import hash_password
+        db_user.hashed_password = hash_password(update_in.password)
     if update_in.full_name is not None:
         db_user.full_name = update_in.full_name
     if update_in.role is not None:

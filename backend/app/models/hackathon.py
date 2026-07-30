@@ -31,6 +31,7 @@ class Hackathon(BaseTable):
     status = Column(SQLEnum(HackathonStatus), default=HackathonStatus.UPCOMING, nullable=False)
     banner_url = Column(String(500), nullable=True)
     results_published = Column(Boolean, default=False, nullable=False)
+    announce_ps_advance = Column(Boolean, default=True, nullable=False)
 
 
     problem_statements = relationship("ProblemStatement", back_populates="hackathon", cascade="all, delete-orphan")

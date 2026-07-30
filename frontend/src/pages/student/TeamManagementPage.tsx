@@ -31,7 +31,10 @@ export const TeamManagementPage: React.FC = () => {
   const { user } = useAuth();
 
   // Data state
+  const [myTeamsList, setMyTeamsList] = useState<BackendTeam[]>([]);
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   const [activeTeam, setActiveTeam] = useState<BackendTeam | null>(null);
+  const [allHackathons, setAllHackathons] = useState<any[]>([]);
   const [invitations, setInvitations] = useState<BackendInvitation[]>([]);
   const [sentInvitations, setSentInvitations] = useState<BackendInvitation[]>([]);
 
@@ -39,50 +42,76 @@ export const TeamManagementPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
-  const [joinCodeInput, setJoinCodeInput] = useState('');
-  const [joinLoading, setJoinLoading] = useState(false);
-  const [joinError, setJoinError] = useState('');
   const [copiedCode, setCopiedCode] = useState(false);
   const [removeError, setRemoveError] = useState('');
 
+  // New Team Wizard Modal state
+  const [isNewTeamModalOpen, setIsNewTeamModalOpen] = useState(false);
+  const [newTeamMode, setNewTeamMode] = useState<'create' | 'join'>('create');
+  const [newTeamHackathonId, setNewTeamHackathonId] = useState('');
+  const [newTeamName, setNewTeamName] = useState('');
+  const [newTeamCode, setNewTeamCode] = useState('');
+  const [wizardLoading, setWizardLoading] = useState(false);
+  const [wizardError, setWizardError] = useState('');
+
   const isLeader = activeTeam ? activeTeam.leader_id === user?.id : false;
   const memberCount = activeTeam?.members.length || 0;
-  const maxTeamSize = 4; // Default; backend hackathon data would have exact max
+  const maxTeamSize = activeTeam?.hackathon?.max_team_size || 4;
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (selectTeamIdAfterLoad?: string) => {
     try {
       setIsLoading(true);
       setError('');
 
       // Load user's teams
       const teamsRes = await apiService.getMyTeams();
-      // Load user's teams (store in activeTeam directly)
       const myTeams = teamsRes.data || [];
+      setMyTeamsList(myTeams);
 
-      // Use the first team as active team
-      const primary = myTeams.length > 0 ? myTeams[0] : null;
+      // Load all hackathons
+      const hacksRes = await apiService.listHackathons();
+      setAllHackathons(hacksRes.data || []);
+
+      // Select active team
+      let primary: BackendTeam | null = null;
+      if (selectTeamIdAfterLoad) {
+        primary = myTeams.find((t: any) => t.id === selectTeamIdAfterLoad) || null;
+      }
+      if (!primary && selectedTeamId) {
+        primary = myTeams.find((t: any) => t.id === selectedTeamId) || null;
+      }
+      if (!primary && myTeams.length > 0) {
+        primary = myTeams[0];
+      }
+
       setActiveTeam(primary);
+      if (primary) {
+        setSelectedTeamId(primary.id);
+        // Load sent invitations if leader
+        if (primary.leader_id === user?.id) {
+          const sentRes = await apiService.getSentInvitations(primary.id);
+          setSentInvitations(sentRes.data || []);
+        } else {
+          setSentInvitations([]);
+        }
+      } else {
+        setSelectedTeamId('');
+        setSentInvitations([]);
+      }
 
       // Load received invitations (for non-team members to see invites)
       const invRes = await apiService.getReceivedInvitations();
       setInvitations(invRes.data || []);
-
-      // Load sent invitations if leader
-      if (primary && primary.leader_id === user?.id) {
-        const sentRes = await apiService.getSentInvitations(primary.id);
-        setSentInvitations(sentRes.data || []);
-      }
     } catch (err: any) {
       setError(err.message || 'Failed to load team data.');
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, selectedTeamId]);
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, [user?.id]);
 
   const handleCopyCode = () => {
     if (!activeTeam) return;
@@ -91,19 +120,70 @@ export const TeamManagementPage: React.FC = () => {
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  const handleJoinTeam = async () => {
-    if (!joinCodeInput.trim()) return;
-    setJoinLoading(true);
-    setJoinError('');
+  const handleTeamDropdownChange = async (teamId: string) => {
+    setSelectedTeamId(teamId);
+    const targetTeam = myTeamsList.find(t => t.id === teamId) || null;
+    setActiveTeam(targetTeam);
+    if (targetTeam) {
+      if (targetTeam.leader_id === user?.id) {
+        try {
+          const sentRes = await apiService.getSentInvitations(targetTeam.id);
+          setSentInvitations(sentRes.data || []);
+        } catch {
+          setSentInvitations([]);
+        }
+      } else {
+        setSentInvitations([]);
+      }
+    }
+  };
+
+  const handleWizardSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setWizardError('');
+    setWizardLoading(true);
+
     try {
-      await apiService.joinTeam(joinCodeInput.trim());
-      setIsJoinModalOpen(false);
-      setJoinCodeInput('');
-      await loadData();
+      if (newTeamMode === 'create') {
+        if (!newTeamHackathonId) {
+          setWizardError('Please select a hackathon.');
+          setWizardLoading(false);
+          return;
+        }
+        if (!newTeamName.trim()) {
+          setWizardError('Please enter a team name.');
+          setWizardLoading(false);
+          return;
+        }
+        const createRes = await apiService.createTeam({
+          name: newTeamName.trim(),
+          hackathon_id: newTeamHackathonId
+        });
+        if (createRes.success && createRes.data) {
+          setIsNewTeamModalOpen(false);
+          setNewTeamName('');
+          setNewTeamHackathonId('');
+          // Refresh and select the newly created team
+          await loadData(createRes.data.id);
+        }
+      } else {
+        if (!newTeamCode.trim()) {
+          setWizardError('Please enter a valid join code.');
+          setWizardLoading(false);
+          return;
+        }
+        const joinRes = await apiService.joinTeam(newTeamCode.trim().toUpperCase());
+        if (joinRes.success && joinRes.data) {
+          setIsNewTeamModalOpen(false);
+          setNewTeamCode('');
+          // Refresh and select the newly joined team
+          await loadData(joinRes.data.id);
+        }
+      }
     } catch (err: any) {
-      setJoinError(err.message || 'Failed to join team. Check the code and try again.');
+      setWizardError(err.message || 'Failed to submit team request.');
     } finally {
-      setJoinLoading(false);
+      setWizardLoading(false);
     }
   };
 
@@ -154,6 +234,12 @@ export const TeamManagementPage: React.FC = () => {
     );
   }
 
+  const eligibleHackathons = allHackathons.filter(h => {
+    // Show only ongoing/upcoming hackathons where student does not have a team yet
+    const hasTeam = myTeamsList.some(t => t.hackathon_id === h.id);
+    return !hasTeam && h.status !== 'ended';
+  });
+
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto w-full font-manrope">
       
@@ -171,7 +257,41 @@ export const TeamManagementPage: React.FC = () => {
             Form your hackathon squad, invite fellow student developers, and manage member credentials.
           </p>
         </div>
+
+        <div className="flex-shrink-0">
+          <Button
+            variant="primary"
+            onClick={() => {
+              setWizardError('');
+              setIsNewTeamModalOpen(true);
+            }}
+            className="h-10 text-xs px-5 flex items-center gap-1.5"
+          >
+            <UserPlus size={15} />
+            <span>New Team Selection</span>
+          </Button>
+        </div>
       </div>
+
+      {/* Team Dropdown Selector */}
+      {myTeamsList.length > 0 && (
+        <div className="p-6 rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl flex flex-col gap-3">
+          <label className="text-xs uppercase tracking-widest font-bold text-white/60 block">
+            Select Active Hackathon Team Context
+          </label>
+          <select
+            value={selectedTeamId}
+            onChange={(e) => handleTeamDropdownChange(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl text-xs text-white bg-black/60 border border-white/10 outline-none focus:border-accent-primary transition-all duration-200"
+          >
+            {myTeamsList.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name} (Event: {t.hackathon?.title || `ID: ${t.hackathon_id}`})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {!activeTeam ? (
         /* No team — Show invitations + empty state */
@@ -188,26 +308,12 @@ export const TeamManagementPage: React.FC = () => {
             title="You Are Not In A Team"
             description="To register for college hackathons, you must either form a new team as a leader or join an existing team using a team join code."
             icon={Users}
-            actionLabel="Create New Sprint Team"
-            onAction={() => navigate('/student/team/create')}
+            actionLabel="Form Sprint Team"
+            onAction={() => {
+              setWizardError('');
+              setIsNewTeamModalOpen(true);
+            }}
           />
-
-          {/* Join by code option */}
-          <Card className="flex flex-col gap-3 max-w-md mx-auto w-full">
-            <h4 className="text-xs uppercase tracking-wider text-accent-primary font-bold">
-              Have a Join Code?
-            </h4>
-            <p className="text-xs text-white/60 leading-relaxed font-light">
-              A peer team leader can share their unique join code with you.
-            </p>
-            <Button
-              variant="secondary"
-              onClick={() => setIsJoinModalOpen(true)}
-              className="h-10 text-xs w-full mt-1"
-            >
-              Enter Join Code
-            </Button>
-          </Card>
         </div>
       ) : (
         /* Active Team Dashboard */
@@ -222,7 +328,7 @@ export const TeamManagementPage: React.FC = () => {
               <div className="flex items-center justify-between border-b border-white/10 pb-4 flex-wrap gap-4">
                 <div>
                   <span className="text-[10px] font-mono uppercase tracking-wider text-white/40 block font-semibold">
-                    Hackathon ID: {activeTeam.hackathon_id.slice(0, 8).toUpperCase()}
+                    Hackathon: {activeTeam.hackathon?.title || activeTeam.hackathon_id}
                   </span>
                   <h3 className="font-archivo text-2xl font-black text-glow-cyan text-white uppercase mt-1">
                     {activeTeam.name}
@@ -255,7 +361,7 @@ export const TeamManagementPage: React.FC = () => {
               <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 flex items-center justify-between gap-4">
                 <div>
                   <span className="text-[10px] uppercase tracking-wider text-white/40 block font-semibold">
-                    Unique Team Join Code
+                    Unique Team Join Code (Share with classmates to invite them)
                   </span>
                   <span className="font-mono text-lg font-bold text-accent-primary tracking-wider">
                     {activeTeam.join_code}
@@ -280,7 +386,7 @@ export const TeamManagementPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <ShieldCheck size={18} className="text-accent-primary" />
                   <h4 className="font-archivo text-lg uppercase font-bold text-white">
-                    Team Members ({memberCount})
+                    Team Members ({memberCount} / {maxTeamSize})
                   </h4>
                 </div>
 
@@ -432,7 +538,6 @@ export const TeamManagementPage: React.FC = () => {
                 variant="danger"
                 onClick={() => {
                   if (confirm('Are you sure you want to leave this team?')) {
-                    // Leave team — not yet in backend scope but we can show a message
                     alert('Leave team functionality will be available in the next sprint update.');
                   }
                 }}
@@ -472,20 +577,23 @@ export const TeamManagementPage: React.FC = () => {
               </div>
             </Card>
 
-            {/* Join another team */}
+            {/* Join another team card */}
             <Card className="flex flex-col gap-3">
               <h4 className="text-xs uppercase tracking-wider text-accent-primary font-bold">
-                Join Another Team?
+                Join/Create for another Event?
               </h4>
               <p className="text-xs text-white/60 leading-relaxed font-light">
-                Have a join code from a peer leader? Use code entry to join their squad.
+                Form or join another sprint squad for a different ongoing hackathon.
               </p>
               <Button
                 variant="secondary"
-                onClick={() => setIsJoinModalOpen(true)}
+                onClick={() => {
+                  setWizardError('');
+                  setIsNewTeamModalOpen(true);
+                }}
                 className="h-10 text-xs w-full mt-1"
               >
-                Enter Join Code
+                Create/Join Wizard
               </Button>
             </Card>
 
@@ -509,44 +617,108 @@ export const TeamManagementPage: React.FC = () => {
         />
       )}
 
-      {/* Join Code Modal */}
+      {/* Wizard Modal: New Team Selection (Create/Join) */}
       <Modal
-        isOpen={isJoinModalOpen}
-        onClose={() => { setIsJoinModalOpen(false); setJoinError(''); }}
-        title="Join Team via Code"
+        isOpen={isNewTeamModalOpen}
+        onClose={() => { setIsNewTeamModalOpen(false); setWizardError(''); }}
+        title="Form or Join Sprint Team"
       >
-        <div className="flex flex-col gap-4 py-2 font-manrope">
-          <p className="text-xs text-white/70">
-            Paste the unique team join code provided by your team leader.
+        <form onSubmit={handleWizardSubmit} className="flex flex-col gap-5 py-2 font-manrope text-xs text-white">
+          <p className="text-xs text-white/60">
+            Form a new sprint squad as a Leader, or paste a join code from a classmate to join as a Member.
           </p>
-          <Input
-            label="Team Join Code"
-            placeholder="e.g. A1B2C3D4"
-            value={joinCodeInput}
-            onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
-          />
 
-          {joinError && (
+          <div className="flex items-center justify-center p-1 rounded-xl bg-white/5 border border-white/10">
+            <button
+              type="button"
+              onClick={() => { setNewTeamMode('create'); setWizardError(''); }}
+              className={`flex-1 py-2 text-center text-xs font-bold rounded-lg transition-all ${
+                newTeamMode === 'create' ? 'bg-accent-primary text-black' : 'text-white/60 hover:text-white'
+              }`}
+            >
+              Create New Team (Leader)
+            </button>
+            <button
+              type="button"
+              onClick={() => { setNewTeamMode('join'); setWizardError(''); }}
+              className={`flex-1 py-2 text-center text-xs font-bold rounded-lg transition-all ${
+                newTeamMode === 'join' ? 'bg-accent-primary text-black' : 'text-white/60 hover:text-white'
+              }`}
+            >
+              Join Existing Team (Member)
+            </button>
+          </div>
+
+          {newTeamMode === 'create' ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs uppercase tracking-widest font-bold text-white/60">
+                  Select Hackathon Event
+                </label>
+                <select
+                  value={newTeamHackathonId}
+                  onChange={(e) => setNewTeamHackathonId(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl text-xs text-white bg-black/60 border border-white/10 outline-none focus:border-accent-primary"
+                >
+                  <option value="">-- Choose Eligible Hackathon --</option>
+                  {eligibleHackathons.map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.title} (Starts: {new Date(h.start_date).toLocaleDateString()})
+                    </option>
+                  ))}
+                </select>
+                {eligibleHackathons.length === 0 && (
+                  <p className="text-[10px] text-yellow-400/80 mt-1 font-light">
+                    You have already formed teams for all ongoing/upcoming events.
+                  </p>
+                )}
+              </div>
+
+              <Input
+                label="Team Name"
+                placeholder="e.g. Code_Commandos"
+                value={newTeamName}
+                onChange={(e) => setNewTeamName(e.target.value)}
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <Input
+                label="Team Join Code"
+                placeholder="e.g. X1Y2Z3W4"
+                value={newTeamCode}
+                onChange={(e) => setNewTeamCode(e.target.value.toUpperCase())}
+              />
+            </div>
+          )}
+
+          {wizardError && (
             <div className="p-3 rounded-xl bg-danger/10 border border-danger/30 text-danger text-xs flex items-center gap-2">
-              <AlertCircle size={14} />
-              <span>{joinError}</span>
+              <AlertCircle size={14} className="flex-shrink-0" />
+              <span>{wizardError}</span>
             </div>
           )}
 
           <div className="flex justify-end gap-3 pt-3 border-t border-white/10">
-            <Button variant="secondary" onClick={() => { setIsJoinModalOpen(false); setJoinError(''); }} className="h-10 text-xs px-4">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => { setIsNewTeamModalOpen(false); setWizardError(''); }}
+              className="h-10 text-xs px-4"
+            >
               Cancel
             </Button>
             <Button
+              type="submit"
               variant="primary"
-              isLoading={joinLoading}
-              onClick={handleJoinTeam}
+              isLoading={wizardLoading}
+              disabled={newTeamMode === 'create' && eligibleHackathons.length === 0}
               className="h-10 text-xs px-6"
             >
-              Submit Join Request
+              {newTeamMode === 'create' ? 'Initialize Team' : 'Join Team'}
             </Button>
           </div>
-        </div>
+        </form>
       </Modal>
 
     </div>

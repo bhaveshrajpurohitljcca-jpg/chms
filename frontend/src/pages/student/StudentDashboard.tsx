@@ -6,16 +6,19 @@ import Button from '@/components/ui/button';
 import { 
   Trophy, 
   Users, 
-  CheckCircle, 
   Clock, 
   FileCode2, 
   ArrowRight, 
   Megaphone,
   Sparkles,
-  Mail
+  Mail,
+  Crown,
+  AlertCircle,
+  ShieldCheck,
+  Calendar
 } from 'lucide-react';
 import { apiService } from '@/services/api';
-import type { BackendHackathon, BackendTeam, BackendRegistration, BackendInvitation } from '@/services/api';
+import type { BackendHackathon, BackendRegistration, BackendInvitation } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { HackathonCard } from '@/components/student/HackathonCard';
 import { LoadingState } from '@/components/student/StateContainer';
@@ -27,41 +30,86 @@ export const StudentDashboard: React.FC = () => {
 
   // Data state
   const [hackathons, setHackathons] = useState<BackendHackathon[]>([]);
-  const [myTeam, setMyTeam] = useState<BackendTeam | null>(null);
-  const [myRegistration, setMyRegistration] = useState<BackendRegistration | null>(null);
+  const [registrations, setRegistrations] = useState<BackendRegistration[]>([]);
+  const [selectedRegId, setSelectedRegId] = useState<string>('');
   const [pendingInvitations, setPendingInvitations] = useState<BackendInvitation[]>([]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [submissionsCount, setSubmissionsCount] = useState<number>(0);
+  const [pendingEvaluations, setPendingEvaluations] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadDashboard() {
-      try {
-        setIsLoading(true);
-        const [hackathonsRes, teamsRes, registrationsRes, invitationsRes] = await Promise.allSettled([
-          apiService.listHackathons(),
-          apiService.getMyTeams(),
-          apiService.getMyRegistrations(),
-          apiService.getReceivedInvitations(),
-        ]);
+  // Selector state for problem statements
+  const [selectedPSId, setSelectedPSId] = useState('');
+  const [psError, setPsError] = useState('');
+  const [psLoading, setPsLoading] = useState(false);
 
-        if (hackathonsRes.status === 'fulfilled' && hackathonsRes.value.data) {
-          setHackathons(hackathonsRes.value.data);
-        }
-        if (teamsRes.status === 'fulfilled' && teamsRes.value.data) {
-          setMyTeam(teamsRes.value.data[0] || null);
-        }
-        if (registrationsRes.status === 'fulfilled' && registrationsRes.value.data) {
-          setMyRegistration(registrationsRes.value.data[0] || null);
-        }
-        if (invitationsRes.status === 'fulfilled' && invitationsRes.value.data) {
-          const pending = invitationsRes.value.data.filter(i => i.status === 'pending');
-          setPendingInvitations(pending);
-        }
-      } catch {
-        // Silently fail — dashboard is non-critical; individual pages will retry
-      } finally {
-        setIsLoading(false);
+  const loadDashboard = async () => {
+    try {
+      setIsLoading(true);
+      const [hackathonsRes, registrationsRes, invitationsRes, notificationsRes] = await Promise.allSettled([
+        apiService.listHackathons(),
+        apiService.getMyRegistrations(),
+        apiService.getReceivedInvitations(),
+        apiService.listNotifications(1, 20)
+      ]);
+
+      if (hackathonsRes.status === 'fulfilled' && hackathonsRes.value.data) {
+        setHackathons(hackathonsRes.value.data);
       }
+      
+      let myRegs: BackendRegistration[] = [];
+      if (registrationsRes.status === 'fulfilled' && registrationsRes.value.data) {
+        myRegs = registrationsRes.value.data;
+        setRegistrations(myRegs);
+        if (myRegs.length > 0) {
+          setSelectedRegId(myRegs[0].id);
+        }
+      }
+
+      if (invitationsRes.status === 'fulfilled' && invitationsRes.value.data) {
+        const pending = invitationsRes.value.data.filter(i => i.status === 'pending');
+        setPendingInvitations(pending);
+      }
+
+      if (notificationsRes.status === 'fulfilled' && notificationsRes.value.data) {
+        setAnnouncements(notificationsRes.value.data.notifications || []);
+      }
+
+      // Load analytics (Submissions & Evaluations)
+      try {
+        const teamsRes = await apiService.getMyTeams();
+        const myTeams = teamsRes.data || [];
+        let subCount = 0;
+        let pendingEval = 0;
+
+        await Promise.all(myTeams.map(async (team: any) => {
+          try {
+            const subRes = await apiService.getMySubmission(team.hackathon_id);
+            if (subRes.success && subRes.data) {
+              subCount++;
+              if (subRes.data.status === 'pending') {
+                pendingEval++;
+              }
+            }
+          } catch {
+            // No submission
+          }
+        }));
+
+        setSubmissionsCount(subCount);
+        setPendingEvaluations(pendingEval);
+      } catch (err: any) {
+        console.warn("Failed to load analytics details", err.message);
+      }
+
+    } catch (err: any) {
+      console.warn("Failed loading dashboard data", err.message);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadDashboard();
   }, []);
 
@@ -70,7 +118,38 @@ export const StudentDashboard: React.FC = () => {
   const displayedHackathons = activeTab === 'active' ? activeHackathons : upcomingHackathons;
 
   const isRegisteredFor = (hackathonId: string) =>
-    !!myRegistration && myRegistration.hackathon_id === hackathonId;
+    registrations.some(r => r.hackathon_id === hackathonId);
+
+  const activeReg = registrations.find(r => r.id === selectedRegId);
+
+  // Selected Hackathon details variables
+  const now = new Date();
+  const hasStarted = activeReg?.hackathon?.start_date
+    ? new Date(activeReg.hackathon.start_date) <= now
+    : false;
+  const isPsHidden = activeReg?.hackathon
+    ? !activeReg.hackathon.announce_ps_advance && !hasStarted
+    : false;
+
+  const isLeader = activeReg?.team ? activeReg.team.leader_id === user?.id : false;
+
+  const handleSelectProblemStatement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRegId || !selectedPSId) return;
+    setPsLoading(true);
+    setPsError('');
+    try {
+      const res = await apiService.selectProblemStatement(selectedRegId, selectedPSId);
+      if (res.success) {
+        setSelectedPSId('');
+        await loadDashboard();
+      }
+    } catch (err: any) {
+      setPsError(err.message || 'Failed to select problem statement.');
+    } finally {
+      setPsLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -125,7 +204,7 @@ export const StudentDashboard: React.FC = () => {
               onClick={() => navigate('/student/hackathons')}
               className="h-11 px-5 text-xs"
             >
-              Browse Hackathons
+              Explore Events
             </Button>
             <Button 
               variant="primary" 
@@ -139,229 +218,289 @@ export const StudentDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Quick Overview Stats Cards */}
+      {/* 2. Lifetime Analytics Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card hoverable className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-accent-primary/10 border border-accent-primary/30 flex items-center justify-center text-accent-primary">
             <Trophy size={22} />
           </div>
           <div>
-            <span className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-semibold block">Active Hackathons</span>
-            <span className="font-archivo text-2xl font-black text-white">{activeHackathons.length} Live</span>
+            <span className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-semibold block">Joined Events</span>
+            <span className="font-archivo text-2xl font-black text-white">{registrations.length} Joined</span>
           </div>
         </Card>
 
         <Card hoverable className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-accent-secondary/10 border border-accent-secondary/30 flex items-center justify-center text-accent-secondary">
-            <Users size={22} />
+            <FileCode2 size={22} />
           </div>
           <div>
-            <span className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-semibold block">Current Team</span>
-            <span className="font-archivo text-xl font-black text-white truncate max-w-[120px]">
-              {myTeam ? myTeam.name : 'No Team'}
-            </span>
+            <span className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-semibold block">Submitted Projects</span>
+            <span className="font-archivo text-2xl font-black text-white">{submissionsCount} Submitted</span>
+          </div>
+        </Card>
+
+        <Card hoverable className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-warning/10 border border-warning/30 flex items-center justify-center text-warning">
+            <Clock size={22} />
+          </div>
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-semibold block">Pending Review</span>
+            <span className="font-archivo text-2xl font-black text-white">{pendingEvaluations} Projects</span>
           </div>
         </Card>
 
         <Card hoverable className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-success/10 border border-success/30 flex items-center justify-center text-success">
-            <CheckCircle size={22} />
+            <ShieldCheck size={22} />
           </div>
           <div>
-            <span className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-semibold block">Registration</span>
-            <span className="font-archivo text-xl font-black text-white capitalize">
-              {myRegistration ? myRegistration.status : 'None'}
-            </span>
-          </div>
-        </Card>
-
-        <Card hoverable className="flex items-center gap-4" onClick={() => navigate('/student/team')}>
-          <div className="w-12 h-12 rounded-2xl bg-warning/10 border border-warning/30 flex items-center justify-center text-warning">
-            <Mail size={22} />
-          </div>
-          <div>
-            <span className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-semibold block">Invitations</span>
-            <span className="font-archivo text-2xl font-black text-white">
-              {pendingInvitations.length} Pending
-            </span>
+            <span className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-semibold block">Clearance Level</span>
+            <span className="font-archivo text-xl font-black text-white capitalize">Student</span>
           </div>
         </Card>
       </div>
 
-      {/* 3. Main Dashboard Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left 2 Cols: Active & Upcoming Hackathons */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <h3 className="font-archivo text-xl uppercase font-black text-white">
-                College Hackathons
-              </h3>
-              <div className="flex rounded-full bg-white/5 border border-white/10 p-1">
-                <button
-                  onClick={() => setActiveTab('active')}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                    activeTab === 'active' ? 'bg-accent-primary text-black' : 'text-white/60 hover:text-white'
-                  }`}
-                >
-                  Active ({activeHackathons.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab('upcoming')}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                    activeTab === 'upcoming' ? 'bg-accent-primary text-black' : 'text-white/60 hover:text-white'
-                  }`}
-                >
-                  Upcoming ({upcomingHackathons.length})
-                </button>
+      {/* 3. Selected Hackathon Dropdown */}
+      {registrations.length > 0 && (
+        <div className="p-6 rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl flex flex-col gap-3">
+          <label className="text-xs uppercase tracking-widest font-bold text-white/60 block">
+            Select Active Registered Hackathon Event Context
+          </label>
+          <select
+            value={selectedRegId}
+            onChange={(e) => setSelectedRegId(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl text-xs text-white bg-black/60 border border-white/10 outline-none focus:border-accent-primary transition-all duration-200"
+          >
+            {registrations.map(reg => (
+              <option key={reg.id} value={reg.id}>
+                {reg.hackathon?.title || `Hackathon ID: ${reg.hackathon_id}`} (Team: {reg.team?.name})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* 4. Main Workspace Display for Selected Hackathon */}
+      {activeReg ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Active Team Card */}
+          <Card className="flex flex-col gap-5 border-accent-primary/20">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <span className="text-[10px] uppercase tracking-wider text-accent-primary font-bold">Team Workspace</span>
+              <Badge variant="success">Active</Badge>
+            </div>
+
+            <div>
+              <h4 className="font-archivo text-xl font-black text-white uppercase">{activeReg.team?.name}</h4>
+              <p className="text-xs text-white/50 mt-1">
+                Join Code: <span className="font-mono text-accent-primary font-semibold">{activeReg.team?.join_code}</span>
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 bg-white/[0.02] p-4 rounded-2xl border border-white/5 text-xs">
+              <div className="flex items-center gap-2 text-white/70">
+                <Crown size={13} className="text-accent-primary" />
+                <span>Leader: <strong>{isLeader ? 'You' : (activeReg.team?.leader?.full_name || 'Leader')}</strong></span>
+              </div>
+              <div className="flex items-center gap-2 text-white/70 mt-1">
+                <Users size={13} className="text-white/40" />
+                <span>Roster size: {activeReg.team?.members?.length || 1} members</span>
               </div>
             </div>
 
-            <Link to="/student/hackathons" className="text-xs text-accent-primary hover:underline flex items-center gap-1">
-              <span>View All</span>
-              <ArrowRight size={14} />
-            </Link>
-          </div>
+            <Button
+              variant="secondary"
+              onClick={() => navigate('/student/team')}
+              className="h-10 text-xs w-full mt-auto"
+            >
+              Go to Team Portal
+            </Button>
+          </Card>
 
-          {displayedHackathons.length === 0 ? (
-            <div className="p-8 rounded-3xl bg-white/[0.02] border border-white/10 text-center">
-              <p className="text-sm text-white/50">No {activeTab} hackathons right now.</p>
+          {/* Problem Statement Card */}
+          <Card className="flex flex-col gap-5 border-accent-secondary/20">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <span className="text-[10px] uppercase tracking-wider text-accent-secondary font-bold">Problem Statement</span>
+              <Badge variant="info">Context</Badge>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {displayedHackathons.slice(0, 4).map((hackathon) => (
-                <HackathonCard
-                  key={hackathon.id}
-                  hackathon={hackathon}
-                  isRegistered={isRegisteredFor(hackathon.id)}
-                  onInspect={(h) => navigate(`/student/hackathons/${h.id}`)}
-                  onRegister={(h) => navigate(`/student/registration?hackathonId=${h.id}`)}
-                />
+
+            {isPsHidden ? (
+              <div className="flex flex-col items-center justify-center gap-4 py-8 text-center bg-yellow-500/5 border border-yellow-500/10 rounded-2xl p-5">
+                <AlertCircle className="text-yellow-400" size={24} />
+                <div>
+                  <p className="text-xs text-yellow-300 font-bold uppercase tracking-wider">Statements Hidden</p>
+                  <p className="text-[11px] text-white/50 mt-1 font-light">
+                    Problem statements will be announced on event launch day:
+                  </p>
+                  <p className="text-[11px] text-accent-secondary font-mono mt-1 font-semibold">
+                    {activeReg.hackathon?.start_date ? new Date(activeReg.hackathon.start_date).toLocaleDateString() : 'Event Day'}
+                  </p>
+                </div>
+              </div>
+            ) : activeReg.problem_statement ? (
+              <div className="flex flex-col gap-3">
+                <h4 className="font-archivo text-base font-bold text-white uppercase">{activeReg.problem_statement.title}</h4>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-[10px]">{activeReg.problem_statement.category}</Badge>
+                  <Badge variant="primary" className="text-[10px]">{activeReg.problem_statement.difficulty}</Badge>
+                </div>
+                <p className="text-xs text-white/60 leading-relaxed font-light mt-1">
+                  {activeReg.problem_statement.description}
+                </p>
+              </div>
+            ) : (
+              /* No PS selected yet, and release day has started / is advance */
+              <div className="flex flex-col gap-4">
+                <div className="p-3 rounded-xl bg-accent-secondary/5 border border-accent-secondary/20 text-xs text-accent-secondary">
+                  No problem statement has been chosen yet for your team.
+                </div>
+
+                {isLeader ? (
+                  <form onSubmit={handleSelectProblemStatement} className="flex flex-col gap-3">
+                    <label className="text-[11px] text-white/50 uppercase font-semibold">Select Statement Choice</label>
+                    <select
+                      value={selectedPSId}
+                      onChange={(e) => setSelectedPSId(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-black/60 border border-white/10 text-white outline-none focus:border-accent-secondary"
+                    >
+                      <option value="">-- Select Problem Statement --</option>
+                      {activeReg.hackathon?.problem_statements?.map((ps: any) => (
+                        <option key={ps.id} value={ps.id}>{ps.title} ({ps.difficulty})</option>
+                      ))}
+                    </select>
+
+                    {psError && (
+                      <p className="text-[10px] text-danger">{psError}</p>
+                    )}
+
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      isLoading={psLoading}
+                      disabled={!selectedPSId}
+                      className="h-9 text-xs w-full"
+                    >
+                      Lock In Choice
+                    </Button>
+                  </form>
+                ) : (
+                  <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 text-[11px] text-white/40">
+                    Waiting for your Team Leader to lock in a problem statement choice.
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+
+          {/* Bulletin & Status Card */}
+          <Card className="flex flex-col gap-5 border-success/20">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <span className="text-[10px] uppercase tracking-wider text-success font-bold">Campus Bulletin</span>
+              <Megaphone size={16} className="text-success" />
+            </div>
+
+            <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto">
+              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-xs">
+                <p className="font-semibold text-white">Event Launch Notification</p>
+                <p className="text-[10px] text-white/40 mt-1">
+                  Registration for {activeReg.hackathon?.title} is now successfully recorded. Prepare your workspace.
+                </p>
+              </div>
+
+              {announcements.filter(n => n.type === 'announcement').slice(0, 2).map((ann, i) => (
+                <div key={i} className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-xs">
+                  <p className="font-semibold text-white">{ann.title || 'Platform Announcement'}</p>
+                  <p className="text-[10px] text-white/40 mt-1">{ann.message}</p>
+                </div>
               ))}
             </div>
-          )}
-        </div>
 
-        {/* Right 1 Col: Team Status & Registration Summary */}
-        <div className="flex flex-col gap-6">
-          
-          {/* Active Registration Card */}
-          {myRegistration ? (
-            <Card hoverable className="flex flex-col gap-4 border-accent-primary/30">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <span className="text-[10px] uppercase tracking-wider text-accent-primary font-bold">Active Registration</span>
-                <Badge variant="success" className="capitalize">{myRegistration.status}</Badge>
-              </div>
-
-              <div>
-                <h4 className="font-archivo text-lg uppercase font-black text-white mb-1">
-                  {myRegistration.hackathon?.title || 'Hackathon'}
-                </h4>
-                {myRegistration.team && (
-                  <p className="text-xs text-white/60">
-                    Team: <span className="text-white font-semibold">{myRegistration.team.name}</span>
-                    {' '}({myRegistration.team.members.length} members)
-                  </p>
-                )}
-              </div>
-
-              {myRegistration.problem_statement && (
-                <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3">
-                  <FileCode2 size={20} className="text-accent-secondary flex-shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-white truncate">{myRegistration.problem_statement.title}</p>
-                    <p className="text-[10px] text-white/40">Selected Problem Statement</p>
-                  </div>
-                </div>
-              )}
-
-              <Button 
-                variant="secondary" 
-                onClick={() => navigate('/student/hackathons')}
-                className="h-10 text-xs w-full mt-1"
-              >
-                View Hackathon Details
-              </Button>
-            </Card>
-          ) : (
-            <Card hoverable className="flex flex-col gap-3 border-warning/20">
-              <div className="flex items-center gap-2 text-warning pb-2 border-b border-white/10">
-                <Clock size={16} />
-                <span className="text-xs uppercase tracking-wider font-bold text-white">Registration</span>
-              </div>
-              <p className="text-xs text-white/60">You haven't registered for any hackathon yet.</p>
-              <Button variant="primary" onClick={() => navigate('/student/registration')} className="h-10 text-xs">
-                Register Now
-              </Button>
-            </Card>
-          )}
-
-          {/* Quick Team Status Card */}
-          {myTeam ? (
-            <Card hoverable className="flex flex-col gap-4">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <span className="text-[10px] uppercase tracking-wider text-white/40 font-semibold">Your Sprint Team</span>
-                <span className="text-xs font-mono font-bold text-accent-primary">{myTeam.join_code}</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-md font-bold text-white">{myTeam.name}</h4>
-                  <p className="text-xs text-white/50">{myTeam.members.length} Active Teammates</p>
-                </div>
-                <Button
-                  variant="secondary"
-                  onClick={() => navigate('/student/team')}
-                  className="h-9 px-3 text-xs"
-                >
-                  Manage
-                </Button>
-              </div>
-
-              <div className="flex flex-col gap-2 pt-2">
-                {myTeam.members.slice(0, 3).map((m) => (
-                  <div key={m.id} className="flex items-center justify-between text-xs py-1.5 px-3 rounded-xl bg-white/[0.02]">
-                    <span className="font-medium text-white/80">{m.user?.full_name || m.user_id}</span>
-                    <span className="text-[10px] text-white/40 capitalize">{m.role_in_team}</span>
-                  </div>
-                ))}
-                {myTeam.members.length > 3 && (
-                  <p className="text-[10px] text-white/30 text-center">
-                    +{myTeam.members.length - 3} more members
-                  </p>
-                )}
-              </div>
-            </Card>
-          ) : (
-            <Card hoverable className="flex flex-col gap-3">
-              <div className="flex items-center gap-2 pb-2 border-b border-white/10">
-                <Users size={16} className="text-accent-primary" />
-                <span className="text-xs uppercase tracking-wider font-bold text-white">Sprint Team</span>
-              </div>
-              <p className="text-xs text-white/60">You're not part of any team yet.</p>
-              <Button variant="primary" onClick={() => navigate('/student/team/create')} className="h-10 text-xs">
-                Create a Team
-              </Button>
-            </Card>
-          )}
-
-          {/* Announcements Card */}
-          <Card hoverable className="flex flex-col gap-3">
-            <div className="flex items-center gap-2 text-accent-secondary border-b border-white/10 pb-2">
-              <Megaphone size={16} />
-              <span className="text-xs uppercase tracking-wider font-bold text-white">Campus Bulletin</span>
-            </div>
-            <div className="text-xs space-y-2">
-              <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-                <p className="font-semibold text-white">Welcome to CHMS Sprint 2</p>
-                <p className="text-[10px] text-white/40 mt-0.5">Backend integration is now live.</p>
-              </div>
-            </div>
+            <Button
+              variant="secondary"
+              onClick={() => navigate('/student/submission')}
+              className="h-10 text-xs w-full mt-auto"
+            >
+              Go to Submission Center
+            </Button>
           </Card>
 
         </div>
+      ) : (
+        /* Empty registrations state */
+        <div className="p-12 rounded-[30px] border border-white/10 bg-white/[0.01] text-center max-w-xl mx-auto flex flex-col items-center gap-6">
+          <div className="w-16 h-16 rounded-full bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center text-accent-primary">
+            <Calendar size={28} />
+          </div>
+          <div>
+            <h3 className="font-archivo text-xl font-black text-white uppercase tracking-tight">Not Registered for Any Event</h3>
+            <p className="text-xs text-white/50 mt-2 font-light max-w-sm mx-auto leading-relaxed">
+              Form or join a team inside the Team Portal first, then head to the hackathon directory to lock in registrations.
+            </p>
+          </div>
+          <div className="flex gap-4">
+            <Button variant="secondary" onClick={() => navigate('/student/hackathons')} className="h-10 text-xs px-6">
+              Browse Hackathons
+            </Button>
+            <Button variant="primary" onClick={() => navigate('/student/team')} className="h-10 text-xs px-6">
+              Go to Team Portal
+            </Button>
+          </div>
+        </div>
+      )}
 
+      {/* 5. General Hackathons Section */}
+      <div className="flex flex-col gap-6 mt-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h3 className="font-archivo text-xl uppercase font-black text-white">
+              Explore Hackathon Directory
+            </h3>
+            <div className="flex rounded-full bg-white/5 border border-white/10 p-1">
+              <button
+                onClick={() => setActiveTab('active')}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                  activeTab === 'active' ? 'bg-accent-primary text-black' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                Active ({activeHackathons.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('upcoming')}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                  activeTab === 'upcoming' ? 'bg-accent-primary text-black' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                Upcoming ({upcomingHackathons.length})
+              </button>
+            </div>
+          </div>
+
+          <Link to="/student/hackathons" className="text-xs text-accent-primary hover:underline flex items-center gap-1">
+            <span>View All</span>
+            <ArrowRight size={14} />
+          </Link>
+        </div>
+
+        {displayedHackathons.length === 0 ? (
+          <div className="p-8 rounded-3xl bg-white/[0.02] border border-white/10 text-center">
+            <p className="text-sm text-white/50">No {activeTab} hackathons right now.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {displayedHackathons.slice(0, 3).map((hackathon) => (
+              <HackathonCard
+                key={hackathon.id}
+                hackathon={hackathon}
+                isRegistered={isRegisteredFor(hackathon.id)}
+                onInspect={(h: BackendHackathon) => navigate(`/student/hackathons/${h.id}`)}
+                onRegister={(h: BackendHackathon) => navigate(`/student/registration?hackathonId=${h.id}`)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
     </div>

@@ -1,6 +1,6 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
-const STATIC_BASE = import.meta.env.VITE_API_BASE_URL
-  ? import.meta.env.VITE_API_BASE_URL.replace('/api/v1', '')
+export const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+const STATIC_BASE = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL)
+  ? (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL).replace('/api/v1', '')
   : 'http://localhost:8000';
 
 // ==========================================
@@ -59,6 +59,7 @@ export interface BackendHackathon {
   status: 'draft' | 'upcoming' | 'active' | 'ended';
   banner_url?: string;
   problem_statements: BackendProblemStatement[];
+  announce_ps_advance: boolean;
   created_at: string;
 }
 
@@ -80,6 +81,7 @@ export interface BackendTeam {
   status: 'pending' | 'approved' | 'rejected';
   leader?: UserProfile;
   members: BackendTeamMember[];
+  hackathon?: BackendHackathon;
   created_at: string;
 }
 
@@ -291,6 +293,23 @@ export const apiService = {
     });
   },
 
+  async updateUser(userId: string, payload: {
+    email?: string;
+    password?: string;
+    full_name?: string;
+    role?: string;
+    department?: string;
+    college_id?: string;
+    avatar_url?: string;
+    bio?: string;
+    is_active?: boolean;
+  }) {
+    return request<UserProfile>(`/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
   // ─── Assignments ───────────────────────────────────────────
   async listJudgeAssignments() {
     return request<any[]>('/assignments/judges');
@@ -367,6 +386,7 @@ export const apiService = {
     max_team_size?: number;
     min_team_size?: number;
     status?: string;
+    announce_ps_advance?: boolean;
   }) {
     return request<any>('/hackathons', {
       method: 'POST',
@@ -377,6 +397,46 @@ export const apiService = {
   async getHackathon(idOrSlug: string) {
     return request<BackendHackathon>(`/hackathons/${idOrSlug}`);
   },
+
+  async updateHackathon(hackathonId: string, payload: {
+    title: string;
+    slug: string;
+    tagline?: string;
+    description?: string;
+    start_date?: string;
+    end_date?: string;
+    registration_deadline?: string;
+    max_team_size?: number;
+    min_team_size?: number;
+    status?: string;
+    banner_url?: string;
+    announce_ps_advance?: boolean;
+  }) {
+    return request<any>(`/hackathons/${hackathonId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async updateProblemStatement(hackathonId: string, problemId: string, payload: {
+    title: string;
+    description: string;
+    category?: string;
+    difficulty?: string;
+    max_teams?: number;
+  }) {
+    return request<any>(`/hackathons/${hackathonId}/problem-statements/${problemId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async deleteProblemStatement(hackathonId: string, problemId: string) {
+    return request<any>(`/hackathons/${hackathonId}/problem-statements/${problemId}`, {
+      method: 'DELETE',
+    });
+  },
+
 
   // ─── Teams ────────────────────────────────────────────────
   async listTeams(hackathonId?: string) {
@@ -437,6 +497,12 @@ export const apiService = {
   },
 
   // ─── Registrations ──────────────────────────────────────────
+  /** List all registrations for a hackathon (admin/coordinator only) */
+  async listRegistrations(hackathonId?: string) {
+    const query = hackathonId ? `?hackathon_id=${hackathonId}` : '';
+    return request<BackendRegistration[]>(`/registrations${query}`);
+  },
+
   /** Register a team for a hackathon with a problem statement */
   async createRegistration(payload: {
     team_id: string;
@@ -452,6 +518,14 @@ export const apiService = {
   /** Get all registrations for teams the current user belongs to */
   async getMyRegistrations() {
     return request<BackendRegistration[]>('/registrations/my');
+  },
+
+  /** Select or update the problem statement choice for a registration */
+  async selectProblemStatement(registrationId: string, problemStatementId: string) {
+    return request<BackendRegistration>(`/registrations/${registrationId}/problem-statement`, {
+      method: 'PUT',
+      body: JSON.stringify({ problem_statement_id: problemStatementId }),
+    });
   },
 
   // ─── Submissions ───────────────────────────────────────────
@@ -561,6 +635,18 @@ export const apiService = {
     });
   },
 
+  async sendAnnouncement(payload: {
+    hackathon_id?: string;
+    title: string;
+    message: string;
+    target: string; // "all_users" | "team_leaders" | team_id
+  }) {
+    return request<number>('/notifications/announce', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
   // ─── Sprint 5 Leaderboard, Stats & Certificates ────────────
   async publishResults(hackathonId: string) {
     return request<any>(`/hackathons/${hackathonId}/publish-results`, {
@@ -584,6 +670,12 @@ export const apiService = {
 
   async getHackathonStats(hackathonId: string) {
     return request<any>(`/hackathons/${hackathonId}/stats`);
+  },
+
+  async resetSystem() {
+    return request<any>('/users/reset-system', {
+      method: 'POST',
+    });
   },
 };
 

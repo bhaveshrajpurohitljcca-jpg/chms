@@ -19,6 +19,49 @@ from app.services import user_service
 
 router = APIRouter(prefix="/users", tags=["Users & Profiles"])
 
+@router.post("/reset-system", response_model=StandardResponse[bool])
+def reset_system(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Wipes all data in the system and re-seeds it. Restricted to Admin role.
+    """
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Only system administrators can reset the platform."
+        )
+
+    try:
+        from app.models.submission import Evaluation, Submission
+        from app.models.team import TeamMember, Team
+        from app.models.hackathon import ProblemStatement, Hackathon, CoordinatorAssignment
+        from app.models.registration import Registration
+        from app.models.base import Base
+        from app.core.seed import seed_database
+        from app.database import engine
+
+        # Wiping database completely by dropping and recreating tables
+        Base.metadata.drop_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
+
+        # Trigger re-seed
+        seed_database(db, engine)
+
+        return StandardResponse(
+            success=True,
+            message="System database wiped and re-seeded successfully.",
+            data=True
+        )
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Reset failed: {str(e)}"
+        )
+
+
 @router.get("/me", response_model=StandardResponse[UserResponse])
 def get_current_user_profile(current_user: User = Depends(get_current_active_user)):
     """

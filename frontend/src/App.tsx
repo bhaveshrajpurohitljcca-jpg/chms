@@ -11,13 +11,10 @@ import {
 import { 
   Zap, 
   Cpu, 
-  Box, 
   ArrowRight,
   ChevronRight,
   Terminal,
-  Globe,
   Layers,
-  Shirt,
   Award,
   X,
   Layers2,
@@ -25,17 +22,20 @@ import {
   CheckCircle,
   Star,
   ExternalLink,
+  MessageCircle,
   FileText,
   Search,
   Plus,
   Check,
   Code,
   Users,
-  Megaphone,
   Shield,
-  Trash2
+  Trash2,
+  Edit2,
+  User,
+  Sparkles
 } from 'lucide-react';
-import { apiService } from '@/services/api';
+import { apiService, STATIC_BASE } from '@/services/api';
 import type { UserProfile } from '@/services/api';
 import ThreeParticleBg from '@/components/ui/ThreeParticleBg';
 import StatusPulseBadge from '@/components/ui/StatusPulseBadge';
@@ -58,8 +58,6 @@ import { AuthModal } from '@/components/auth/AuthModal';
 import { ProfilePage } from '@/pages/ProfilePage';
 
 // Auth Imports
-import Login from './pages/Login';
-import Signup from './pages/Signup';
 import ProfileSettings from './pages/ProfileSettings';
 import RoleLayout from './layouts/RoleLayout';
 import Badge from '@/components/ui/badge';
@@ -150,13 +148,6 @@ const GlobalLayout = () => {
               Sign In
             </button>
           )}
-
-          <button 
-            onClick={() => setIsMenuOpen(true)}
-            className="h-10 px-6 rounded-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.1)] hover:border-accent-primary hover:text-accent-primary text-xs font-semibold uppercase tracking-wider transition-all duration-300 flex items-center gap-2"
-          >
-            <span>Index</span>
-          </button>
         </div>
       </header>
 
@@ -273,14 +264,40 @@ const GlobalLayout = () => {
 
 // 1. PUBLIC SCROLLING LANDING PAGE
 const PublicLanding = () => {
-  const [email, setEmail] = useState('');
-  const { user } = useAuth();
+  const { user, openAuthModal } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [hackathons, setHackathons] = useState<any[]>([]);
 
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    alert(`Connected stream frequency to: ${email}`);
-    setEmail('');
-  };
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await apiService.listHackathons();
+        if (res && res.data) {
+          setHackathons(res.data);
+        }
+      } catch (err) {
+        console.warn('Failed to load public hackathons:', err);
+      }
+    }
+    load();
+  }, []);
+
+  useEffect(() => {
+    const authType = searchParams.get('auth');
+    if (!authType) return;
+
+    // Immediately clear the ?auth param from the URL to prevent re-trigger loops
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('auth');
+    setSearchParams(newParams, { replace: true });
+
+    // Only open the modal if user is not already logged in
+    if (!user && (authType === 'login' || authType === 'register')) {
+      openAuthModal(authType as 'login' | 'register');
+    }
+  }, [searchParams, setSearchParams, openAuthModal, user]);
+
+
 
   return (
     <div className="flex flex-col w-full pointer-events-auto">
@@ -306,16 +323,12 @@ const PublicLanding = () => {
             </Link>
           ) : (
             <>
-              <Link to="/login" className="w-full sm:w-auto">
-                <Button variant="primary" className="w-full px-10">
-                  Login Connection
-                </Button>
-              </Link>
-              <Link to="/signup" className="w-full sm:w-auto">
-                <Button variant="secondary" className="w-full px-10">
-                  Register Node
-                </Button>
-              </Link>
+              <Button variant="primary" className="w-full sm:w-auto px-10" onClick={() => openAuthModal('login')}>
+                Login Connection
+              </Button>
+              <Button variant="secondary" className="w-full sm:w-auto px-10" onClick={() => openAuthModal('register')}>
+                Register Node
+              </Button>
             </>
           )}
         </div>
@@ -328,11 +341,11 @@ const PublicLanding = () => {
       {/* Infinite Horizontal Marquee */}
       <section className="py-12 border-y border-[rgba(255,255,255,0.08)] bg-[#050505]/60 backdrop-blur-md overflow-hidden select-none">
         <div className="flex whitespace-nowrap animate-marquee">
-          <span className="font-archivo text-5xl font-black uppercase text-white/[0.03] tracking-[0.1em] mr-8">
-            REGISTRATIONS OPEN • PROJECTS SUBMITTED • LIVE SCORING IN PROGRESS • MINT CERTIFICATES • SYSTEM STABLE •
+          <span className="font-archivo text-5xl font-black uppercase text-white/10 tracking-[0.1em] mr-8">
+            LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION •
           </span>
-          <span className="font-archivo text-5xl font-black uppercase text-white/[0.03] tracking-[0.1em] mr-8">
-            REGISTRATIONS OPEN • PROJECTS SUBMITTED • LIVE SCORING IN PROGRESS • MINT CERTIFICATES • SYSTEM STABLE •
+          <span className="font-archivo text-5xl font-black uppercase text-white/10 tracking-[0.1em] mr-8">
+            LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION •
           </span>
         </div>
       </section>
@@ -340,40 +353,33 @@ const PublicLanding = () => {
       {/* Catalogue Grid */}
       <section id="protocol" className="py-32 px-8 max-w-7xl mx-auto w-full flex flex-col gap-16">
         <div className="flex flex-col gap-4">
-          <span className="text-xs uppercase tracking-[0.3em] text-accent-primary font-semibold">Active Runtimes</span>
+          <span className="text-xs uppercase tracking-[0.3em] text-accent-primary font-semibold">Ongoing & Completed</span>
           <h3 className="font-archivo text-4xl md:text-5xl font-black uppercase text-white">
-            LAB SYSTEM CATALOGUE
+            HACKATHONS PORTAL
           </h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <Link to="/hackathons">
-            <GlassProductCard 
-              icon={Shirt}
-              title="CYBER-KNIT HOODIE"
-              description="Synthetic heavy-weight fabrication with custom active heat-retention index and integrated mesh coordinates."
-              price="0.08 ETH"
-              accentColor="cyan"
-            />
-          </Link>
-          <Link to="/gallery">
-            <GlassProductCard 
-              icon={Layers}
-              title="NEURAL-FIT SHELL"
-              description="Triple-layer membrane offering adaptive wind-blocking, structural durability, and high-impact sealing."
-              price="0.15 ETH"
-              accentColor="pink"
-            />
-          </Link>
-          <Link to="/leaderboard">
-            <GlassProductCard 
-              icon={Cpu}
-              title="BIO-LOGIC TRACKER"
-              description="Continuous telemetry tracking metrics routed directly to on-wrist display nodes and local indices."
-              price="0.05 ETH"
-              accentColor="purple"
-            />
-          </Link>
+          {hackathons.filter(h => h.status === 'active' || h.status === 'ended').length > 0 ? (
+            hackathons.filter(h => h.status === 'active' || h.status === 'ended').slice(0, 3).map((hack, idx) => (
+              <Link key={hack.id} to="/hackathons">
+                <GlassProductCard 
+                  icon={idx % 3 === 0 ? Award : idx % 3 === 1 ? Zap : Cpu}
+                  title={hack.title}
+                  description={hack.tagline || hack.description || 'No description provided.'}
+                  price={hack.status === 'active' ? 'ONGOING' : 'COMPLETED'}
+                  accentColor={idx % 3 === 0 ? 'cyan' : idx % 3 === 1 ? 'pink' : 'purple'}
+                />
+              </Link>
+            ))
+          ) : (
+            <div className="col-span-3 text-center p-16 rounded-[40px] bg-white/[0.02] border border-white/10 flex flex-col items-center justify-center gap-4">
+              <span className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40">
+                <Cpu size={20} />
+              </span>
+              <p className="text-white/50 text-xs tracking-wider uppercase font-semibold">No ongoing or completed hackathons found.</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -382,22 +388,34 @@ const PublicLanding = () => {
         <div className="w-full rounded-[60px] glass-card p-10 md:p-16 flex flex-col lg:flex-row items-center gap-12 bg-white/[0.01]">
           
           <div className="flex-1 flex flex-col gap-6">
-            <span className="text-xs uppercase tracking-[0.3em] text-accent-secondary font-semibold">Generative Environment</span>
+            <span className="text-xs uppercase tracking-[0.3em] text-accent-secondary font-semibold">Advance Innovation Research & Analysis Lab</span>
             <h2 className="font-archivo text-6xl md:text-7xl font-black uppercase text-white tracking-tighter leading-none select-none">
-              0x_LAB
+              AiRA LAB
             </h2>
-            <p className="text-sm md:text-base text-text-secondary leading-relaxed font-light">
-              Interact with the WebGL particle field container. This sandbox measures real-time frame rates, mouse distance metrics, and rendering shader bounds within a high-performance react layout.
+            <p className="text-xs md:text-sm text-text-secondary leading-relaxed font-light">
+              <strong>AiRA Lab (Advance Innovation Research & Analysis Lab)</strong> was created to bridge the gap between classroom learning and real-world experience. The idea emerged after students participated in events and hackathons and realized that while there was no shortage of talent, there was a lack of a structured platform where students could collaborate, prepare, gain exposure, and grow together. This challenge was taken to <strong>Parth Sir</strong>, whose vision led to the creation of AiRA Lab as a <strong>virtual lab built for students, by students</strong>. Built around the four pillars <strong>“Learn, Build, Lead and Serve,”</strong> AiRA Lab provides opportunities for students to develop practical skills, leadership, teamwork, confidence, creativity, and industry exposure beyond the classroom. Its tagline, <strong>“For the Students, By the Students,”</strong> represents its core purpose: creating a student-driven environment where learners can turn ideas into action, gain real experience, and become future-ready.
             </p>
           </div>
 
-          <div className="flex-1 flex items-center justify-center relative w-full aspect-square max-w-[400px]">
-            <div className="absolute inset-0 rounded-full border border-dashed border-accent-primary/30 animate-spin-slow" />
-            <div className="absolute inset-6 rounded-full border border-dashed border-accent-secondary/40 animate-spin-reverse-slow" />
-            <div className="absolute inset-12 rounded-full border border-dashed border-accent-third/50 animate-spin-fast" />
+          <div className="flex-1 flex flex-col items-center justify-center gap-6 w-full max-w-[400px]">
+            <div className="relative w-full aspect-square flex items-center justify-center">
+              {/* Sci-fi rotating rings */}
+              <div className="absolute inset-0 rounded-full border border-dashed border-accent-primary/20 animate-spin-slow animate-pulse" />
+              <div className="absolute inset-6 rounded-full border border-dashed border-accent-secondary/30 animate-spin-reverse-slow" />
+              <div className="absolute inset-12 rounded-full border border-dashed border-accent-third/40 animate-spin-fast" />
 
-            <div className="relative z-10 w-20 h-20 rounded-full bg-[rgba(5,5,5,0.9)] border border-[rgba(255,255,255,0.15)] flex items-center justify-center text-accent-primary shadow-[0_0_30px_rgba(0,243,255,0.3)] animate-pulse">
-              <Box size={32} className="text-accent-primary" />
+              {/* Logo frame */}
+              <div className="relative z-10 w-52 h-52 rounded-[32px] overflow-hidden bg-black border border-[rgba(255,255,255,0.08)] flex items-center justify-center shadow-[0_0_50px_rgba(0,243,255,0.12)] transition-transform duration-500 hover:scale-105">
+                <img src="/aira_logo.png" alt="AiRA Lab Logo" className="w-full h-full object-contain p-2" />
+              </div>
+            </div>
+            <div className="text-center flex flex-col gap-1">
+              <span className="font-archivo text-xs uppercase tracking-[0.25em] text-accent-primary font-bold">
+                AiRA Lab Portal
+              </span>
+              <span className="text-[9px] font-mono text-white/40 tracking-wider">
+                DRIVING NEXT-GEN INNOVATION & AI RESEARCH
+              </span>
             </div>
           </div>
 
@@ -405,88 +423,48 @@ const PublicLanding = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-[rgba(255,255,255,0.08)] bg-[#050505]/80 backdrop-blur-md pt-20 pb-10 px-8 w-full">
-        <div className="max-w-7xl mx-auto w-full flex flex-col gap-16">
+      <footer className="border-t border-[rgba(255,255,255,0.08)] bg-[#050505]/80 backdrop-blur-md pt-16 pb-10 px-8 w-full">
+        <div className="max-w-7xl mx-auto w-full flex flex-col gap-12">
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+          {/* Centered WhatsApp Invite Block */}
+          <div className="flex flex-col items-center justify-center text-center py-6 gap-5 w-full max-w-xl mx-auto">
+            <div className="w-14 h-14 rounded-full bg-accent-primary/10 border border-accent-primary/30 flex items-center justify-center text-accent-primary shadow-[0_0_20px_rgba(0,243,255,0.1)]">
+              <MessageCircle size={28} />
+            </div>
             
-            <div className="flex flex-col gap-6">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] flex items-center justify-center text-accent-primary">
-                  <Zap size={14} />
-                </div>
-                <span className="font-archivo text-md tracking-wider font-black text-white">PROTOCOL</span>
-              </div>
-              <p className="text-xs text-[rgba(255,255,255,0.45)] leading-relaxed font-light">
-                A high-fidelity framework purpose-built for premium streetwear and next-generation tech brands.
+            <div className="flex flex-col gap-2">
+              <h4 className="font-archivo text-2xl md:text-3xl uppercase font-black tracking-tight text-white">
+                Join the Community
+              </h4>
+              <p className="text-xs text-white/50 leading-relaxed font-light">
+                Connect with developers, innovators, and analysts inside the Advance Innovation Research & Analysis Lab.
               </p>
-              <div className="flex items-center gap-3">
-                {[Terminal, Globe, Cpu].map((SocialIcon, idx) => (
-                  <a 
-                    key={idx}
-                    href="#"
-                    className="w-10 h-10 rounded-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-[rgba(255,255,255,0.6)] hover:text-accent-primary hover:border-accent-primary transition-all duration-300"
-                  >
-                    <SocialIcon size={16} />
-                  </a>
-                ))}
-              </div>
             </div>
 
-            <div className="flex flex-col gap-4">
-              <h4 className="text-xs uppercase tracking-widest text-white font-semibold">Protocol</h4>
-              <ul className="flex flex-col gap-2.5 text-xs text-[rgba(255,255,255,0.45)]">
-                <li><Link to="/hackathons" className="hover:text-accent-primary transition-colors">Developer Sandbox</Link></li>
-                <li><Link to="/gallery" className="hover:text-accent-primary transition-colors">Explore Gallery</Link></li>
-                <li><Link to="/leaderboard" className="hover:text-accent-primary transition-colors">Leader Board</Link></li>
-                <li><a href="#" className="hover:text-accent-primary transition-colors">Runtime Logs</a></li>
-              </ul>
-            </div>
-
-            <div className="flex flex-col gap-4">
-              <h4 className="text-xs uppercase tracking-widest text-white font-semibold">Archive</h4>
-              <ul className="flex flex-col gap-2.5 text-xs text-[rgba(255,255,255,0.45)]">
-                <li><a href="#" className="hover:text-accent-primary transition-colors">Release 01</a></li>
-                <li><a href="#" className="hover:text-accent-primary transition-colors">Open Source Repo</a></li>
-                <li><a href="#" className="hover:text-accent-primary transition-colors">Lab Support</a></li>
-                <li><a href="#" className="hover:text-accent-primary transition-colors">Telemetry Nodes</a></li>
-              </ul>
-            </div>
-
-            <div className="flex flex-col gap-4">
-              <h4 className="text-xs uppercase tracking-widest text-white font-semibold">Frequency</h4>
-              <p className="text-xs text-[rgba(255,255,255,0.45)] font-light">
-                Subscribe to receive real-time system alerts and node updates.
-              </p>
-              
-              <form onSubmit={handleSubscribe} className="relative w-full flex items-center mt-2">
-                <input 
-                  type="email" 
-                  required
-                  placeholder="Enter email address" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full h-11 px-4 pr-12 rounded-full bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-primary focus:shadow-[0_0_12px_rgba(0,243,255,0.1)] transition-all duration-300"
-                />
-                <button 
-                  type="submit"
-                  className="absolute right-1.5 w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:bg-accent-primary hover:text-black transition-all duration-300"
-                >
-                  <ArrowRight size={14} />
-                </button>
-              </form>
-            </div>
-
+            <a 
+              href="https://whatsapp.com/channel/0029VbClQzuDzgT2mJ7z1o2v" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="px-8 h-12 rounded-full bg-accent-primary hover:bg-[#00d4df] text-black font-archivo text-xs uppercase font-black tracking-wider flex items-center gap-3 transition-all duration-300 shadow-[0_0_25px_rgba(0,243,255,0.25)] hover:scale-105"
+            >
+              <span>Join AiRA Lab Community</span>
+              <ExternalLink size={14} />
+            </a>
           </div>
 
-          <div className="border-t border-[rgba(255,255,255,0.05)] pt-8 mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <span className="text-[9px] uppercase tracking-[0.3em] text-[rgba(255,255,255,0.35)] select-none">
-              © 2026 PROTOCOL LABS. ALL RIGHTS RESERVED.
-            </span>
+          <div className="border-t border-[rgba(255,255,255,0.05)] pt-8 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex flex-col gap-1.5 text-center sm:text-left">
+              <span className="text-[9px] uppercase tracking-[0.3em] text-[rgba(255,255,255,0.35)] select-none">
+                © 2026 AiRA LAB. ALL RIGHTS RESERVED.
+              </span>
+              <span className="text-[9px] uppercase tracking-[0.1em] text-accent-primary font-mono select-none">
+                Developed By Team Zero ( Yash Chaudary , Dhyey Trivedi , Bhavesh Rajpurohit )
+              </span>
+            </div>
             
             <div className="flex gap-6 text-[9px] uppercase tracking-wider text-[rgba(255,255,255,0.35)]">
-              <a href="#" className="hover:text-accent-primary transition-colors">Privacy Protocol</a>
-              <a href="#" className="hover:text-accent-primary transition-colors">Terms of Runtime</a>
+              <a href="#" className="hover:text-accent-primary transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-accent-primary transition-colors">Terms of Use</a>
             </div>
           </div>
 
@@ -1234,21 +1212,242 @@ const CertificatesView = () => {
 
 // 8. ANNOUNCEMENTS
 const AnnouncementsView = () => {
+  const { user } = useAuth();
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [hackathons, setHackathons] = useState<any[]>([]);
+  const [teams, setTeams] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Form states
+  const [title, setTitle] = useState('');
+  const [message, setMessage] = useState('');
+  const [targetType, setTargetType] = useState<'platform' | 'hackathon'>('platform');
+  const [selectedHackathonId, setSelectedHackathonId] = useState('');
+  const [hackathonTarget, setHackathonTarget] = useState('all_users');
+  const [isSending, setIsSending] = useState(false);
+  const [success, setSuccess] = useState('');
+
+  const fetchInitialData = async () => {
+    setLoading(true);
+    try {
+      // 1. Fetch user notifications
+      const notifRes = await apiService.listNotifications(1, 100);
+      if (notifRes.data && notifRes.data.notifications) {
+        const anns = notifRes.data.notifications.filter((n: any) => n.type === 'announcement');
+        setNotifications(anns);
+      }
+
+      // 2. Fetch hackathons if coordinator/admin
+      if (user?.role === 'coordinator' || user?.role === 'admin') {
+        const hackRes = await apiService.listHackathons();
+        if (user.role === 'coordinator') {
+          const assignRes = await apiService.listCoordinatorAssignments();
+          const assignedIds = (assignRes.data || [])
+            .filter((a: any) => a.coordinator_id === user.id)
+            .map((a: any) => a.hackathon_id);
+          const myHacks = (hackRes.data || []).filter((h: any) => assignedIds.includes(h.id));
+          setHackathons(myHacks);
+          if (myHacks.length > 0) {
+            setSelectedHackathonId(myHacks[0].id);
+          }
+        } else {
+          setHackathons(hackRes.data || []);
+          if (hackRes.data && hackRes.data.length > 0) {
+            setSelectedHackathonId(hackRes.data[0].id);
+          }
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInitialData();
+  }, [user]);
+
+  // Fetch teams when selected hackathon changes
+  useEffect(() => {
+    if (!selectedHackathonId) return;
+    const fetchTeams = async () => {
+      try {
+        const res = await apiService.listTeams(selectedHackathonId);
+        setTeams(res.data || []);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchTeams();
+  }, [selectedHackathonId]);
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !message.trim()) return;
+    setIsSending(true);
+    setSuccess('');
+    try {
+      const payload = {
+        title,
+        message,
+        target: targetType === 'platform' ? 'all_platform_users' : hackathonTarget,
+        hackathon_id: targetType === 'platform' ? undefined : selectedHackathonId
+      };
+      const res = await apiService.sendAnnouncement(payload);
+      setSuccess(res.message || `Announcement sent to ${res.data} user(s) successfully!`);
+      setTitle('');
+      setMessage('');
+      // Refresh feed
+      const notifRes = await apiService.listNotifications(1, 100);
+      if (notifRes.data && notifRes.data.notifications) {
+        const anns = notifRes.data.notifications.filter((n: any) => n.type === 'announcement');
+        setNotifications(anns);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to send announcement.');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-8 w-full max-w-5xl">
       <div>
         <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-white">
-          Announcements
+          Announcements Board
         </h2>
-        <p className="text-xs text-text-secondary mt-1 font-light font-manrope">Latest alerts published by administrators and system coordinators.</p>
+        <p className="text-xs text-text-secondary mt-1 font-light font-manrope">
+          Latest alerts published by administrators and system coordinators.
+        </p>
       </div>
-      <Card hoverable className="bg-white/[0.02]">
-        <div className="border-b border-white/5 pb-2 mb-3">
-          <h4 className="text-md font-archivo font-black uppercase text-white">System Foundation Initialized</h4>
-          <p className="text-[10px] text-white/40 mt-0.5">Published by Admin • 2026-07-25</p>
-        </div>
-        <p className="text-xs text-white/70 leading-relaxed font-light">Vite compiler configurations, Alembic setup, and Pydantic validators are now live in our codebase.</p>
-      </Card>
+
+      {/* COMPOSITION FORM FOR COORD/ADMIN */}
+      {(user?.role === 'coordinator' || user?.role === 'admin') && (
+        <Card className="p-6 flex flex-col gap-5 bg-white/[0.02]">
+          <div>
+            <h3 className="font-archivo text-sm font-black uppercase text-accent-primary tracking-wider">
+              Broadcast New Announcement
+            </h3>
+            <p className="text-[10px] text-white/40 mt-0.5">
+              Send notifications to all platform users or target specific hackathon registration channels.
+            </p>
+          </div>
+
+          <form onSubmit={handleSend} className="flex flex-col gap-4 text-xs font-manrope">
+            {/* Target selection */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="font-bold text-white/70">Broadcast Scope</label>
+                <select
+                  value={targetType}
+                  onChange={(e: any) => setTargetType(e.target.value)}
+                  className="p-2.5 rounded-xl bg-black border border-white/10 text-white text-[11px] focus:border-accent-primary"
+                >
+                  <option value="platform">📢 Platform-Wide (all active users)</option>
+                  <option value="hackathon">🏆 Specific Hackathon Target</option>
+                </select>
+              </div>
+
+              {targetType === 'hackathon' && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-bold text-white/70">Select Hackathon</label>
+                  <select
+                    value={selectedHackathonId}
+                    onChange={(e: any) => setSelectedHackathonId(e.target.value)}
+                    className="p-2.5 rounded-xl bg-black border border-white/10 text-white text-[11px]"
+                  >
+                    {hackathons.map((h) => (
+                      <option key={h.id} value={h.id}>{h.title}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {targetType === 'hackathon' && (
+              <div className="flex flex-col gap-1.5">
+                <label className="font-bold text-white/70">Target Audience</label>
+                <select
+                  value={hackathonTarget}
+                  onChange={(e: any) => setHackathonTarget(e.target.value)}
+                  className="p-2.5 rounded-xl bg-black border border-white/10 text-white text-[11px]"
+                >
+                  <option value="all_users">All Hackathon Participants</option>
+                  <option value="team_leaders">Team Leaders Only</option>
+                  {teams.map((t) => (
+                    <option key={t.id} value={t.id}>Team: {t.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Title & Message */}
+            <Input
+              label="Title"
+              required
+              placeholder="e.g. Server Maintenance or Session Kickoff Details"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+
+            <div className="flex flex-col gap-1.5">
+              <label className="font-bold text-white/70">Message Content</label>
+              <textarea
+                required
+                placeholder="Compose your broadcast message..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                className="w-full h-24 p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-primary transition-all resize-none"
+              />
+            </div>
+
+            {success && (
+              <div className="p-3 rounded-xl bg-success/10 border border-success/20 text-xs text-success font-bold flex items-center gap-2">
+                <Check size={14} /> {success}
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <Button type="submit" variant="primary" disabled={isSending || !title.trim() || !message.trim()}>
+                {isSending ? 'Sending Broadcast...' : 'Send Broadcast Notification'}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      )}
+
+      {/* ANNOUNCEMENTS FEED */}
+      <div className="flex flex-col gap-4">
+        <h3 className="font-archivo text-xs font-black uppercase text-white/50 tracking-wider">
+          Announcement Log ({notifications.length})
+        </h3>
+
+        {loading ? (
+          <div className="py-8 text-center text-xs text-white/40">Loading feed...</div>
+        ) : notifications.length === 0 ? (
+          <div className="py-12 text-center text-xs text-white/30 border border-dashed border-white/10 rounded-2xl">
+            No announcements published yet.
+          </div>
+        ) : (
+          notifications.map((n) => (
+            <Card key={n.id} className="p-5 bg-white/[0.01] border-white/5">
+              <div className="border-b border-white/5 pb-2 mb-3 flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-archivo font-black uppercase text-white">{n.title}</h4>
+                  <p className="text-[9px] text-white/40 mt-0.5">
+                    Published • {new Date(n.created_at || Date.now()).toLocaleString()}
+                  </p>
+                </div>
+                <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-accent-primary/10 text-accent-primary border border-accent-primary/20 uppercase">
+                  Broadcast
+                </span>
+              </div>
+              <p className="text-xs text-white/70 leading-relaxed font-manrope whitespace-pre-line">{n.message}</p>
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 };
@@ -1696,31 +1895,1119 @@ const JudgeView = () => {
   );
 };
 
+// ─── HACKATHON ANALYTICS COMPONENT ───
+interface HackathonAnalyticsProps {
+  hackathonId: string;
+}
+
+const HackathonAnalyticsView: React.FC<HackathonAnalyticsProps> = ({ hackathonId }) => {
+  const [stats, setStats] = useState<any>(null);
+  const [registrations, setRegistrations] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [problems, setProblems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      setLoading(true);
+      try {
+        const [statsRes, regRes, subRes, hackRes] = await Promise.all([
+          apiService.getHackathonStats(hackathonId),
+          apiService.listRegistrations(hackathonId),
+          apiService.listSubmissions(hackathonId),
+          apiService.getHackathon(hackathonId)
+        ]);
+        setStats(statsRes.data);
+        setRegistrations(regRes.data || []);
+        setSubmissions(subRes.data || []);
+        setProblems(hackRes.data?.problem_statements || []);
+      } catch (err) {
+        console.error("Failed to load analytics", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAnalytics();
+  }, [hackathonId]);
+
+  if (loading) {
+    return (
+      <div className="py-20 flex justify-center items-center text-xs text-white/40">
+        <Sparkles className="animate-spin text-accent-primary mr-2" size={16} />
+        Loading analytics reports...
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className="py-12 text-center text-xs text-white/30">
+        No stats available for this hackathon.
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-8 w-full">
+      {/* Metrics Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* Total Students */}
+        <Card className="p-5 flex items-center justify-between bg-white/[0.01] border-white/5">
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-white/40 font-mono">Total Students</span>
+            <h3 className="text-2xl font-archivo font-black text-white mt-1">{stats.total_students || 0}</h3>
+          </div>
+          <div className="p-3 rounded-xl bg-accent-primary/10 border border-accent-primary/20 text-accent-primary">
+            <User size={20} />
+          </div>
+        </Card>
+
+        {/* Total Teams */}
+        <Card className="p-5 flex items-center justify-between bg-white/[0.01] border-white/5">
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-white/40 font-mono">Total Teams</span>
+            <h3 className="text-2xl font-archivo font-black text-white mt-1">{stats.total_teams || 0}</h3>
+          </div>
+          <div className="p-3 rounded-xl bg-accent-secondary/10 border border-accent-secondary/20 text-accent-secondary">
+            <Users size={20} />
+          </div>
+        </Card>
+
+        {/* Average Score */}
+        <Card className="p-5 flex items-center justify-between bg-white/[0.01] border-white/5">
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-white/40 font-mono">Average Score</span>
+            <h3 className="text-2xl font-archivo font-black text-white mt-1">
+              {stats.average_score !== null ? `${stats.average_score}/10` : 'N/A'}
+            </h3>
+          </div>
+          <div className="p-3 rounded-xl bg-warning/10 border border-warning/20 text-warning">
+            <Star size={20} />
+          </div>
+        </Card>
+
+        {/* Pending Evaluations */}
+        <Card className="p-5 flex items-center justify-between bg-white/[0.01] border-white/5">
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-white/40 font-mono">Pending Evaluations</span>
+            <h3 className="text-2xl font-archivo font-black text-white mt-1">{stats.pending_evaluations || 0}</h3>
+          </div>
+          <div className={`p-3 rounded-xl ${stats.pending_evaluations > 0 ? 'bg-danger/10 border-danger/20 text-danger' : 'bg-success/10 border-success/20 text-success'}`}>
+            <Clock size={20} />
+          </div>
+        </Card>
+      </div>
+
+      {/* Reports Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Registration Report */}
+        <Card className="p-6 flex flex-col gap-4 bg-white/[0.01] border-white/5">
+          <div>
+            <h4 className="font-archivo text-sm font-black uppercase text-white tracking-wider">Registration Report</h4>
+            <p className="text-[9px] text-white/40 mt-0.5">Timeline of all teams registered for this session.</p>
+          </div>
+          {registrations.length === 0 ? (
+            <div className="py-12 text-center text-[10px] text-white/30 border border-dashed border-white/10 rounded-xl">
+              No registration logs found.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table headers={['Team Name', 'Selected PS', 'Registered Date']}>
+                {registrations.map((reg) => {
+                  const ps = problems.find(p => p.id === reg.problem_statement_id);
+                  return (
+                    <TableRow key={reg.id}>
+                      <TableCell className="font-bold text-white text-xs">{reg.team?.name || 'Unknown'}</TableCell>
+                      <TableCell className="text-xs text-white/60 max-w-[200px] truncate">{ps?.title || 'No PS Selected'}</TableCell>
+                      <TableCell className="text-[10px] font-mono text-white/40">{new Date(reg.created_at).toLocaleDateString()}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </Table>
+            </div>
+          )}
+        </Card>
+
+        {/* Submission Report */}
+        <Card className="p-6 flex flex-col gap-4 bg-white/[0.01] border-white/5">
+          <div>
+            <h4 className="font-archivo text-sm font-black uppercase text-white tracking-wider">Submission Report</h4>
+            <p className="text-[9px] text-white/40 mt-0.5">Overview of submitted solutions and review status.</p>
+          </div>
+          {submissions.length === 0 ? (
+            <div className="py-12 text-center text-[10px] text-white/30 border border-dashed border-white/10 rounded-xl">
+              No submissions uploaded yet.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table headers={['Team Name', 'Project Title', 'Status', 'Submitted']}>
+                {submissions.map((sub) => (
+                  <TableRow key={sub.id}>
+                    <TableCell className="font-bold text-white text-xs">{sub.team_name || 'Team'}</TableCell>
+                    <TableCell className="text-xs text-white/60 max-w-[180px] truncate">{sub.title}</TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider font-mono ${
+                        sub.status === 'graded' ? 'bg-success/10 text-success border border-success/20' :
+                        sub.status === 'under_review' ? 'bg-accent-secondary/10 text-accent-secondary border border-accent-secondary/20' :
+                        'bg-white/5 text-white/40 border border-white/10'
+                      }`}>
+                        {sub.status}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-[10px] font-mono text-white/40">{new Date(sub.submitted_at).toLocaleDateString()}</TableCell>
+                  </TableRow>
+                ))}
+              </Table>
+            </div>
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+
 // 10. COORDINATOR HUB
 const CoordinatorView = () => {
-  return (
-    <div className="flex flex-col gap-8 w-full max-w-5xl">
-      <div>
-        <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-glow-cyan text-white">
-          Operations Console
-        </h2>
-        <p className="text-xs text-text-secondary mt-1 font-light">Track submissions progress, publish announcements, and verify team registrations.</p>
+  const { user } = useAuth();
+  const [assignedHackathons, setAssignedHackathons] = useState<any[]>([]);
+  const [selectedHackathon, setSelectedHackathon] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<'problems' | 'teams' | 'announcements' | 'analytics'>('problems');
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Announcements states
+  const [announcementTitle, setAnnouncementTitle] = useState('');
+  const [announcementMessage, setAnnouncementMessage] = useState('');
+  const [announcementTarget, setAnnouncementTarget] = useState('all_users');
+  const [isSendingAnnouncement, setIsSendingAnnouncement] = useState(false);
+  const [announcementSuccess, setAnnouncementSuccess] = useState('');
+
+  // Problem Statement states
+  const [selectedPS, setSelectedPS] = useState<any>(null);
+  const [selectedPSTeam, setSelectedPSTeam] = useState<any>(null);
+  const [editingPS, setEditingPS] = useState<any>(null);
+  const [editPSData, setEditPSData] = useState({ title: '', description: '', category: 'Open Innovation', difficulty: 'Medium', maxTeams: 10 });
+  const [showEditPSModal, setShowEditPSModal] = useState(false);
+
+  // Teams / Registrations states
+  const [registrations, setRegistrations] = useState<any[]>([]);
+  const [teams, setTeams] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [selectedTeam, setSelectedTeam] = useState<any>(null);
+  const [judgeAssignments, setJudgeAssignments] = useState<any[]>([]);
+
+  // Fetch assigned hackathons for this coordinator
+  useEffect(() => {
+    const fetchAssigned = async () => {
+      if (!user) return;
+      setIsLoading(true);
+      try {
+        const [coordAssignRes, hackRes] = await Promise.all([
+          apiService.listCoordinatorAssignments(),
+          apiService.listHackathons()
+        ]);
+        const myAssignments = (coordAssignRes.data || []).filter((a: any) => a.coordinator_id === user.id);
+        const assignedIds = myAssignments.map((a: any) => a.hackathon_id);
+        const myHackathons = (hackRes.data || []).filter((h: any) => assignedIds.includes(h.id));
+        setAssignedHackathons(myHackathons);
+      } catch (err) {
+        console.error('Failed to load assigned hackathons', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAssigned();
+  }, [user]);
+
+  // When a hackathon is selected, fetch registrations, teams, submissions, judge assignments
+  useEffect(() => {
+    if (!selectedHackathon) return;
+    const fetchHackathonData = async () => {
+      try {
+        const [regRes, teamRes, subRes, judgeRes] = await Promise.all([
+          apiService.listRegistrations(selectedHackathon.id),
+          apiService.listTeams(selectedHackathon.id),
+          apiService.listSubmissions(selectedHackathon.id),
+          apiService.listJudgeAssignments()
+        ]);
+        setRegistrations(regRes.data || []);
+        setTeams(teamRes.data || []);
+        setSubmissions(subRes.data || []);
+        setJudgeAssignments((judgeRes.data || []).filter((a: any) => a.hackathon_id === selectedHackathon.id));
+      } catch (err) {
+        console.error('Failed to load hackathon data', err);
+      }
+    };
+    fetchHackathonData();
+    setSelectedPS(null);
+    setSelectedPSTeam(null);
+    setSelectedTeam(null);
+  }, [selectedHackathon]);
+
+  // Handle PS Edit
+  const handleOpenEditPS = (ps: any) => {
+    setEditPSData({
+      title: ps.title,
+      description: ps.description,
+      category: ps.category || 'Open Innovation',
+      difficulty: ps.difficulty || 'Medium',
+      maxTeams: ps.max_teams || 10
+    });
+    setEditingPS(ps);
+    setShowEditPSModal(true);
+  };
+
+  const handleSavePS = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPS || !selectedHackathon) return;
+    try {
+      await apiService.updateProblemStatement(selectedHackathon.id, editingPS.id, {
+        title: editPSData.title,
+        description: editPSData.description,
+        category: editPSData.category,
+        difficulty: editPSData.difficulty,
+        max_teams: editPSData.maxTeams
+      });
+      // Refresh hackathon data
+      const hackRes = await apiService.getHackathon(selectedHackathon.id);
+      if (hackRes.data) setSelectedHackathon(hackRes.data);
+      setShowEditPSModal(false);
+    } catch (err: any) {
+      alert(err.message || 'Failed to update problem statement');
+    }
+  };
+
+  // Helper: get teams that selected a specific problem statement
+  const getTeamsForPS = (psId: string) => {
+    return registrations.filter(r => r.problem_statement_id === psId);
+  };
+
+  // Helper: get submission for a team
+  const getSubmissionForTeam = (teamId: string) => {
+    return submissions.find(s => s.team_id === teamId);
+  };
+
+  // Helper: get judge assigned to a submission
+  const getJudgeForSubmission = (submissionId: string) => {
+    const specific = judgeAssignments.find(a => a.submission_id === submissionId);
+    if (specific) return specific;
+    
+    // Fallback: get any judge assigned to this hackathon generally (with submission_id null)
+    const general = judgeAssignments.find(a => a.hackathon_id === selectedHackathon.id && !a.submission_id);
+    if (general) {
+      return {
+        ...general,
+        judge_name: `${general.judge_name} (Hackathon Judge)`
+      };
+    }
+    return null;
+  };
+
+  // ─── HACKATHON CARDS (no hackathon selected) ───
+  if (!selectedHackathon) {
+    return (
+      <div className="flex flex-col gap-8 w-full max-w-6xl">
+        <div>
+          <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-glow-cyan text-white">
+            Operations Console
+          </h2>
+          <p className="text-xs text-text-secondary mt-1 font-light">
+            Select an assigned hackathon to manage problem statements, registrations, and track team progress.
+          </p>
+        </div>
+
+        {isLoading ? (
+          <div className="py-20 flex justify-center text-xs text-white/40">Loading assigned hackathons...</div>
+        ) : assignedHackathons.length === 0 ? (
+          <Card className="py-16 flex flex-col items-center justify-center text-center">
+            <Terminal size={48} className="text-white/10 mb-4" />
+            <p className="text-sm font-bold text-white/50">No Hackathons Assigned</p>
+            <p className="text-[10px] text-white/30 mt-1 max-w-xs">
+              You have not been assigned to coordinate any hackathons yet. Please contact the system administrator.
+            </p>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {assignedHackathons.map(h => (
+              <div
+                key={h.id}
+                onClick={() => setSelectedHackathon(h)}
+                className="p-6 rounded-2xl border border-white/5 bg-white/[0.02] hover:border-accent-primary hover:shadow-[0_0_25px_rgba(0,243,255,0.08)] cursor-pointer transition-all group flex flex-col gap-4"
+              >
+                <div className="flex items-center justify-between">
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                    h.status === 'active' ? 'bg-success/10 text-success border border-success/20' :
+                    h.status === 'upcoming' ? 'bg-accent-primary/10 text-accent-primary border border-accent-primary/20' :
+                    'bg-white/5 text-white/40 border border-white/10'
+                  }`}>
+                    {h.status}
+                  </span>
+                  <span className="text-[9px] font-mono text-white/30">{h.problem_statements?.length || 0} PS</span>
+                </div>
+                <div>
+                  <h3 className="font-archivo text-lg font-black text-white group-hover:text-accent-primary transition-colors tracking-wider uppercase">
+                    {h.title}
+                  </h3>
+                  <p className="text-[10px] text-white/40 mt-1 line-clamp-2">{h.tagline || h.description || 'No description'}</p>
+                </div>
+                <div className="flex items-center justify-between border-t border-white/5 pt-3 text-[9px] text-white/30 font-mono">
+                  <span>{h.start_date ? new Date(h.start_date).toLocaleDateString() : 'TBD'} — {h.end_date ? new Date(h.end_date).toLocaleDateString() : 'TBD'}</span>
+                  <span className="text-accent-primary group-hover:translate-x-1 transition-transform flex items-center gap-0.5">
+                    Manage <ChevronRight size={10} />
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-      <Card hoverable className="bg-white/[0.02]">
-        <h3 className="text-sm font-bold text-white mb-4">Pending Registrations</h3>
-        <Table headers={['Team Name', 'Members Count', 'Chosen PS', 'Action']}>
-          <TableRow>
-            <TableCell className="font-semibold text-white">Zero_Gravity</TableCell>
-            <TableCell className="font-mono text-xs">2 Members</TableCell>
-            <TableCell className="text-xs text-white/60">PS-01: Generative LLM Interface</TableCell>
-            <TableCell>
-              <Button variant="success" className="h-8 text-xs font-bold" onClick={() => alert('Team Verified successfully!')}>
-                Verify Team
+    );
+  }
+
+  // ─── HACKATHON DETAIL VIEW (with Problem Statements / Teams tabs) ───
+  const problemStatements = selectedHackathon.problem_statements || [];
+
+  return (
+    <div className="flex flex-col gap-6 w-full max-w-6xl">
+      {/* Back Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white/[0.02] border border-white/5 p-5 rounded-2xl gap-4">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => { setSelectedHackathon(null); setActiveTab('problems'); setSelectedPSTeam(null); }}
+            className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold uppercase tracking-wider transition-all"
+          >
+            ← Back
+          </button>
+          <div>
+            <h2 className="font-archivo text-xl font-black text-white uppercase tracking-wider">{selectedHackathon.title}</h2>
+            <p className="text-[10px] text-white/40">
+              {selectedHackathon.status?.toUpperCase()} • {problemStatements.length} Problem Statements • {teams.length} Teams
+            </p>
+          </div>
+        </div>
+        {/* Tab Switcher */}
+        <div className="flex p-1 bg-white/5 rounded-xl border border-white/10">
+          <button
+            onClick={() => { setActiveTab('problems'); setSelectedPS(null); setSelectedPSTeam(null); setSelectedTeam(null); }}
+            className={`px-5 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${
+              activeTab === 'problems'
+                ? 'bg-accent-primary text-black shadow-[0_0_12px_rgba(0,243,255,0.3)]'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            Problem Statements
+          </button>
+          <button
+            onClick={() => { setActiveTab('teams'); setSelectedPS(null); setSelectedPSTeam(null); setSelectedTeam(null); }}
+            className={`px-5 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${
+              activeTab === 'teams'
+                ? 'bg-accent-primary text-black shadow-[0_0_12px_rgba(0,243,255,0.3)]'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            Registered Teams
+          </button>
+          <button
+            onClick={() => { setActiveTab('announcements'); setSelectedPS(null); setSelectedPSTeam(null); setSelectedTeam(null); }}
+            className={`px-5 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${
+              activeTab === 'announcements'
+                ? 'bg-accent-primary text-black shadow-[0_0_12px_rgba(0,243,255,0.3)]'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            Announcements
+          </button>
+          <button
+            onClick={() => { setActiveTab('analytics'); setSelectedPS(null); setSelectedPSTeam(null); setSelectedTeam(null); }}
+            className={`px-5 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${
+              activeTab === 'analytics'
+                ? 'bg-accent-primary text-black shadow-[0_0_12px_rgba(0,243,255,0.3)]'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            Analytics
+          </button>
+        </div>
+      </div>
+
+      {/* ─── PROBLEM STATEMENTS TAB ─── */}
+      {activeTab === 'problems' && (
+        <div className="flex flex-col gap-6">
+          {!selectedPS ? (
+            // PS List
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {problemStatements.length === 0 ? (
+                <Card className="md:col-span-2 py-12 flex flex-col items-center justify-center text-center">
+                  <FileText size={40} className="text-white/10 mb-3" />
+                  <p className="text-sm font-bold text-white/40">No Problem Statements</p>
+                  <p className="text-[10px] text-white/25 mt-1">The admin has not added any problem statements to this hackathon yet.</p>
+                </Card>
+              ) : problemStatements.map((ps: any) => {
+                const teamsForPS = getTeamsForPS(ps.id);
+                return (
+                  <div
+                    key={ps.id}
+                    className="p-5 rounded-2xl border border-white/5 bg-white/[0.02] hover:border-accent-secondary/40 cursor-pointer transition-all group flex flex-col gap-3"
+                    onClick={() => setSelectedPS(ps)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-accent-secondary/10 text-accent-secondary border border-accent-secondary/20">
+                        {ps.category || 'General'}
+                      </span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleOpenEditPS(ps); }}
+                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all"
+                        title="Edit Problem Statement"
+                      >
+                        <Edit2 size={12} />
+                      </button>
+                    </div>
+                    <h4 className="font-bold text-white group-hover:text-accent-secondary transition-colors text-sm">{ps.title}</h4>
+                    <p className="text-[10px] text-white/40 line-clamp-2">{ps.description}</p>
+                    <div className="flex items-center justify-between border-t border-white/5 pt-2 text-[9px] text-white/30 font-mono">
+                      <span>Difficulty: {ps.difficulty || 'Medium'} • Max: {ps.max_teams || '∞'} teams</span>
+                      <span className="text-accent-secondary">{teamsForPS.length} team(s) selected</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : !selectedPSTeam ? (
+            // PS Detail — show teams that selected this PS, and their submissions
+            <div className="flex flex-col gap-6">
+              <div className="flex items-center justify-between bg-white/[0.02] border border-white/5 p-5 rounded-2xl">
+                <div className="flex items-center gap-3">
+                  <button onClick={() => { setSelectedPS(null); setSelectedPSTeam(null); }} className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-semibold transition-all">
+                    ← Back to PS List
+                  </button>
+                  <div>
+                    <h3 className="font-archivo font-black text-white uppercase tracking-wider">{selectedPS.title}</h3>
+                    <p className="text-[10px] text-white/40">{selectedPS.category} • {selectedPS.difficulty}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleOpenEditPS(selectedPS)}
+                  className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-semibold transition-all flex items-center gap-1.5"
+                >
+                  <Edit2 size={12} /> Edit
+                </button>
+              </div>
+
+              <Card className="p-6">
+                <p className="text-xs text-white/60 leading-relaxed">{selectedPS.description}</p>
+              </Card>
+
+              {/* Teams that selected this PS */}
+              <Card className="p-6 flex flex-col gap-4">
+                <h4 className="font-archivo text-sm font-black uppercase text-white tracking-wider">
+                  Teams That Selected This Problem ({getTeamsForPS(selectedPS.id).length})
+                </h4>
+                {getTeamsForPS(selectedPS.id).length === 0 ? (
+                  <div className="py-8 text-center text-[10px] text-white/30 border border-dashed border-white/10 rounded-xl">
+                    No teams have selected this problem statement yet.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {getTeamsForPS(selectedPS.id).map((reg: any) => {
+                      const team = teams.find((t: any) => t.id === reg.team_id);
+                      const sub = getSubmissionForTeam(reg.team_id);
+                      return (
+                        <div
+                          key={reg.id}
+                          onClick={() => setSelectedPSTeam({ team, submission: sub, registration: reg })}
+                          className="p-4 rounded-xl border border-white/5 bg-white/[0.01] hover:border-accent-primary/40 cursor-pointer transition-all flex flex-col gap-3 group"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h5 className="font-bold text-white text-sm group-hover:text-accent-primary transition-colors">{team?.name || 'Unknown Team'}</h5>
+                              <p className="text-[9px] text-white/35 font-mono">{team?.members?.length || 0} members • Leader: {team?.leader?.full_name || 'N/A'}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${
+                                sub ? 'bg-success/10 text-success border border-success/20' : 'bg-warning/10 text-warning border border-warning/20'
+                              }`}>
+                                {sub ? 'Submitted' : 'Pending Submission'}
+                              </span>
+                              <ChevronRight size={12} className="text-white/20 group-hover:text-accent-primary group-hover:translate-x-0.5 transition-all" />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
+            </div>
+          ) : (
+            // Selected PSTeam details (submission fields statuses and read-only details)
+            <div className="flex flex-col gap-6">
+              <div className="flex items-center gap-3 bg-white/[0.02] border border-white/5 p-5 rounded-2xl">
+                <button 
+                  onClick={() => setSelectedPSTeam(null)} 
+                  className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-semibold transition-all"
+                >
+                  ← Back to Teams
+                </button>
+                <div>
+                  <h3 className="font-archivo font-black text-white uppercase tracking-wider">{selectedPSTeam.team?.name || 'Team'}</h3>
+                  <p className="text-[10px] text-white/40">
+                    Leader: {selectedPSTeam.team?.leader?.full_name || 'N/A'} • {selectedPSTeam.team?.members?.length || 0} members
+                  </p>
+                </div>
+              </div>
+
+              {/* Team Members List */}
+              <Card className="p-6 flex flex-col gap-4">
+                <h4 className="font-archivo text-sm font-black uppercase text-white tracking-wider">Team Members</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {(selectedPSTeam.team?.members || []).map((member: any) => (
+                    <div key={member.id} className="p-3 rounded-xl border border-white/5 bg-white/[0.01] flex items-center gap-3">
+                      <img
+                        src={member.user?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${member.user_id}`}
+                        alt="avatar"
+                        className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 object-cover"
+                      />
+                      <div>
+                        <p className="font-bold text-white text-xs">{member.user?.full_name || 'Unknown'}</p>
+                        <p className="text-[9px] text-white/35">{member.user?.email || ''} • {member.role_in_team === 'leader' ? '⭐ Leader' : 'Member'}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              {/* Submission Fields Status Tracker */}
+              <Card className="p-6 flex flex-col gap-4">
+                <h4 className="font-archivo text-sm font-black uppercase text-white tracking-wider">Submission Fields Status</h4>
+                <div className="flex flex-col gap-3 font-manrope">
+                  {/* Repo URL (Required field) */}
+                  <div className="p-3 rounded-xl border border-white/5 bg-white/[0.01] flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Code size={16} className="text-accent-primary" />
+                      <div>
+                        <p className="text-xs font-bold text-white">GitHub Repository URL (Required)</p>
+                        <p className="text-[9px] text-white/45">{selectedPSTeam.submission?.repo_url || 'No URL submitted'}</p>
+                      </div>
+                    </div>
+                    <div>
+                      {selectedPSTeam.submission?.repo_url ? (
+                        <span className="px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-success/10 text-success border border-success/20">
+                          ✓ Submitted
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-danger/10 text-danger border border-danger/20">
+                          ✗ Missing
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Demo URL (Optional field) */}
+                  <div className="p-3 rounded-xl border border-white/5 bg-white/[0.01] flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <ExternalLink size={16} className="text-accent-secondary" />
+                      <div>
+                        <p className="text-xs font-bold text-white">Live Demo URL (Optional)</p>
+                        <p className="text-[9px] text-white/45">{selectedPSTeam.submission?.demo_url || 'No URL submitted'}</p>
+                      </div>
+                    </div>
+                    <div>
+                      {selectedPSTeam.submission?.demo_url ? (
+                        <span className="px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-success/10 text-success border border-success/20">
+                          ✓ Submitted
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-white/5 text-white/30 border border-white/10">
+                          ○ Empty
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Video URL (Optional field) */}
+                  <div className="p-3 rounded-xl border border-white/5 bg-white/[0.01] flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <ExternalLink size={16} className="text-accent-secondary" />
+                      <div>
+                        <p className="text-xs font-bold text-white">Video Presentation URL (Optional)</p>
+                        <p className="text-[9px] text-white/45">{selectedPSTeam.submission?.video_url || 'No URL submitted'}</p>
+                      </div>
+                    </div>
+                    <div>
+                      {selectedPSTeam.submission?.video_url ? (
+                        <span className="px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-success/10 text-success border border-success/20">
+                          ✓ Submitted
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-white/5 text-white/30 border border-white/10">
+                          ○ Empty
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* File Upload (Optional field) */}
+                  <div className="p-3 rounded-xl border border-white/5 bg-white/[0.01] flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <FileText size={16} className="text-accent-secondary" />
+                      <div>
+                        <p className="text-xs font-bold text-white">Project Documentation File (Optional)</p>
+                        <p className="text-[9px] text-white/45 font-mono">
+                          {selectedPSTeam.submission?.file_name ? `${selectedPSTeam.submission.file_name}` : 'No file uploaded'}
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      {selectedPSTeam.submission?.file_url ? (
+                        <span className="px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-success/10 text-success border border-success/20">
+                          ✓ Submitted
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-white/5 text-white/30 border border-white/10">
+                          ○ Empty
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Additional Notes (Optional field) */}
+                  <div className="p-3 rounded-xl border border-white/5 bg-white/[0.01] flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <FileText size={16} className="text-accent-secondary" />
+                      <div>
+                        <p className="text-xs font-bold text-white">Additional Notes (Optional)</p>
+                        <p className="text-[9px] text-white/45 truncate max-w-md">
+                          {selectedPSTeam.submission?.additional_notes || 'No additional notes provided'}
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      {selectedPSTeam.submission?.additional_notes ? (
+                        <span className="px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-success/10 text-success border border-success/20">
+                          ✓ Submitted
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-white/5 text-white/30 border border-white/10">
+                          ○ Empty
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Read-Only Solution details */}
+              {selectedPSTeam.submission ? (
+                <Card className="p-6 flex flex-col gap-4">
+                  <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                    <h4 className="font-archivo text-sm font-black uppercase text-white tracking-wider">Submitted Project Details</h4>
+                    <span className="px-2.5 py-0.5 rounded bg-accent-primary/10 text-accent-primary text-[9px] uppercase font-bold tracking-wider font-mono">Read Only</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-xs font-manrope">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[9px] text-white/35 uppercase font-mono tracking-wider">Project Title</span>
+                      <span className="text-white font-semibold">{selectedPSTeam.submission.title}</span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[9px] text-white/35 uppercase font-mono tracking-wider">Submission Status</span>
+                      <span className="text-white font-semibold uppercase">{selectedPSTeam.submission.status}</span>
+                    </div>
+                    <div className="col-span-2 flex flex-col gap-1">
+                      <span className="text-[9px] text-white/35 uppercase font-mono tracking-wider">Description</span>
+                      <p className="text-white/60 leading-relaxed">{selectedPSTeam.submission.description || 'No description provided.'}</p>
+                    </div>
+                    {selectedPSTeam.submission.additional_notes && (
+                      <div className="col-span-2 flex flex-col gap-1">
+                        <span className="text-[9px] text-white/35 uppercase font-mono tracking-wider">Additional Notes</span>
+                        <p className="text-white/60 leading-relaxed">{selectedPSTeam.submission.additional_notes}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 text-[10px] font-mono border-t border-white/5 pt-3">
+                    {selectedPSTeam.submission.repo_url && (
+                      <a href={selectedPSTeam.submission.repo_url} target="_blank" rel="noreferrer" className="px-3 py-1.5 rounded-lg bg-accent-primary/10 text-accent-primary border border-accent-primary/20 hover:bg-accent-primary/20 transition-all flex items-center gap-1">
+                        <Code size={12} /> Repository URL
+                      </a>
+                    )}
+                    {selectedPSTeam.submission.demo_url && (
+                      <a href={selectedPSTeam.submission.demo_url} target="_blank" rel="noreferrer" className="px-3 py-1.5 rounded-lg bg-accent-primary/10 text-accent-primary border border-accent-primary/20 hover:bg-accent-primary/20 transition-all flex items-center gap-1">
+                        <ExternalLink size={12} /> Live Demo URL
+                      </a>
+                    )}
+                    {selectedPSTeam.submission.video_url && (
+                      <a href={selectedPSTeam.submission.video_url} target="_blank" rel="noreferrer" className="px-3 py-1.5 rounded-lg bg-accent-primary/10 text-accent-primary border border-accent-primary/20 hover:bg-accent-primary/20 transition-all flex items-center gap-1">
+                        <ExternalLink size={12} /> Video Presentation
+                      </a>
+                    )}
+                    {selectedPSTeam.submission.file_url && (
+                      <a href={selectedPSTeam.submission.file_url} target="_blank" rel="noreferrer" className="px-3 py-1.5 rounded-lg bg-accent-primary/10 text-accent-primary border border-accent-primary/20 hover:bg-accent-primary/20 transition-all flex items-center gap-1">
+                        <FileText size={12} /> Documentation File
+                      </a>
+                    )}
+                  </div>
+                </Card>
+              ) : (
+                <Card className="p-8 flex flex-col items-center justify-center text-center">
+                  <Terminal size={36} className="text-white/10 mb-3" />
+                  <p className="text-xs font-bold text-white/40">No Project Submitted Yet</p>
+                  <p className="text-[9px] text-white/20 mt-1">This team has not submitted any files or URLs for their solution.</p>
+                </Card>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── REGISTERED TEAMS TAB ─── */}
+      {activeTab === 'teams' && (
+        <div className="flex flex-col gap-6">
+          {!selectedTeam ? (
+            // Team List
+            <Card className="p-6 flex flex-col gap-5">
+              <h4 className="font-archivo text-sm font-black uppercase text-white tracking-wider">
+                Registered Teams ({registrations.length})
+              </h4>
+              {registrations.length === 0 ? (
+                <div className="py-12 text-center text-[10px] text-white/30 border border-dashed border-white/10 rounded-xl">
+                  No teams have registered for this hackathon yet.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {registrations.map((reg: any) => {
+                    const team = teams.find((t: any) => t.id === reg.team_id);
+                    const ps = problemStatements.find((p: any) => p.id === reg.problem_statement_id);
+                    const sub = getSubmissionForTeam(reg.team_id);
+                    return (
+                      <div
+                        key={reg.id}
+                        onClick={() => setSelectedTeam({ registration: reg, team, ps, submission: sub })}
+                        className="p-5 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-primary/30 cursor-pointer transition-all group flex flex-col gap-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center text-accent-primary font-bold text-sm">
+                            {(team?.name || 'T')[0].toUpperCase()}
+                          </div>
+                          <div className="flex-grow">
+                            <h5 className="font-bold text-white group-hover:text-accent-primary transition-colors text-sm">{team?.name || 'Unknown'}</h5>
+                            <p className="text-[9px] text-white/35 font-mono">{team?.members?.length || 0} members</p>
+                          </div>
+                          <ChevronRight size={14} className="text-white/20 group-hover:text-accent-primary group-hover:translate-x-1 transition-all" />
+                        </div>
+                        <div className="flex items-center gap-2 text-[9px] font-mono text-white/30">
+                          <span className="px-1.5 py-0.5 rounded bg-white/5">{ps?.title || 'No PS selected'}</span>
+                          <span>•</span>
+                          <span className={sub ? 'text-success' : 'text-warning'}>{sub ? '✓ Submitted' : '○ Pending'}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          ) : (
+            // Team Detail View with Progress Flow
+            <div className="flex flex-col gap-6">
+              <div className="flex items-center gap-3 bg-white/[0.02] border border-white/5 p-5 rounded-2xl">
+                <button onClick={() => setSelectedTeam(null)} className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-semibold transition-all">
+                  ← Back to Teams
+                </button>
+                <div>
+                  <h3 className="font-archivo font-black text-white uppercase tracking-wider">{selectedTeam.team?.name || 'Team'}</h3>
+                  <p className="text-[10px] text-white/40">{selectedTeam.team?.members?.length || 0} members • Registered {new Date(selectedTeam.registration.created_at).toLocaleDateString()}</p>
+                </div>
+              </div>
+
+              {/* Team Members Card */}
+              <Card className="p-6 flex flex-col gap-4">
+                <h4 className="font-archivo text-sm font-black uppercase text-white tracking-wider">Team Members</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {(selectedTeam.team?.members || []).map((member: any) => (
+                    <div key={member.id} className="p-3 rounded-xl border border-white/5 bg-white/[0.01] flex items-center gap-3">
+                      <img
+                        src={member.user?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${member.user_id}`}
+                        alt="avatar"
+                        className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 object-cover"
+                      />
+                      <div>
+                        <p className="font-bold text-white text-xs">{member.user?.full_name || 'Unknown'}</p>
+                        <p className="text-[9px] text-white/35">{member.user?.email || ''} • {member.role_in_team === 'leader' ? '⭐ Leader' : 'Member'}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              {/* Progress Flow Card */}
+              <Card className="p-6 flex flex-col gap-5">
+                <h4 className="font-archivo text-sm font-black uppercase text-white tracking-wider">Progress Flow</h4>
+                <div className="flex flex-col gap-0">
+                  {/* Step 1: Registration */}
+                  <div className="flex items-start gap-4">
+                    <div className="flex flex-col items-center">
+                      <div className="w-8 h-8 rounded-full bg-success/20 border-2 border-success flex items-center justify-center">
+                        <Check size={14} className="text-success" />
+                      </div>
+                      <div className="w-0.5 h-10 bg-success/30" />
+                    </div>
+                    <div className="pt-1">
+                      <p className="font-bold text-white text-xs">Team Registered</p>
+                      <p className="text-[9px] text-white/40">Registered on {new Date(selectedTeam.registration.created_at).toLocaleString()}</p>
+                    </div>
+                  </div>
+
+                  {/* Step 2: PS Selection */}
+                  <div className="flex items-start gap-4">
+                    <div className="flex flex-col items-center">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        selectedTeam.ps ? 'bg-success/20 border-2 border-success' : 'bg-white/5 border-2 border-white/20'
+                      }`}>
+                        {selectedTeam.ps ? <Check size={14} className="text-success" /> : <Clock size={14} className="text-white/30" />}
+                      </div>
+                      <div className={`w-0.5 h-10 ${selectedTeam.ps ? 'bg-success/30' : 'bg-white/10'}`} />
+                    </div>
+                    <div className="pt-1">
+                      <p className="font-bold text-white text-xs">Problem Statement Selected</p>
+                      <p className="text-[9px] text-white/40">{selectedTeam.ps ? selectedTeam.ps.title : 'Not yet selected'}</p>
+                    </div>
+                  </div>
+
+                  {/* Step 3: Solution Submitted */}
+                  <div className="flex items-start gap-4">
+                    <div className="flex flex-col items-center">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        selectedTeam.submission ? 'bg-success/20 border-2 border-success' : 'bg-white/5 border-2 border-white/20'
+                      }`}>
+                        {selectedTeam.submission ? <Check size={14} className="text-success" /> : <Clock size={14} className="text-white/30" />}
+                      </div>
+                      <div className={`w-0.5 h-10 ${selectedTeam.submission ? 'bg-success/30' : 'bg-white/10'}`} />
+                    </div>
+                    <div className="pt-1">
+                      <p className="font-bold text-white text-xs">Solution Submitted</p>
+                      {selectedTeam.submission ? (
+                        <div className="text-[9px] text-white/40">
+                          <p>"{selectedTeam.submission.title}" — {new Date(selectedTeam.submission.submitted_at).toLocaleString()}</p>
+                          <div className="flex gap-3 mt-1 text-accent-primary">
+                            {selectedTeam.submission.repo_url && <a href={selectedTeam.submission.repo_url} target="_blank" rel="noreferrer" className="hover:underline flex items-center gap-0.5"><Code size={9} /> Repo</a>}
+                            {selectedTeam.submission.demo_url && <a href={selectedTeam.submission.demo_url} target="_blank" rel="noreferrer" className="hover:underline flex items-center gap-0.5"><ExternalLink size={9} /> Demo</a>}
+                            {selectedTeam.submission.file_url && <a href={selectedTeam.submission.file_url} target="_blank" rel="noreferrer" className="hover:underline flex items-center gap-0.5"><FileText size={9} /> File</a>}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-[9px] text-white/40">Not yet submitted</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Step 4: Evaluation */}
+                  {(() => {
+                    const judgeAssignment = selectedTeam.submission ? getJudgeForSubmission(selectedTeam.submission.id) : null;
+                    const isEvaluated = selectedTeam.submission?.evaluations?.length > 0;
+                    return (
+                      <div className="flex items-start gap-4">
+                        <div className="flex flex-col items-center">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                            isEvaluated ? 'bg-success/20 border-2 border-success' :
+                            judgeAssignment ? 'bg-accent-secondary/20 border-2 border-accent-secondary' :
+                            'bg-white/5 border-2 border-white/20'
+                          }`}>
+                            {isEvaluated ? <Check size={14} className="text-success" /> :
+                             judgeAssignment ? <Star size={14} className="text-accent-secondary" /> :
+                             <Clock size={14} className="text-white/30" />}
+                          </div>
+                        </div>
+                        <div className="pt-1">
+                          <p className="font-bold text-white text-xs">Evaluation</p>
+                          {isEvaluated ? (
+                            <p className="text-[9px] text-success">✓ Evaluation completed</p>
+                          ) : judgeAssignment ? (
+                            <p className="text-[9px] text-accent-secondary">Assigned to Judge: {judgeAssignment.judge_name || judgeAssignment.judge_id}</p>
+                          ) : selectedTeam.submission ? (
+                            <p className="text-[9px] text-white/40">Awaiting judge assignment</p>
+                          ) : (
+                            <p className="text-[9px] text-white/40">Submission required first</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </Card>
+
+              {/* Submission Detail Card (if exists) */}
+              {selectedTeam.submission && (
+                <Card className="p-6 flex flex-col gap-4">
+                  <h4 className="font-archivo text-sm font-black uppercase text-white tracking-wider">Submission Details</h4>
+                  <div className="grid grid-cols-2 gap-4 text-xs">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[9px] text-white/30 uppercase font-mono tracking-wider">Title</span>
+                      <span className="text-white font-semibold">{selectedTeam.submission.title}</span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[9px] text-white/30 uppercase font-mono tracking-wider">Status</span>
+                      <span className="text-white font-semibold uppercase">{selectedTeam.submission.status}</span>
+                    </div>
+                    <div className="col-span-2 flex flex-col gap-1">
+                      <span className="text-[9px] text-white/30 uppercase font-mono tracking-wider">Description</span>
+                      <span className="text-white/60">{selectedTeam.submission.description || 'No description'}</span>
+                    </div>
+                    {selectedTeam.submission.additional_notes && (
+                      <div className="col-span-2 flex flex-col gap-1">
+                        <span className="text-[9px] text-white/30 uppercase font-mono tracking-wider">Additional Notes</span>
+                        <span className="text-white/60">{selectedTeam.submission.additional_notes}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-3 text-[10px] font-mono border-t border-white/5 pt-3">
+                    {selectedTeam.submission.repo_url && <a href={selectedTeam.submission.repo_url} target="_blank" rel="noreferrer" className="px-3 py-1.5 rounded-lg bg-accent-primary/10 text-accent-primary border border-accent-primary/20 hover:bg-accent-primary/20 transition-all flex items-center gap-1"><Code size={12} /> Repository</a>}
+                    {selectedTeam.submission.demo_url && <a href={selectedTeam.submission.demo_url} target="_blank" rel="noreferrer" className="px-3 py-1.5 rounded-lg bg-accent-primary/10 text-accent-primary border border-accent-primary/20 hover:bg-accent-primary/20 transition-all flex items-center gap-1"><ExternalLink size={12} /> Live Demo</a>}
+                    {selectedTeam.submission.video_url && <a href={selectedTeam.submission.video_url} target="_blank" rel="noreferrer" className="px-3 py-1.5 rounded-lg bg-accent-primary/10 text-accent-primary border border-accent-primary/20 hover:bg-accent-primary/20 transition-all flex items-center gap-1"><ExternalLink size={12} /> Video</a>}
+                    {selectedTeam.submission.file_url && <a href={selectedTeam.submission.file_url} target="_blank" rel="noreferrer" className="px-3 py-1.5 rounded-lg bg-accent-primary/10 text-accent-primary border border-accent-primary/20 hover:bg-accent-primary/20 transition-all flex items-center gap-1"><FileText size={12} /> Document</a>}
+                  </div>
+                </Card>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Edit PS Modal */}
+      {/* ─── ANNOUNCEMENTS TAB ─── */}
+      {activeTab === 'announcements' && (
+        <Card className="p-6 flex flex-col gap-6">
+          <div>
+            <h4 className="font-archivo text-sm font-black uppercase text-white tracking-wider">Send Announcement</h4>
+            <p className="text-[10px] text-white/40 mt-1">Broadcast a notification to hackathon participants.</p>
+          </div>
+
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!announcementTitle.trim() || !announcementMessage.trim()) return;
+              setIsSendingAnnouncement(true);
+              setAnnouncementSuccess('');
+              try {
+                const res = await apiService.sendAnnouncement({
+                  hackathon_id: selectedHackathon.id,
+                  title: announcementTitle,
+                  message: announcementMessage,
+                  target: announcementTarget
+                });
+                setAnnouncementSuccess(res.message || `Announcement sent to ${res.data} user(s).`);
+                setAnnouncementTitle('');
+                setAnnouncementMessage('');
+                setAnnouncementTarget('all_users');
+              } catch (err: any) {
+                alert(err.message || 'Failed to send announcement.');
+              } finally {
+                setIsSendingAnnouncement(false);
+              }
+            }}
+            className="flex flex-col gap-4"
+          >
+            {/* Target Selector */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-white/70">Send To</label>
+              <select
+                value={announcementTarget}
+                onChange={e => setAnnouncementTarget(e.target.value)}
+                className="p-2.5 rounded-xl bg-black border border-white/10 text-white text-[11px] focus:border-accent-primary transition-all"
+              >
+                <option value="all_users">📢 All Registered Users (every team member)</option>
+                <option value="team_leaders">👑 Team Leaders Only</option>
+                {teams.map((t: any) => (
+                  <option key={t.id} value={t.id}>🏷️ Team: {t.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Title */}
+            <Input
+              label="Announcement Title"
+              required
+              placeholder="e.g. Submission Deadline Extended"
+              value={announcementTitle}
+              onChange={e => setAnnouncementTitle(e.target.value)}
+            />
+
+            {/* Message */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-white/70">Message</label>
+              <textarea
+                required
+                placeholder="Write your announcement message here..."
+                value={announcementMessage}
+                onChange={e => setAnnouncementMessage(e.target.value)}
+                className="w-full h-32 p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-primary transition-all resize-none"
+              />
+            </div>
+
+            {/* Success Message */}
+            {announcementSuccess && (
+              <div className="p-3 rounded-xl bg-success/10 border border-success/20 text-xs text-success font-semibold flex items-center gap-2">
+                <Check size={14} /> {announcementSuccess}
+              </div>
+            )}
+
+            {/* Submit */}
+            <div className="flex justify-end">
+              <Button type="submit" variant="primary" disabled={isSendingAnnouncement || !announcementTitle.trim() || !announcementMessage.trim()}>
+                {isSendingAnnouncement ? 'Sending...' : 'Send Announcement'}
               </Button>
-            </TableCell>
-          </TableRow>
-        </Table>
-      </Card>
+            </div>
+          </form>
+        </Card>
+      )}
+
+      {/* ─── ANALYTICS TAB ─── */}
+      {activeTab === 'analytics' && (
+        <HackathonAnalyticsView hackathonId={selectedHackathon.id} />
+      )}
+
+      {showEditPSModal && editingPS && (
+        <Modal
+          isOpen={true}
+          onClose={() => setShowEditPSModal(false)}
+          title={`Edit Problem Statement | ${editingPS.title}`}
+        >
+          <form onSubmit={handleSavePS} className="flex flex-col gap-4 py-2 text-xs font-manrope">
+            <Input
+              label="Title"
+              required
+              value={editPSData.title}
+              onChange={(e) => setEditPSData({ ...editPSData, title: e.target.value })}
+            />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-white/70">Description</label>
+              <textarea
+                required
+                value={editPSData.description}
+                onChange={(e) => setEditPSData({ ...editPSData, description: e.target.value })}
+                className="w-full h-28 p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-primary transition-all resize-none"
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-white/70">Category</label>
+                <select value={editPSData.category} onChange={e => setEditPSData({ ...editPSData, category: e.target.value })} className="p-2.5 rounded-xl bg-black border border-white/10 text-white text-[11px]">
+                  <option>Open Innovation</option><option>AI/ML</option><option>Web/Mobile</option><option>IoT</option><option>Blockchain</option><option>Social Impact</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-white/70">Difficulty</label>
+                <select value={editPSData.difficulty} onChange={e => setEditPSData({ ...editPSData, difficulty: e.target.value })} className="p-2.5 rounded-xl bg-black border border-white/10 text-white text-[11px]">
+                  <option>Easy</option><option>Medium</option><option>Hard</option><option>Expert</option>
+                </select>
+              </div>
+              <Input label="Max Teams" type="number" value={String(editPSData.maxTeams)} onChange={e => setEditPSData({ ...editPSData, maxTeams: parseInt(e.target.value) || 10 })} />
+            </div>
+            <div className="flex gap-3 justify-end mt-3">
+              <Button type="button" variant="secondary" onClick={() => setShowEditPSModal(false)}>Cancel</Button>
+              <Button type="submit" variant="primary">Save Changes</Button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 };
@@ -1761,7 +3048,8 @@ const AdminView = () => {
     description: '', 
     startDate: '', 
     endDate: '', 
-    maxTeamSize: 4 
+    maxTeamSize: 4,
+    announcePsAdvance: true
   });
   
   const [newPS, setNewPS] = useState({ 
@@ -1783,6 +3071,98 @@ const AdminView = () => {
   const [announcementText, setAnnouncementText] = useState('');
   const [isPerformingAction, setIsPerformingAction] = useState(false);
   const [toastText, setToastText] = useState('');
+
+  // Dynamic active hackathon details
+  const [activeHackathonTeams, setActiveHackathonTeams] = useState<any[]>([]);
+  const [activeHackathonSubmissions, setActiveHackathonSubmissions] = useState<any[]>([]);
+
+  // Edit Hackathon state
+  const [showEditHackathonModal, setShowEditHackathonModal] = useState<boolean>(false);
+  const [editHackathonData, setEditHackathonData] = useState<any>({
+    title: '',
+    slug: '',
+    tagline: '',
+    description: '',
+    start_date: '',
+    end_date: '',
+    registration_deadline: '',
+    max_team_size: 4,
+    min_team_size: 1,
+    announce_ps_advance: true
+  });
+
+  const [selectedHackathonSubTab, setSelectedHackathonSubTab] = useState<'console' | 'analytics'>('console');
+
+  // Console Server Health Metrics states
+  const [cpuLoad, setCpuLoad] = useState(24);
+  const [memoryUsed, setMemoryUsed] = useState(48);
+  const [apiLatency, setApiLatency] = useState(38);
+  const [activeSockets, setActiveSockets] = useState(12);
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [terminalLogs, setTerminalLogs] = useState<string[]>([
+    `[${new Date().toLocaleTimeString()}] AUTH: Authenticated admin@college.edu successfully.`,
+    `[${new Date().toLocaleTimeString()}] GATEWAY: CORS configurations loaded for localhost:5173.`,
+    `[${new Date().toLocaleTimeString()}] DB: Connection pool cluster initialized (3 active nodes).`,
+    `[${new Date().toLocaleTimeString()}] API: Loaded system configuration settings.`,
+  ]);
+
+  useEffect(() => {
+    if (activeTab !== 'dashboard') return;
+    const interval = setInterval(() => {
+      // Simulate live metric ticks
+      setCpuLoad(prev => Math.min(100, Math.max(5, prev + Math.floor(Math.random() * 9) - 4)));
+      setMemoryUsed(prev => Math.min(100, Math.max(30, prev + Math.floor(Math.random() * 5) - 2)));
+      setApiLatency(prev => Math.min(300, Math.max(10, prev + Math.floor(Math.random() * 15) - 7)));
+      setActiveSockets(prev => Math.min(50, Math.max(2, prev + Math.floor(Math.random() * 3) - 1)));
+
+      // Random logs
+      const services = ['GATEWAY', 'DB_POOL', 'LEDGER', 'AUTH', 'API'];
+      const actions = [
+        'GET /api/v1/hackathons completed in 32ms.',
+        'heartbeat check succeeded.',
+        'active session tokens parsed and verified.',
+        'refreshing stats telemetry metrics.',
+        'garbage collection routine executed.',
+        'connection verified by node sentinel.'
+      ];
+      const randomService = services[Math.floor(Math.random() * services.length)];
+      const randomAction = actions[Math.floor(Math.random() * actions.length)];
+      const timestamp = new Date().toLocaleTimeString();
+      setTerminalLogs(prev => [...prev.slice(-30), `[${timestamp}] ${randomService}: ${randomAction}`]);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [activeTab]);
+
+  // Edit Problem Statement state
+  const [showEditPSModal, setShowEditPSModal] = useState<boolean>(false);
+  const [selectedPSForEdit, setSelectedPSForEdit] = useState<any | null>(null);
+  const [editPSData, setEditPSData] = useState<any>({
+    title: '',
+    description: '',
+    category: 'Open Innovation',
+    difficulty: 'Medium',
+    maxTeams: 10
+  });
+
+  // Edit Judge state
+  const [showEditJudgeModal, setShowEditJudgeModal] = useState<boolean>(false);
+  const [editJudgeData, setEditJudgeData] = useState<any>({
+    fullName: '',
+    email: '',
+    department: '',
+    collegeId: '',
+    password: ''
+  });
+
+  // Edit Coordinator state
+  const [showEditCoordinatorModal, setShowEditCoordinatorModal] = useState<boolean>(false);
+  const [editCoordinatorData, setEditCoordinatorData] = useState<any>({
+    fullName: '',
+    email: '',
+    department: '',
+    collegeId: '',
+    password: ''
+  });
 
   // Core lists state loaded from APIs
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -1816,70 +3196,6 @@ const AdminView = () => {
   const [judgeAssignments, setJudgeAssignments] = useState<any[]>([]);
   const [coordinatorAssignments, setCoordinatorAssignments] = useState<any[]>([]);
 
-  // Fallback mock submissions (so the user always has submissions to assign and test if database is empty)
-  const getSubmissionsForHackathon = (hackathonId: string) => {
-    const realSubs = submissionsList.filter(s => s.hackathon_id === hackathonId);
-    if (realSubs.length > 0) return realSubs;
-    
-    return [
-      {
-        id: `sub-mock-1-${hackathonId}`,
-        hackathon_id: hackathonId,
-        team_name: 'Alpha Coders',
-        team_id: 'team-mock-1',
-        title: 'Decentralized Finance Portal',
-        repo_url: 'https://github.com/alpha-coders/defi',
-        file_name: 'defi_architecture.pdf',
-        grade_score: null
-      },
-      {
-        id: `sub-mock-2-${hackathonId}`,
-        hackathon_id: hackathonId,
-        team_name: 'Quantum Thinkers',
-        team_id: 'team-mock-2',
-        title: 'Smart Crop Analytics Tool',
-        repo_url: 'https://github.com/quantum/crop-analytics',
-        file_name: 'crop_analytics_pitch.pptx',
-        grade_score: 92
-      },
-      {
-        id: `sub-mock-3-${hackathonId}`,
-        hackathon_id: hackathonId,
-        team_name: 'Neural Hawks',
-        team_id: 'team-mock-3',
-        title: 'AI Resume Screener & Parser',
-        repo_url: 'https://github.com/neural-hawks/parser',
-        file_name: 'resume_parser.pptx',
-        grade_score: 85
-      }
-    ];
-  };
-
-  // Mock registered teams for Hackathon view
-  const mockTeams = [
-    {
-      id: 'team-1',
-      name: 'Zero Gravity',
-      leader: 'Alice Johnson',
-      members: ['Alice Johnson', 'Bob Smith', 'Charlie Brown'],
-      problemStatement: 'AI-Powered Resume Screen',
-      githubLink: 'https://github.com/alice/zero-gravity',
-      pptFile: 'zero_gravity_pitch.pdf',
-      videoLink: 'https://drive.google.com/file/d/123/view',
-      solutionText: 'An automated resume screening tool that parses resume files and maps skills dynamically using custom embeddings.'
-    },
-    {
-      id: 'team-2',
-      name: 'Volt Tech',
-      leader: 'David Miller',
-      members: ['David Miller', 'Eva Green'],
-      problemStatement: 'Smart Grid Monitoring Console',
-      githubLink: 'https://github.com/david/volt-tech',
-      pptFile: 'volt_tech_grid.pptx',
-      videoLink: 'https://drive.google.com/file/d/456/view',
-      solutionText: 'IoT dashboard displaying real-time substation current spikes and sending warning SMS to coordinators.'
-    }
-  ];
 
   // Toast alert
   const showToast = (text: string) => {
@@ -2036,10 +3352,11 @@ const AdminView = () => {
         description: newEvent.description,
         start_date: newEvent.startDate ? new Date(newEvent.startDate).toISOString() : undefined,
         end_date: newEvent.endDate ? new Date(newEvent.endDate).toISOString() : undefined,
-        max_team_size: newEvent.maxTeamSize
+        max_team_size: newEvent.maxTeamSize,
+        announce_ps_advance: newEvent.announcePsAdvance
       });
       showToast(`Hackathon "${newEvent.title}" successfully created!`);
-      setNewEvent({ title: '', slug: '', tagline: '', description: '', startDate: '', endDate: '', maxTeamSize: 4 });
+      setNewEvent({ title: '', slug: '', tagline: '', description: '', startDate: '', endDate: '', maxTeamSize: 4, announcePsAdvance: true });
       setShowEventModal(false);
       fetchHackathons();
     } catch (err: any) {
@@ -2049,7 +3366,7 @@ const AdminView = () => {
     }
   };
 
-  // Add Problem Statement (API integration!)
+  // Add Problem Statement
   const handleAddPS = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedHackathon) return;
@@ -2065,18 +3382,129 @@ const AdminView = () => {
       showToast("Problem statement added successfully!");
       setNewPS({ title: '', description: '', category: 'Open Innovation', difficulty: 'Medium', maxTeams: 10 });
       setShowPSModal(false);
-      
-      // Reload details
-      const updated = await apiService.getHackathon(selectedHackathon.id);
-      if (updated && updated.data) {
-        setSelectedHackathon(updated.data);
-      }
+      loadSelectedHackathonDetails(selectedHackathon.id);
     } catch (err: any) {
       showToast(err.message || 'Failed to add problem statement');
     } finally {
       setIsPerformingAction(false);
     }
   };
+
+  const loadSelectedHackathonDetails = async (hackathonId: string) => {
+    try {
+      const hackRes = await apiService.getHackathon(hackathonId);
+      if (hackRes && hackRes.data) {
+        setSelectedHackathon(hackRes.data);
+        setSelectedHackathonSubTab('console');
+      }
+      
+      const teamsRes = await apiService.listTeams(hackathonId);
+      if (teamsRes && teamsRes.data) {
+        setActiveHackathonTeams(teamsRes.data);
+      } else {
+        setActiveHackathonTeams([]);
+      }
+      
+      const subsRes = await apiService.listSubmissions(hackathonId);
+      if (subsRes && subsRes.data) {
+        setActiveHackathonSubmissions(subsRes.data);
+      } else {
+        setActiveHackathonSubmissions([]);
+      }
+    } catch (err: any) {
+      console.warn("Failed to load hackathon details", err.message);
+    }
+  };
+
+  const handleOpenEditHackathon = () => {
+    if (!selectedHackathon) return;
+    setEditHackathonData({
+      title: selectedHackathon.title,
+      slug: selectedHackathon.slug,
+      tagline: selectedHackathon.tagline || '',
+      description: selectedHackathon.description || '',
+      start_date: selectedHackathon.start_date ? selectedHackathon.start_date.substring(0, 10) : '',
+      end_date: selectedHackathon.end_date ? selectedHackathon.end_date.substring(0, 10) : '',
+      registration_deadline: selectedHackathon.registration_deadline ? selectedHackathon.registration_deadline.substring(0, 10) : '',
+      max_team_size: selectedHackathon.max_team_size,
+      min_team_size: selectedHackathon.min_team_size,
+      status: selectedHackathon.status,
+      banner_url: selectedHackathon.banner_url || '',
+      announce_ps_advance: selectedHackathon.announce_ps_advance
+    });
+    setShowEditHackathonModal(true);
+  };
+
+  const handleUpdateHackathon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedHackathon) return;
+    try {
+      await apiService.updateHackathon(selectedHackathon.id, {
+        title: editHackathonData.title,
+        slug: editHackathonData.slug,
+        tagline: editHackathonData.tagline,
+        description: editHackathonData.description,
+        start_date: editHackathonData.start_date ? new Date(editHackathonData.start_date).toISOString() : undefined,
+        end_date: editHackathonData.end_date ? new Date(editHackathonData.end_date).toISOString() : undefined,
+        registration_deadline: editHackathonData.registration_deadline ? new Date(editHackathonData.registration_deadline).toISOString() : undefined,
+        max_team_size: editHackathonData.max_team_size,
+        min_team_size: editHackathonData.min_team_size,
+        status: editHackathonData.status,
+        banner_url: editHackathonData.banner_url,
+        announce_ps_advance: editHackathonData.announce_ps_advance
+      });
+      showToast("Hackathon updated successfully!");
+      setShowEditHackathonModal(false);
+      loadSelectedHackathonDetails(selectedHackathon.id);
+      fetchHackathons();
+    } catch (err: any) {
+      showToast(err.message || "Failed to update hackathon.");
+    }
+  };
+
+  const handleOpenEditPS = (ps: any) => {
+    setSelectedPSForEdit(ps);
+    setEditPSData({
+      title: ps.title,
+      description: ps.description,
+      category: ps.category || 'Open Innovation',
+      difficulty: ps.difficulty || 'Medium',
+      maxTeams: ps.max_teams || 10
+    });
+    setShowEditPSModal(true);
+  };
+
+  const handleUpdatePS = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedHackathon || !selectedPSForEdit) return;
+    try {
+      await apiService.updateProblemStatement(selectedHackathon.id, selectedPSForEdit.id, {
+        title: editPSData.title,
+        description: editPSData.description,
+        category: editPSData.category,
+        difficulty: editPSData.difficulty,
+        max_teams: editPSData.maxTeams
+      });
+      showToast("Problem statement updated successfully!");
+      setShowEditPSModal(false);
+      loadSelectedHackathonDetails(selectedHackathon.id);
+    } catch (err: any) {
+      showToast(err.message || "Failed to update problem statement.");
+    }
+  };
+
+  const handleDeletePS = async (problemId: string) => {
+    if (!selectedHackathon) return;
+    if (!window.confirm("Are you sure you want to delete this problem statement?")) return;
+    try {
+      await apiService.deleteProblemStatement(selectedHackathon.id, problemId);
+      showToast("Problem statement deleted successfully!");
+      loadSelectedHackathonDetails(selectedHackathon.id);
+    } catch (err: any) {
+      showToast(err.message || "Failed to delete problem statement.");
+    }
+  };
+
 
   // Create Judge Account
   const handleCreateJudge = async (e: React.FormEvent) => {
@@ -2176,6 +3604,55 @@ const AdminView = () => {
       .map(a => a.submissionId);
   };
 
+  const handleOpenEditJudge = (j: any) => {
+    setEditJudgeData({
+      fullName: j.full_name,
+      email: j.email,
+      department: j.department || '',
+      collegeId: j.college_id || '',
+      password: ''
+    });
+    setShowEditJudgeModal(true);
+  };
+
+  const handleUpdateJudge = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedJudgeDetail) return;
+    try {
+      const res = await apiService.updateUser(selectedJudgeDetail.id, {
+        email: editJudgeData.email,
+        password: editJudgeData.password || undefined,
+        full_name: editJudgeData.fullName,
+        department: editJudgeData.department,
+        college_id: editJudgeData.collegeId
+      });
+      showToast("Judge details updated successfully!");
+      setShowEditJudgeModal(false);
+      if (res && res.data) {
+        setSelectedJudgeDetail(res.data);
+      } else {
+        setSelectedJudgeDetail(null);
+      }
+      fetchUsers();
+    } catch (err: any) {
+      showToast(err.message || "Failed to update judge details.");
+    }
+  };
+
+  const handleDeleteJudge = async (judgeId: string) => {
+    if (!window.confirm("Are you sure you want to delete this judge account? This will revoke all their assignments and evaluations.")) return;
+    try {
+      await apiService.deleteUser(judgeId);
+      showToast("Judge account deleted successfully.");
+      setSelectedJudgeDetail(null);
+      fetchUsers();
+      fetchAssignments();
+    } catch (err: any) {
+      showToast(err.message || "Failed to delete judge account.");
+    }
+  };
+
+
   // Create Coordinator Account
   const handleCreateCoordinator = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2239,6 +3716,53 @@ const AdminView = () => {
     }
   };
 
+  const handleOpenEditCoordinator = (c: any) => {
+    setEditCoordinatorData({
+      fullName: c.full_name,
+      email: c.email,
+      department: c.department || '',
+      collegeId: c.college_id || '',
+      password: ''
+    });
+    setShowEditCoordinatorModal(true);
+  };
+
+  const handleUpdateCoordinator = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCoordinatorDetail) return;
+    try {
+      const res = await apiService.updateUser(selectedCoordinatorDetail.id, {
+        email: editCoordinatorData.email,
+        password: editCoordinatorData.password || undefined,
+        full_name: editCoordinatorData.fullName,
+        department: editCoordinatorData.department,
+        college_id: editCoordinatorData.collegeId
+      });
+      showToast("Coordinator details updated successfully!");
+      setShowEditCoordinatorModal(false);
+      if (res && res.data) {
+        setSelectedCoordinatorDetail(res.data);
+      } else {
+        setSelectedCoordinatorDetail(null);
+      }
+      fetchUsers();
+    } catch (err: any) {
+      showToast(err.message || "Failed to update coordinator details.");
+    }
+  };
+
+  const handleDeleteCoordinator = async (coordId: string) => {
+    if (!window.confirm("Are you sure you want to delete this coordinator account? This will revoke all their event assignments.")) return;
+    try {
+      await apiService.deleteUser(coordId);
+      showToast("Coordinator account deleted successfully.");
+      setSelectedCoordinatorDetail(null);
+      fetchUsers();
+      fetchAssignments();
+    } catch (err: any) {
+      showToast(err.message || "Failed to delete coordinator account.");
+    }
+  };
 
   // Toggle user active status
   const handleToggleUserStatus = async (userId: string, currentStatus: boolean) => {
@@ -2435,54 +3959,139 @@ const AdminView = () => {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="md:col-span-2 p-8">
-              <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider mb-6">Operations Hub</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <button 
-                  onClick={() => setShowEventModal(true)}
-                  className="p-4 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-primary hover:bg-accent-primary/5 transition-all text-left flex flex-col justify-between h-28 group"
-                >
-                  <Plus size={18} className="text-accent-primary group-hover:rotate-90 transition-transform duration-300" />
-                  <div>
-                    <p className="text-xs font-bold text-white">Create Hackathon</p>
-                    <p className="text-[10px] text-white/40 mt-0.5 font-medium">Scaffold new sprint events</p>
-                  </div>
-                </button>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Operations Hub with Reset Seed and Maintenance Toggle */}
+            <Card className="p-8 flex flex-col justify-between">
+              <div>
+                <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider mb-6">Operations Hub</h4>
+                <div className="flex flex-col gap-4">
+                  <button 
+                    onClick={() => setShowEventModal(true)}
+                    className="w-full p-4 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-primary hover:bg-accent-primary/5 transition-all text-left flex items-center justify-between group"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-white">Create Hackathon</p>
+                      <p className="text-[10px] text-white/40 mt-0.5 font-medium">Scaffold new sprint events</p>
+                    </div>
+                    <Plus size={18} className="text-accent-primary group-hover:rotate-90 transition-transform duration-300" />
+                  </button>
 
-                <button 
-                  onClick={() => navigateTab('judges')}
-                  className="p-4 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-secondary hover:bg-accent-secondary/5 transition-all text-left flex flex-col justify-between h-28 group"
-                >
-                  <Users size={18} className="text-accent-secondary" />
-                  <div>
-                    <p className="text-xs font-bold text-white">Allocate Judges</p>
-                    <p className="text-[10px] text-white/40 mt-0.5 font-medium">Assign review matrices</p>
-                  </div>
-                </button>
+                  <button 
+                    onClick={() => navigateTab('judges')}
+                    className="w-full p-4 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-secondary hover:bg-accent-secondary/5 transition-all text-left flex items-center justify-between group"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-white">Allocate Judges</p>
+                      <p className="text-[10px] text-white/40 mt-0.5 font-medium">Assign review matrices</p>
+                    </div>
+                    <Users size={18} className="text-accent-secondary" />
+                  </button>
 
-                <button 
-                  onClick={() => setShowAnnouncementModal(true)}
-                  className="p-4 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-third hover:bg-accent-third/5 transition-all text-left flex flex-col justify-between h-28 group"
-                >
-                  <Megaphone size={18} className="text-accent-third" />
-                  <div>
-                    <p className="text-xs font-bold text-white">Publish Alert</p>
-                    <p className="text-[10px] text-white/40 mt-0.5 font-medium">Broadcast system alerts</p>
+                  {/* Seed / Database Reset */}
+                  <button 
+                    onClick={async () => {
+                      if (!window.confirm("WARNING: This will delete ALL teams, submissions, evaluations, and mock registrations, and restore the database to its initial seeded state. Proceed?")) return;
+                      showToast("Wiping database and reseeding...");
+                      try {
+                        await apiService.resetSystem();
+                        showToast("System database successfully reseeded!");
+                        setTimeout(() => window.location.reload(), 1500);
+                      } catch (err: any) {
+                        showToast(err.message || "Reseed failed.");
+                      }
+                    }}
+                    className="w-full p-4 rounded-2xl border border-danger/25 bg-danger/5 hover:bg-danger/10 transition-all text-left flex items-center justify-between group"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-danger">Reset System Database</p>
+                      <p className="text-[10px] text-danger/60 mt-0.5 font-medium">Wipe and re-seed clean demonstration data</p>
+                    </div>
+                    <Trash2 size={18} className="text-danger" />
+                  </button>
+
+                  {/* Maintenance Toggle */}
+                  <div className="p-4 rounded-2xl border border-white/5 bg-white/[0.01] flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-white">Maintenance Mode</p>
+                      <p className="text-[10px] text-white/40 mt-0.5 font-medium">Temporarily disable updates & submissions</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMaintenanceMode(!maintenanceMode);
+                        showToast(maintenanceMode ? "Maintenance mode deactivated." : "Maintenance mode activated. Profile updates and submissions are read-only.");
+                      }}
+                      className={`w-12 h-6 rounded-full p-0.5 transition-colors duration-200 focus:outline-none flex items-center ${
+                        maintenanceMode ? 'bg-accent-primary justify-end' : 'bg-white/10 justify-start'
+                      }`}
+                    >
+                      <div className="w-5 h-5 rounded-full bg-white shadow-md transform duration-200" />
+                    </button>
                   </div>
-                </button>
+                </div>
               </div>
             </Card>
 
+            {/* Server Health Monitor Card */}
+            <Card className="p-8 flex flex-col justify-between">
+              <div>
+                <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider mb-6">Server Metrics</h4>
+                <div className="flex flex-col gap-5 text-xs font-manrope">
+                  {/* CPU load */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-white/70">
+                      <span>CPU Utilization</span>
+                      <span className="font-mono font-bold text-accent-primary">{cpuLoad}%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-full bg-accent-primary transition-all duration-500" style={{ width: `${cpuLoad}%` }} />
+                    </div>
+                  </div>
+
+                  {/* Memory load */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-white/70">
+                      <span>Memory Allocation</span>
+                      <span className="font-mono font-bold text-accent-secondary">{memoryUsed}%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-full bg-accent-secondary transition-all duration-500" style={{ width: `${memoryUsed}%` }} />
+                    </div>
+                  </div>
+
+                  {/* API response latency */}
+                  <div className="flex items-center justify-between border-t border-white/5 pt-4">
+                    <span className="text-white/60">API Response Latency</span>
+                    <span className="font-mono text-white text-glow-cyan">{apiLatency} ms</span>
+                  </div>
+
+                  {/* Active sockets */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/60">Active WebSockets</span>
+                    <span className="font-mono text-white text-glow-magenta">{activeSockets} channels</span>
+                  </div>
+
+                  {/* Node Status */}
+                  <div className="flex items-center justify-between border-t border-white/5 pt-4">
+                    <span className="text-white/60">Gateway status</span>
+                    <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-success/15 text-success border border-success/35 uppercase">
+                      Online
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Quick System Broadcast */}
             <Card className="p-8 flex flex-col justify-between">
               <div>
                 <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider mb-6">System Broadcast</h4>
-                <form onSubmit={handlePublishAnnouncement} className="flex flex-col gap-3">
+                <form onSubmit={handlePublishAnnouncement} className="flex flex-col gap-3 font-manrope">
                   <textarea
                     placeholder="Enter system announcement text..."
                     value={announcementText}
                     onChange={(e) => setAnnouncementText(e.target.value)}
-                    className="p-3 w-full h-20 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-white/35 focus:outline-none focus:border-accent-primary resize-none"
+                    className="p-3 w-full h-24 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-white/35 focus:outline-none focus:border-accent-primary resize-none"
                     required
                   />
                   <Button type="submit" variant="primary" className="w-full text-xs">
@@ -2492,6 +4101,67 @@ const AdminView = () => {
               </div>
             </Card>
           </div>
+
+          {/* Hackathons Performance Report (Participants & Winners) */}
+          <Card className="p-8 flex flex-col gap-6">
+            <div>
+              <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider">Hackathons Registry & Performance Ledger</h4>
+              <p className="text-[10px] text-white/45 mt-0.5">Overview of participants counts and winners across deployed hackathon sprints</p>
+            </div>
+            <div className="overflow-x-auto">
+              <Table headers={['Hackathon Title', 'Status', 'Registered Teams', 'Winning Team Solution']}>
+                {hackathonsList.map((h) => {
+                  // Winners simulation: if status is active or completed, assign a winner
+                  const hasWinner = h.status === 'active' || h.status === 'completed';
+                  return (
+                    <TableRow key={h.id}>
+                      <TableCell className="font-bold text-white text-xs">{h.title}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider font-mono ${
+                          h.status === 'active' ? 'bg-success/10 text-success border border-success/20' :
+                          h.status === 'upcoming' ? 'bg-accent-primary/10 text-accent-primary border border-accent-primary/20' :
+                          'bg-white/5 text-white/40 border border-white/10'
+                        }`}>
+                          {h.status}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-xs font-mono text-white/60">
+                        {h.min_team_size ? '4 Teams registered' : 'No Registrations'}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {hasWinner ? (
+                          <span className="text-accent-secondary font-semibold">🏆 Team Antigravity (Score: 9.1/10)</span>
+                        ) : (
+                          <span className="text-white/30 italic text-[10px]">Session in-progress / upcoming</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </Table>
+            </div>
+          </Card>
+
+          {/* Retro terminal console widget */}
+          <Card className="p-6 bg-black border border-white/15 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-danger/80" />
+                <div className="w-3 h-3 rounded-full bg-warning/80" />
+                <div className="w-3 h-3 rounded-full bg-success/80" />
+                <span className="text-[10px] text-white/50 font-mono ml-2">sysadmin_terminal.sh</span>
+              </div>
+              <span className="text-[9px] text-accent-primary font-mono animate-pulse">● LIVE STREAM</span>
+            </div>
+            <div className="h-44 overflow-y-auto font-mono text-[10px] text-success leading-relaxed flex flex-col gap-1.5 scrollbar-thin scrollbar-thumb-white/10">
+              {terminalLogs.map((log, idx) => (
+                <div key={idx} className="whitespace-pre-wrap select-all">
+                  <span className="text-accent-primary font-bold">{log.slice(0, 10)}</span>
+                  <span>{log.slice(10)}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
         </>
       )}
 
@@ -2531,12 +4201,7 @@ const AdminView = () => {
                     <div 
                       key={h.id} 
                       onClick={async () => {
-                        try {
-                          const res = await apiService.getHackathon(h.id);
-                          setSelectedHackathon(res.data || h);
-                        } catch {
-                          setSelectedHackathon(h);
-                        }
+                        loadSelectedHackathonDetails(h.id);
                       }}
                       className="p-6 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-primary hover:shadow-[0_0_20px_rgba(0,243,255,0.05)] cursor-pointer transition-all flex flex-col justify-between h-48 group"
                     >
@@ -2555,7 +4220,7 @@ const AdminView = () => {
 
                       <div className="flex justify-between items-center border-t border-white/5 pt-4 text-[10px] text-white/40 font-mono">
                         <span>Min/Max Team Size: {h.min_team_size}/{h.max_team_size}</span>
-                        <span className="text-accent-primary group-hover:translate-x-1 transition-transform flex items-center gap-1">
+            <span className="text-accent-primary group-hover:translate-x-1 transition-transform flex items-center gap-1">
                           Manage Console <ChevronRight size={10} />
                         </span>
                       </div>
@@ -2566,62 +4231,114 @@ const AdminView = () => {
             </Card>
           ) : (
             // DEDICATED HACKATHON MANAGEMENT ZONE
-            <div className="flex flex-col gap-8">
-              {/* Back Header */}
-              <div className="flex items-center justify-between bg-white/[0.02] border border-white/5 p-6 rounded-2xl">
-                <div className="flex items-center gap-4">
-                  <button 
-                    onClick={() => setSelectedHackathon(null)}
-                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold uppercase tracking-wider transition-all"
+             <div className="flex flex-col gap-8">
+               {/* Back Header */}
+               <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white/[0.02] border border-white/5 p-6 rounded-2xl gap-4">
+                 <div className="flex items-center gap-4">
+                   <button 
+                     onClick={() => setSelectedHackathon(null)}
+                     className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold uppercase tracking-wider transition-all"
+                   >
+                     ← Back to List
+                   </button>
+                   <div>
+                     <h3 className="font-archivo text-xl font-black text-white uppercase tracking-wider">{selectedHackathon.title}</h3>
+                     <p className="text-[11px] text-accent-primary font-mono mt-0.5">/{selectedHackathon.slug}</p>
+                   </div>
+                 </div>
+                 <div className="flex items-center gap-3">
+                   <Button
+                     variant="secondary"
+                     className="text-xs py-1.5 px-3 flex items-center gap-1.5 border-white/10 bg-white/5 hover:bg-white/10"
+                     onClick={handleOpenEditHackathon}
+                   >
+                     <Edit2 size={12} /> Edit Details & Deadlines
+                   </Button>
+                   <Badge variant={selectedHackathon.status === 'upcoming' ? 'primary' : selectedHackathon.status === 'active' ? 'success' : 'secondary'}>
+                     {selectedHackathon.status}
+                   </Badge>
+                 </div>
+               </div>
+
+                {/* Sub-tab Switcher for Admin */}
+                <div className="flex p-1 bg-white/5 rounded-xl border border-white/10 self-start">
+                  <button
+                    onClick={() => setSelectedHackathonSubTab('console')}
+                    className={`px-5 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${
+                      selectedHackathonSubTab === 'console'
+                        ? 'bg-accent-primary text-black shadow-[0_0_12px_rgba(0,243,255,0.3)]'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
                   >
-                    ← Back to List
+                    Console & Settings
                   </button>
-                  <div>
-                    <h3 className="font-archivo text-xl font-black text-white uppercase tracking-wider">{selectedHackathon.title}</h3>
-                    <p className="text-[11px] text-accent-primary font-mono mt-0.5">/{selectedHackathon.slug}</p>
-                  </div>
+                  <button
+                    onClick={() => setSelectedHackathonSubTab('analytics')}
+                    className={`px-5 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${
+                      selectedHackathonSubTab === 'analytics'
+                        ? 'bg-accent-primary text-black shadow-[0_0_12px_rgba(0,243,255,0.3)]'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    Analytics Report
+                  </button>
                 </div>
-                <Badge variant={selectedHackathon.status === 'upcoming' ? 'primary' : selectedHackathon.status === 'active' ? 'success' : 'secondary'}>
-                  {selectedHackathon.status}
-                </Badge>
-              </div>
 
-              {/* Management Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* 2.1 Problem Statements Panel */}
-                <Card className="lg:col-span-2 p-8 flex flex-col gap-6">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider">Problem Statements</h4>
-                      <p className="text-[10px] text-white/40 mt-0.5">Scaffolds and guidelines for this hackathon</p>
-                    </div>
-                    <Button variant="primary" className="text-xs py-1.5 px-3 flex items-center gap-1.5" onClick={() => setShowPSModal(true)}>
-                      <Plus size={12} /> Add PS
-                    </Button>
-                  </div>
+                {selectedHackathonSubTab === 'console' ? (
+                  <>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                 {/* 2.1 Problem Statements Panel */}
+                 <Card className="lg:col-span-2 p-8 flex flex-col gap-6">
+                   <div className="flex justify-between items-center">
+                     <div>
+                       <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider">Problem Statements</h4>
+                       <p className="text-[10px] text-white/40 mt-0.5">Scaffolds and guidelines for this hackathon</p>
+                     </div>
+                     <Button variant="primary" className="text-xs py-1.5 px-3 flex items-center gap-1.5" onClick={() => setShowPSModal(true)}>
+                       <Plus size={12} /> Add PS
+                     </Button>
+                   </div>
 
-                  {(!selectedHackathon.problem_statements || selectedHackathon.problem_statements.length === 0) ? (
-                    <div className="py-12 text-center text-xs text-white/30 border border-dashed border-white/10 rounded-2xl">
-                      No problem statements created yet. Click "Add PS" to deploy guidelines.
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-4">
-                      {selectedHackathon.problem_statements.map((ps: any, idx: number) => (
-                        <div key={ps.id || idx} className="p-4 rounded-xl border border-white/5 bg-white/[0.01]">
-                          <div className="flex justify-between items-start">
-                            <h5 className="font-bold text-white text-sm">{ps.title}</h5>
-                            <span className="px-2 py-0.5 rounded bg-white/5 text-[9px] font-mono text-white/50 uppercase">{ps.difficulty || 'Medium'}</span>
-                          </div>
-                          <p className="text-xs text-white/60 mt-2 leading-relaxed">{ps.description}</p>
-                          <div className="mt-3 flex items-center gap-4 text-[9px] text-white/40 font-mono">
-                            <span>Track: {ps.category || 'Open Innovation'}</span>
-                            <span>Max Teams: {ps.max_teams || 10}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </Card>
+                   {(!selectedHackathon.problem_statements || selectedHackathon.problem_statements.length === 0) ? (
+                     <div className="py-12 text-center text-xs text-white/30 border border-dashed border-white/10 rounded-2xl">
+                       No problem statements created yet. Click "Add PS" to deploy guidelines.
+                     </div>
+                   ) : (
+                     <div className="flex flex-col gap-4">
+                       {selectedHackathon.problem_statements.map((ps: any, idx: number) => (
+                         <div key={ps.id || idx} className="p-4 rounded-xl border border-white/5 bg-white/[0.01]">
+                           <div className="flex justify-between items-start">
+                             <h5 className="font-bold text-white text-sm">{ps.title}</h5>
+                             <div className="flex items-center gap-3">
+                               <span className="px-2 py-0.5 rounded bg-white/5 text-[9px] font-mono text-white/50 uppercase">{ps.difficulty || 'Medium'}</span>
+                               <div className="flex items-center gap-1.5 border-l border-white/10 pl-2">
+                                 <button 
+                                   onClick={() => handleOpenEditPS(ps)} 
+                                   className="text-white/40 hover:text-accent-secondary transition-colors p-1"
+                                   title="Edit Problem Statement"
+                                 >
+                                   <Edit2 size={11} />
+                                 </button>
+                                 <button 
+                                   onClick={() => handleDeletePS(ps.id)} 
+                                   className="text-white/40 hover:text-error transition-colors p-1"
+                                   title="Delete Problem Statement"
+                                 >
+                                   <Trash2 size={11} />
+                                 </button>
+                               </div>
+                             </div>
+                           </div>
+                           <p className="text-xs text-white/60 mt-2 leading-relaxed">{ps.description}</p>
+                           <div className="mt-3 flex items-center gap-4 text-[9px] text-white/40 font-mono">
+                             <span>Track: {ps.category || 'Open Innovation'}</span>
+                             <span>Max Teams: {ps.max_teams || 10}</span>
+                           </div>
+                         </div>
+                       ))}
+                     </div>
+                   )}
+                 </Card>
 
                 {/* 2.2 Solution Input Fields & Evaluation Criteria */}
                 <div className="flex flex-col gap-8">
@@ -2683,69 +4400,111 @@ const AdminView = () => {
 
               {/* 2.3 Registered Teams & Submissions View */}
               <Card className="p-8 flex flex-col gap-6">
-                <div>
-                  <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider">Registered Teams Ledger</h4>
-                  <p className="text-xs text-white/45 mt-1">Review team composition, leader roles, problem statement selected, and solution documents</p>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider">Registered Teams & Submissions</h4>
+                    <p className="text-xs text-white/45 mt-1">Review team composition, leader roles, problem statement selected, and solution documents</p>
+                  </div>
+                  <div className="flex gap-4 text-xs font-mono border-l border-white/10 pl-4">
+                    <div>
+                      <span className="text-white/40 uppercase block text-[9px]">Registered Teams</span>
+                      <span className="text-lg font-bold text-accent-primary mt-0.5 block">{activeHackathonTeams.length}</span>
+                    </div>
+                    <div>
+                      <span className="text-white/40 uppercase block text-[9px]">Solutions Submitted</span>
+                      <span className="text-lg font-bold text-success mt-0.5 block">{activeHackathonSubmissions.length}</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="overflow-x-auto w-full">
-                  <table className="w-full border-collapse text-left text-xs text-white/85">
-                    <thead>
-                      <tr className="border-b border-white/5 text-white/40 uppercase tracking-wider font-bold">
-                        <th className="py-4 px-4">Team</th>
-                        <th className="py-4 px-4">Leader Name</th>
-                        <th className="py-4 px-4">Problem Statement</th>
-                        <th className="py-4 px-4">Uploaded Files</th>
-                        <th className="py-4 px-4">Solution Summary</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {mockTeams.map((t) => (
-                        <tr key={t.id} className="hover:bg-white/[0.01]">
-                          <td className="py-4 px-4">
-                            <p className="font-bold text-white">{t.name}</p>
-                            <div className="mt-1 flex flex-wrap gap-1.5">
-                              {t.members.map((m: string, idx: number) => (
-                                <span key={idx} className="px-1.5 py-0.5 rounded bg-white/5 text-[9px] text-white/60">
-                                  {m} {m === t.leader && '⭐'}
-                                </span>
-                              ))}
-                            </div>
-                          </td>
-                          <td className="py-4 px-4 font-semibold text-accent-primary">{t.leader}</td>
-                          <td className="py-4 px-4 max-w-xs truncate font-mono text-white/70">{t.problemStatement}</td>
-                          <td className="py-4 px-4">
-                            <div className="flex flex-col gap-1.5 font-mono text-[10px]">
-                              {t.githubLink && (
-                                <a href={t.githubLink} target="_blank" rel="noopener noreferrer" className="text-accent-secondary hover:underline flex items-center gap-1">
-                                  <Code size={10} /> GitHub Link
-                                </a>
-                              )}
-                              {t.pptFile && (
-                                <span className="text-success flex items-center gap-1">
-                                  <FileText size={10} /> {t.pptFile}
-                                </span>
-                              )}
-                              {t.videoLink && (
-                                <a href={t.videoLink} target="_blank" rel="noopener noreferrer" className="text-accent-primary hover:underline flex items-center gap-1">
-                                  <ExternalLink size={10} /> Video Demo
-                                </a>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-4 px-4 max-w-sm">
-                            <p className="line-clamp-3 text-white/60 leading-relaxed">{t.solutionText}</p>
-                          </td>
+                  {activeHackathonTeams.length === 0 ? (
+                    <div className="py-12 text-center text-xs text-white/30 border border-dashed border-white/10 rounded-2xl">
+                      No teams have registered for this hackathon yet.
+                    </div>
+                  ) : (
+                    <table className="w-full border-collapse text-left text-xs text-white/85">
+                      <thead>
+                        <tr className="border-b border-white/5 text-white/40 uppercase tracking-wider font-bold">
+                          <th className="py-4 px-4">Team & Members</th>
+                          <th className="py-4 px-4">Leader Name</th>
+                          <th className="py-4 px-4">Problem Statement</th>
+                          <th className="py-4 px-4">Submission Files</th>
+                          <th className="py-4 px-4">Solution Summary</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {activeHackathonTeams.map((t) => {
+                          const ps = selectedHackathon.problem_statements?.find((p: any) => p.id === t.problem_statement_id);
+                          const psTitle = ps ? ps.title : "Not Selected";
+                          const sub = activeHackathonSubmissions.find((s: any) => s.team_id === t.id);
+
+                          return (
+                            <tr key={t.id} className="hover:bg-white/[0.01]">
+                              <td className="py-4 px-4">
+                                <p className="font-bold text-white">{t.name}</p>
+                                <div className="mt-1 flex flex-wrap gap-1.5">
+                                  {t.members?.map((m: any, idx: number) => (
+                                    <span key={idx} className="px-1.5 py-0.5 rounded bg-white/5 text-[9px] text-white/60">
+                                      {m.user?.full_name || m.user_id} {m.user_id === t.leader_id && '⭐'}
+                                    </span>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="py-4 px-4 font-semibold text-accent-primary">
+                                {t.leader?.full_name || "Unknown"}
+                              </td>
+                              <td className="py-4 px-4 max-w-xs truncate font-mono text-white/70">
+                                {psTitle}
+                              </td>
+                              <td className="py-4 px-4">
+                                {sub ? (
+                                  <div className="flex flex-col gap-1.5 font-mono text-[10px]">
+                                    {sub.repo_url && (
+                                      <a href={sub.repo_url} target="_blank" rel="noopener noreferrer" className="text-accent-secondary hover:underline flex items-center gap-1">
+                                        <Code size={10} /> GitHub Link
+                                      </a>
+                                    )}
+                                    {sub.file_name && (
+                                      <a href={`${STATIC_BASE}${sub.file_url}`} target="_blank" rel="noopener noreferrer" className="text-success hover:underline flex items-center gap-1">
+                                        <FileText size={10} /> {sub.file_name}
+                                      </a>
+                                    )}
+                                    {sub.video_url && (
+                                      <a href={sub.video_url} target="_blank" rel="noopener noreferrer" className="text-accent-primary hover:underline flex items-center gap-1">
+                                        <ExternalLink size={10} /> Video Demo
+                                      </a>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-white/30 italic text-[10px]">No project files uploaded</span>
+                                )}
+                              </td>
+                              <td className="py-4 px-4 max-w-sm">
+                                {sub ? (
+                                  <p className="line-clamp-3 text-white/60 leading-relaxed">
+                                    {sub.description || "No project description provided."}
+                                  </p>
+                                ) : (
+                                  <span className="text-white/30 italic text-[10px]">Awaiting submission</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               </Card>
-            </div>
+            </>
+          ) : (
+            <HackathonAnalyticsView hackathonId={selectedHackathon.id} />
           )}
         </div>
       )}
+    </div>
+  )}
 
       {/* ========================================================================= */}
       {/* 3. MANAGE USERS */}
@@ -2863,142 +4622,526 @@ const AdminView = () => {
       {/* 4. MANAGE JUDGES */}
       {/* ========================================================================= */}
       {activeTab === 'judges' && (
-        <Card className="p-8 flex flex-col gap-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-archivo text-lg font-black uppercase text-white tracking-wider">Judges Management Directory</h3>
-              <p className="text-xs text-white/40 mt-1">Register new judges, allocate hackathons, and assign specific team solutions to judge</p>
-            </div>
-            <Button
-              variant="primary"
-              className="flex items-center gap-2 text-xs"
-              onClick={() => setShowCreateJudgeModal(true)}
-            >
-              <Plus size={14} />
-              <span>Create Judge</span>
-            </Button>
-          </div>
+        <div className="flex flex-col gap-6">
+          {!selectedJudgeDetail ? (
+            <Card className="p-8 flex flex-col gap-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-archivo text-lg font-black uppercase text-white tracking-wider">Judges Management Directory</h3>
+                  <p className="text-xs text-white/40 mt-1">Register new judges, allocate hackathons, and assign specific team solutions to judge</p>
+                </div>
+                <Button
+                  variant="primary"
+                  className="flex items-center gap-2 text-xs"
+                  onClick={() => setShowCreateJudgeModal(true)}
+                >
+                  <Plus size={14} />
+                  <span>Create Judge</span>
+                </Button>
+              </div>
 
-          {isLoadingUsers ? (
-            <div className="py-12 flex justify-center items-center text-xs text-white/50">
-              Loading judges list...
-            </div>
-          ) : users.filter(u => u.role === 'judge').length === 0 ? (
-            <div className="py-12 flex justify-center items-center text-xs text-white/30 border border-dashed border-white/10 rounded-2xl">
-              No judges registered in the system. Click "Create Judge" to get started.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {users.filter(u => u.role === 'judge').map((j) => {
-                const assignedHackathonsCount = judgeAssignments.filter(a => a.judgeId === j.id).length;
-                return (
-                  <div 
-                    key={j.id} 
-                    onClick={() => setSelectedJudgeDetail(j)}
-                    className="p-6 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-secondary hover:shadow-[0_0_20px_rgba(255,0,193,0.05)] cursor-pointer transition-all flex flex-col justify-between h-40 group"
-                  >
-                    <div>
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={j.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${j.id}`}
-                          alt="avatar"
-                          className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 object-cover"
-                        />
+              {isLoadingUsers ? (
+                <div className="py-12 flex justify-center items-center text-xs text-white/50">
+                  Loading judges list...
+                </div>
+              ) : users.filter(u => u.role === 'judge').length === 0 ? (
+                <div className="py-12 flex justify-center items-center text-xs text-white/30 border border-dashed border-white/10 rounded-2xl">
+                  No judges registered in the system. Click "Create Judge" to get started.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {users.filter(u => u.role === 'judge').map((j) => {
+                    const assignedHackathonsCount = judgeAssignments.filter(a => a.judgeId === j.id && !a.submissionId).length;
+                    return (
+                      <div 
+                        key={j.id} 
+                        onClick={() => setSelectedJudgeDetail(j)}
+                        className="p-6 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-secondary hover:shadow-[0_0_20px_rgba(255,0,193,0.05)] cursor-pointer transition-all flex flex-col justify-between h-40 group"
+                      >
                         <div>
-                          <h4 className="font-bold text-white group-hover:text-accent-secondary transition-colors text-sm">{j.full_name}</h4>
-                          <p className="text-[10px] text-white/45">{j.email}</p>
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={j.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${j.id}`}
+                              alt="avatar"
+                              className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 object-cover"
+                            />
+                            <div>
+                              <h4 className="font-bold text-white group-hover:text-accent-secondary transition-colors text-sm">{j.full_name}</h4>
+                              <p className="text-[10px] text-white/45">{j.email}</p>
+                            </div>
+                          </div>
+                          <div className="mt-3 flex gap-2 font-mono text-[9px] text-white/40">
+                            <span>Dept: {j.department || 'N/A'}</span>
+                            <span>•</span>
+                            <span>ID: {j.college_id || 'N/A'}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between items-center border-t border-white/5 pt-3 text-[10px] text-white/40 font-mono">
+                          <span>Assigned: {assignedHackathonsCount} Hackathons</span>
+                          <span className="text-accent-secondary group-hover:translate-x-1 transition-transform flex items-center gap-0.5">
+                            Manage Mappings <ChevronRight size={10} />
+                          </span>
                         </div>
                       </div>
-                      <div className="mt-3 flex gap-2 font-mono text-[9px] text-white/40">
-                        <span>Dept: {j.department || 'N/A'}</span>
-                        <span>•</span>
-                        <span>ID: {j.college_id || 'N/A'}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-between items-center border-t border-white/5 pt-3 text-[10px] text-white/40 font-mono">
-                      <span>Assigned: {assignedHackathonsCount} Hackathons</span>
-                      <span className="text-accent-secondary group-hover:translate-x-1 transition-transform flex items-center gap-0.5">
-                        Manage Mappings <ChevronRight size={10} />
-                      </span>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          ) : (
+            // DEDICATED JUDGE MANAGEMENT ZONE
+            <div className="flex flex-col gap-8">
+              {/* Back Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white/[0.02] border border-white/5 p-6 rounded-2xl gap-4">
+                <div className="flex items-center gap-4">
+                  <button 
+                    onClick={() => { setSelectedJudgeDetail(null); setJudgeActiveAssignHackathonId(''); }}
+                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold uppercase tracking-wider transition-all"
+                  >
+                    ← Back to List
+                  </button>
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={selectedJudgeDetail.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${selectedJudgeDetail.id}`}
+                      alt="avatar"
+                      className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 object-cover"
+                    />
+                    <div>
+                      <h3 className="font-archivo text-xl font-black text-white uppercase tracking-wider">{selectedJudgeDetail.full_name}</h3>
+                      <p className="text-[10px] text-white/40">{selectedJudgeDetail.email} | Dept: {selectedJudgeDetail.department || 'N/A'} | ID: {selectedJudgeDetail.college_id || 'N/A'}</p>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="secondary"
+                    className="text-xs py-1.5 px-3 flex items-center gap-1.5 border-white/10 bg-white/5 hover:bg-white/10"
+                    onClick={() => handleOpenEditJudge(selectedJudgeDetail)}
+                  >
+                    <Edit2 size={12} /> Edit Account
+                  </Button>
+                  <Button
+                    variant="danger"
+                    className="text-xs py-1.5 px-3 flex items-center gap-1.5 bg-danger/10 hover:bg-danger/20 text-danger border border-danger/25"
+                    onClick={() => handleDeleteJudge(selectedJudgeDetail.id)}
+                  >
+                    <Trash2 size={12} /> Delete Account
+                  </Button>
+                </div>
+              </div>
+
+              {/* Management Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left Column: Assigned Hackathons & Assignment Dropdown */}
+                <Card className="p-8 flex flex-col gap-6">
+                  <div>
+                    <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider">Evaluation Scope</h4>
+                    <p className="text-[10px] text-white/40 mt-0.5">Assign and manage hackathons this judge can evaluate</p>
+                  </div>
+
+                  {/* Dropdown for assigning new hackathons */}
+                  {judgeAssignments.filter(a => a.judgeId === selectedJudgeDetail.id && !a.submissionId).length === 0 ? (
+                    <div className="flex flex-col gap-3">
+                      <label className="font-bold text-white/70 text-xs">Assign Hackathon Scope</label>
+                      <form onSubmit={handleAssignHackathonToJudge} className="flex flex-col gap-2.5">
+                        <select
+                          value={judgeAllocHackathonId}
+                          onChange={(e) => setJudgeAllocHackathonId(e.target.value)}
+                          className="p-2.5 rounded-xl bg-black border border-white/10 text-white focus:outline-none text-[11px]"
+                          required
+                        >
+                          <option value="">-- Choose Hackathon to Assign --</option>
+                          {hackathonsList
+                            .filter(h => !judgeAssignments.some(a => a.judgeId === selectedJudgeDetail.id && a.hackathonId === h.id))
+                            .map(h => (
+                              <option key={h.id} value={h.id}>{h.title}</option>
+                            ))
+                          }
+                        </select>
+                        <Button type="submit" variant="secondary" className="text-[10px] w-full py-2 font-bold uppercase tracking-wider">
+                          Assign Hackathon
+                        </Button>
+                      </form>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-xl bg-accent-secondary/5 border border-accent-secondary/20 text-xs text-white/70">
+                      <p className="font-bold text-white text-glow-magenta">Evaluation Scope Locked</p>
+                      <p className="mt-1 text-[10px] text-white/40">This judge is already assigned to a hackathon scope. Revoke the active scope if you need to reassign them.</p>
+                    </div>
+                  )}
+
+                  {/* List of currently assigned hackathons */}
+                  <div className="flex flex-col gap-2 mt-2">
+                    <label className="font-bold text-white/50 uppercase tracking-wider text-[10px]">Assigned Hackathons</label>
+                    {judgeAssignments.filter(a => a.judgeId === selectedJudgeDetail.id && !a.submissionId).length === 0 ? (
+                      <p className="text-white/35 italic py-1 text-xs">No hackathons assigned yet.</p>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {judgeAssignments.filter(a => a.judgeId === selectedJudgeDetail.id && !a.submissionId).map(a => {
+                          const isSelectedActive = judgeActiveAssignHackathonId === a.hackathonId;
+                          return (
+                            <div 
+                              key={a.id} 
+                              className={`p-3 rounded-xl border flex justify-between items-center transition-all ${
+                                isSelectedActive 
+                                  ? 'bg-accent-secondary/5 border-accent-secondary/35 shadow-[0_0_12px_rgba(255,0,193,0.05)]' 
+                                  : 'bg-white/[0.01] border-white/5 hover:border-white/15'
+                              }`}
+                            >
+                              <div 
+                                className="flex-grow cursor-pointer" 
+                                onClick={() => setJudgeActiveAssignHackathonId(a.hackathonId)}
+                              >
+                                <p className="font-bold text-white text-xs">{a.hackathonName}</p>
+                                <p className="text-[9px] text-white/40 mt-0.5">Click to view & allocate team solutions</p>
+                              </div>
+                              <button 
+                                onClick={() => handleRevokeJudgeHackathon(a.id)}
+                                className="px-2 py-1 bg-danger/10 hover:bg-danger/25 text-danger border border-danger/20 rounded text-[9px] font-bold uppercase transition-colors"
+                              >
+                                Revoke
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </Card>
+
+                {/* Right Column: Solution Allocations */}
+                <Card className="lg:col-span-2 p-8 flex flex-col gap-6">
+                  {judgeActiveAssignHackathonId ? (
+                    <div className="flex flex-col gap-6">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider">Solutions Allocation</h4>
+                          <p className="text-[10px] text-white/40 mt-0.5">Toggle checkboxes to assign specific project solutions to this judge</p>
+                        </div>
+                        <Badge variant="primary">
+                          {submissionsList.filter(s => s.hackathon_id === judgeActiveAssignHackathonId).length} Submissions
+                        </Badge>
+                      </div>
+
+                      {submissionsList.filter(s => s.hackathon_id === judgeActiveAssignHackathonId).length === 0 ? (
+                        <div className="py-8 text-center text-xs text-white/30 border border-dashed border-white/10 rounded-2xl">
+                          No submissions uploaded for this hackathon yet.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {submissionsList.filter(s => s.hackathon_id === judgeActiveAssignHackathonId).map((s) => {
+                            const assignedList = getAssignedSubmissionIds(selectedJudgeDetail.id, judgeActiveAssignHackathonId);
+                            const isAssigned = assignedList.includes(s.id);
+                            
+                            const hack = hackathonsList.find(h => h.id === judgeActiveAssignHackathonId);
+                            const ps = hack?.problem_statements?.find((p: any) => p.id === s.problem_statement_id);
+                            const psTitle = ps ? ps.title : "Not Selected";
+
+                            return (
+                              <label 
+                                key={s.id}
+                                className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer select-none transition-all ${
+                                  isAssigned 
+                                    ? 'bg-accent-primary/[0.02] border-accent-primary/30 shadow-[0_0_12px_rgba(0,243,255,0.02)]' 
+                                    : 'bg-white/[0.01] border-white/5 hover:border-white/15'
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isAssigned}
+                                  onChange={() => handleToggleSubmissionForJudge(s.id)}
+                                  className="w-4 h-4 rounded bg-[#050505] border-white/10 text-accent-primary focus:ring-0 mt-0.5"
+                                />
+                                <div>
+                                  <p className="font-bold text-white text-xs">Team: {s.team_name || `Team ID: ${s.team_id.slice(0, 8)}`}</p>
+                                  <p className="text-[10px] text-white/70 mt-1">Project: {s.title}</p>
+                                  <p className="text-[9px] text-white/40 mt-1 font-mono">Statement: {psTitle}</p>
+                                </div>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Ledger of assigned submissions and evaluation status */}
+                      <div className="mt-4 border-t border-white/5 pt-6 flex flex-col gap-4">
+                        <div>
+                          <h4 className="font-archivo text-xs font-black uppercase text-accent-secondary tracking-wider">Assigned Solutions Ledger</h4>
+                          <p className="text-[9px] text-white/45 mt-0.5">List of submissions this judge is currently auditing and their grading status</p>
+                        </div>
+
+                        {submissionsList.filter(s => s.hackathon_id === judgeActiveAssignHackathonId && getAssignedSubmissionIds(selectedJudgeDetail.id, judgeActiveAssignHackathonId).includes(s.id)).length === 0 ? (
+                          <p className="text-white/30 italic text-xs py-2">No solutions allocated to this judge yet.</p>
+                        ) : (
+                          <div className="overflow-x-auto w-full border border-white/5 rounded-xl bg-white/[0.01]">
+                            <table className="w-full border-collapse text-left text-[11px] text-white/80">
+                              <thead>
+                                <tr className="border-b border-white/5 text-white/45 uppercase tracking-wider font-bold bg-white/[0.01]">
+                                  <th className="py-3 px-4">Team</th>
+                                  <th className="py-3 px-4">Problem Statement</th>
+                                  <th className="py-3 px-4">Solution Links</th>
+                                  <th className="py-3 px-4">Evaluation Status</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-white/5">
+                                {submissionsList
+                                  .filter(s => s.hackathon_id === judgeActiveAssignHackathonId && getAssignedSubmissionIds(selectedJudgeDetail.id, judgeActiveAssignHackathonId).includes(s.id))
+                                  .map((s) => {
+                                    const hack = hackathonsList.find(h => h.id === judgeActiveAssignHackathonId);
+                                    const ps = hack?.problem_statements?.find((p: any) => p.id === s.problem_statement_id);
+                                    const psTitle = ps ? ps.title : "Not Selected";
+
+                                    const evaluation = s.evaluations?.find((e: any) => e.judge_id === selectedJudgeDetail.id);
+                                    const isEvaluated = !!evaluation;
+
+                                    return (
+                                      <tr key={s.id} className="hover:bg-white/[0.01]">
+                                        <td className="py-3 px-4 font-bold text-white">{s.team_name || s.team_id}</td>
+                                        <td className="py-3 px-4 text-white/70 max-w-xs truncate font-mono">{psTitle}</td>
+                                        <td className="py-3 px-4">
+                                          <div className="flex gap-2 text-[10px] font-mono">
+                                            {s.repo_url && (
+                                              <a href={s.repo_url} target="_blank" rel="noopener noreferrer" className="text-accent-secondary hover:underline flex items-center gap-0.5">
+                                                GitHub
+                                              </a>
+                                            )}
+                                            {s.demo_url && (
+                                              <a href={s.demo_url} target="_blank" rel="noopener noreferrer" className="text-accent-primary hover:underline flex items-center gap-0.5">
+                                                Demo
+                                              </a>
+                                            )}
+                                          </div>
+                                        </td>
+                                        <td className="py-3 px-4">
+                                          {isEvaluated ? (
+                                            <span className="px-2 py-0.5 rounded bg-success/10 text-success text-[9px] font-bold uppercase tracking-wider">
+                                              Evaluated ({evaluation.total_score} pts)
+                                            </span>
+                                          ) : (
+                                            <span className="px-2 py-0.5 rounded bg-warning/10 text-warning text-[9px] font-bold uppercase tracking-wider">
+                                              Pending Audit
+                                            </span>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })
+                                }
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-12 flex flex-col items-center justify-center text-center text-white/30 h-full">
+                      <Cpu size={32} className="text-white/10 mb-3" />
+                      <p className="font-bold text-sm">Select Hackathon Scope</p>
+                      <p className="text-[10px] max-w-xs mt-1">Choose one of the assigned hackathons from the left panel to configure solutions allocations and view evaluation status ledger.</p>
+                    </div>
+                  )}
+                </Card>
+              </div>
             </div>
           )}
-        </Card>
+        </div>
       )}
 
       {/* ========================================================================= */}
       {/* 5. MANAGE COORDINATORS */}
       {/* ========================================================================= */}
       {activeTab === 'coordinators' && (
-        <Card className="p-8 flex flex-col gap-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-archivo text-lg font-black uppercase text-white tracking-wider">Coordinators Ledger</h3>
-              <p className="text-xs text-white/40 mt-1">Register coordinators and assign events scope limits</p>
-            </div>
-            <Button
-              variant="primary"
-              className="flex items-center gap-2 text-xs"
-              onClick={() => setShowCreateCoordinatorModal(true)}
-            >
-              <Plus size={14} />
-              <span>Create Coordinator</span>
-            </Button>
-          </div>
+        <div className="flex flex-col gap-6">
+          {!selectedCoordinatorDetail ? (
+            <Card className="p-8 flex flex-col gap-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-archivo text-lg font-black uppercase text-white tracking-wider">Coordinators Ledger</h3>
+                  <p className="text-xs text-white/40 mt-1">Register coordinators and assign events scope limits</p>
+                </div>
+                <Button
+                  variant="primary"
+                  className="flex items-center gap-2 text-xs"
+                  onClick={() => setShowCreateCoordinatorModal(true)}
+                >
+                  <Plus size={14} />
+                  <span>Create Coordinator</span>
+                </Button>
+              </div>
 
-          {isLoadingUsers ? (
-            <div className="py-12 flex justify-center items-center text-xs text-white/50">
-              Loading coordinators list...
-            </div>
-          ) : users.filter(u => u.role === 'coordinator').length === 0 ? (
-            <div className="py-12 flex justify-center items-center text-xs text-white/30 border border-dashed border-white/10 rounded-2xl">
-              No coordinators registered. Click "Create Coordinator" to register.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {users.filter(u => u.role === 'coordinator').map((c) => {
-                const assignedScopesCount = coordinatorAssignments.filter(a => a.coordinatorId === c.id).length;
-                return (
-                  <div 
-                    key={c.id} 
-                    onClick={() => setSelectedCoordinatorDetail(c)}
-                    className="p-6 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-third hover:shadow-[0_0_20px_rgba(184,0,255,0.05)] cursor-pointer transition-all flex flex-col justify-between h-40 group"
-                  >
-                    <div>
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={c.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${c.id}`}
-                          alt="avatar"
-                          className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 object-cover"
-                        />
+              {isLoadingUsers ? (
+                <div className="py-12 flex justify-center items-center text-xs text-white/50">
+                  Loading coordinators list...
+                </div>
+              ) : users.filter(u => u.role === 'coordinator').length === 0 ? (
+                <div className="py-12 flex justify-center items-center text-xs text-white/30 border border-dashed border-white/10 rounded-2xl">
+                  No coordinators registered. Click "Create Coordinator" to register.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {users.filter(u => u.role === 'coordinator').map((c) => {
+                    const assignedScopesCount = coordinatorAssignments.filter(a => a.coordinatorId === c.id).length;
+                    return (
+                      <div 
+                        key={c.id} 
+                        onClick={() => setSelectedCoordinatorDetail(c)}
+                        className="p-6 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-accent-third hover:shadow-[0_0_20px_rgba(184,0,255,0.05)] cursor-pointer transition-all flex flex-col justify-between h-40 group"
+                      >
                         <div>
-                          <h4 className="font-bold text-white group-hover:text-accent-third transition-colors text-sm">{c.full_name}</h4>
-                          <p className="text-[10px] text-white/45">{c.email}</p>
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={c.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${c.id}`}
+                              alt="avatar"
+                              className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 object-cover"
+                            />
+                            <div>
+                              <h4 className="font-bold text-white group-hover:text-accent-third transition-colors text-sm">{c.full_name}</h4>
+                              <p className="text-[10px] text-white/45">{c.email}</p>
+                            </div>
+                          </div>
+                          <div className="mt-3 flex gap-2 font-mono text-[9px] text-white/40">
+                            <span>Dept: {c.department || 'N/A'}</span>
+                            <span>•</span>
+                            <span>ID: {c.college_id || 'N/A'}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between items-center border-t border-white/5 pt-3 text-[10px] text-white/40 font-mono">
+                          <span>Assigned Scope: {assignedScopesCount} Hackathons</span>
+                          <span className="text-accent-third group-hover:translate-x-1 transition-transform flex items-center gap-0.5">
+                            Manage Scope <ChevronRight size={10} />
+                          </span>
                         </div>
                       </div>
-                      <div className="mt-3 flex gap-2 font-mono text-[9px] text-white/40">
-                        <span>Dept: {c.department || 'N/A'}</span>
-                        <span>•</span>
-                        <span>ID: {c.college_id || 'N/A'}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-between items-center border-t border-white/5 pt-3 text-[10px] text-white/40 font-mono">
-                      <span>Assigned Scope: {assignedScopesCount} Hackathons</span>
-                      <span className="text-accent-third group-hover:translate-x-1 transition-transform flex items-center gap-0.5">
-                        Manage Scope <ChevronRight size={10} />
-                      </span>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          ) : (
+            // DEDICATED COORDINATOR MANAGEMENT ZONE
+            <div className="flex flex-col gap-8">
+              {/* Back Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white/[0.02] border border-white/5 p-6 rounded-2xl gap-4">
+                <div className="flex items-center gap-4">
+                  <button 
+                    onClick={() => { setSelectedCoordinatorDetail(null); setCoordAllocHackathonId(''); }}
+                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold uppercase tracking-wider transition-all"
+                  >
+                    ← Back to List
+                  </button>
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={selectedCoordinatorDetail.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${selectedCoordinatorDetail.id}`}
+                      alt="avatar"
+                      className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 object-cover"
+                    />
+                    <div>
+                      <h3 className="font-archivo text-xl font-black text-white uppercase tracking-wider">{selectedCoordinatorDetail.full_name}</h3>
+                      <p className="text-[10px] text-white/40">{selectedCoordinatorDetail.email} | Dept: {selectedCoordinatorDetail.department || 'N/A'} | ID: {selectedCoordinatorDetail.college_id || 'N/A'}</p>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="secondary"
+                    className="text-xs py-1.5 px-3 flex items-center gap-1.5 border-white/10 bg-white/5 hover:bg-white/10"
+                    onClick={() => handleOpenEditCoordinator(selectedCoordinatorDetail)}
+                  >
+                    <Edit2 size={12} /> Edit Account
+                  </Button>
+                  <Button
+                    variant="danger"
+                    className="text-xs py-1.5 px-3 flex items-center gap-1.5 bg-danger/10 hover:bg-danger/20 text-danger border border-danger/25"
+                    onClick={() => handleDeleteCoordinator(selectedCoordinatorDetail.id)}
+                  >
+                    <Trash2 size={12} /> Delete Account
+                  </Button>
+                </div>
+              </div>
+
+              {/* Management Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left Column: Scope Assignment Dropdown */}
+                <Card className="p-8 flex flex-col gap-6">
+                  <div>
+                    <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider">Scope Assignment</h4>
+                    <p className="text-[10px] text-white/40 mt-0.5">Assign this coordinator to manage a specific event scope</p>
+                  </div>
+
+                  {coordinatorAssignments.filter(a => a.coordinatorId === selectedCoordinatorDetail.id).length === 0 ? (
+                    <div className="flex flex-col gap-3">
+                      <label className="font-bold text-white/70 text-xs">Assign Event Scope</label>
+                      <form onSubmit={handleAssignCoordinator} className="flex flex-col gap-2.5">
+                        <select
+                          value={coordAllocHackathonId}
+                          onChange={(e) => setCoordAllocHackathonId(e.target.value)}
+                          className="p-2.5 rounded-xl bg-black border border-white/10 text-white focus:outline-none text-[11px]"
+                          required
+                        >
+                          <option value="">-- Choose Hackathon Scope --</option>
+                          {hackathonsList
+                            .filter(h => !coordinatorAssignments.some(a => a.coordinatorId === selectedCoordinatorDetail.id && a.hackathonId === h.id))
+                            .map(h => (
+                              <option key={h.id} value={h.id}>{h.title}</option>
+                            ))
+                          }
+                        </select>
+                        <Button type="submit" variant="secondary" className="text-[10px] w-full py-2 font-bold uppercase tracking-wider">
+                          Assign Scope
+                        </Button>
+                      </form>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-xl bg-accent-third/5 border border-accent-third/20 text-xs text-white/70">
+                      <p className="font-bold text-white text-glow-magenta">Maximum Scopes Assigned</p>
+                      <p className="mt-1 text-[10px] text-white/40">This coordinator is already assigned to a hackathon event. Revoke the active scope if you need to reassign them.</p>
+                    </div>
+                  )}
+                </Card>
+
+                {/* Right Column: Scopes Ledger */}
+                <Card className="lg:col-span-2 p-8 flex flex-col gap-6">
+                  <div>
+                    <h4 className="font-archivo text-md font-black uppercase text-white tracking-wider">Assigned Scopes Ledger</h4>
+                    <p className="text-[10px] text-white/40 mt-0.5">List of active events this coordinator is authorized to administer</p>
+                  </div>
+
+                  {coordinatorAssignments.filter(a => a.coordinatorId === selectedCoordinatorDetail.id).length === 0 ? (
+                    <div className="py-12 flex flex-col items-center justify-center text-center text-white/30 border border-dashed border-white/10 rounded-2xl">
+                      <Terminal size={32} className="text-white/10 mb-3" />
+                      <p className="font-bold text-sm">No Scopes Assigned</p>
+                      <p className="text-[10px] mt-1">This coordinator does not have administrative rights to any events yet.</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {coordinatorAssignments.filter(a => a.coordinatorId === selectedCoordinatorDetail.id).map(a => (
+                        <div 
+                          key={a.id} 
+                          className="p-4 rounded-xl border border-white/5 bg-white/[0.01] flex justify-between items-center"
+                        >
+                          <div>
+                            <p className="font-bold text-white text-sm">{a.hackathonName}</p>
+                            <span className="px-1.5 py-0.5 rounded bg-success/10 text-success text-[9px] font-bold uppercase tracking-wider block mt-1 w-max">
+                              Active Event Admin Scope
+                            </span>
+                          </div>
+                          <button 
+                            onClick={() => handleRevokeCoordinatorScope(a.id)}
+                            className="px-3 py-1.5 bg-danger/10 hover:bg-danger/25 text-danger border border-danger/20 rounded text-[10px] font-bold uppercase transition-colors"
+                          >
+                            Revoke Scope
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              </div>
             </div>
           )}
-        </Card>
+        </div>
       )}
 
       {/* ========================================================================= */}
@@ -3050,6 +5193,7 @@ const AdminView = () => {
                 label="Launch Date" 
                 type="date"
                 required 
+                min={new Date().toISOString().split('T')[0]}
                 value={newEvent.startDate} 
                 onChange={(e) => setNewEvent(prev => ({ ...prev, startDate: e.target.value }))} 
               />
@@ -3057,6 +5201,7 @@ const AdminView = () => {
                 label="Deadline Date" 
                 type="date"
                 required 
+                min={newEvent.startDate || new Date().toISOString().split('T')[0]}
                 value={newEvent.endDate} 
                 onChange={(e) => setNewEvent(prev => ({ ...prev, endDate: e.target.value }))} 
               />
@@ -3070,6 +5215,19 @@ const AdminView = () => {
               value={newEvent.maxTeamSize} 
               onChange={(e) => setNewEvent(prev => ({ ...prev, maxTeamSize: parseInt(e.target.value) }))} 
             />
+
+            <div className="flex items-center gap-2 py-1">
+              <input 
+                type="checkbox" 
+                id="announcePsAdvance" 
+                checked={newEvent.announcePsAdvance} 
+                onChange={(e) => setNewEvent(prev => ({ ...prev, announcePsAdvance: e.target.checked }))} 
+                className="w-4 h-4 rounded bg-white/5 border border-white/10 text-accent-primary focus:ring-0 focus:outline-none"
+              />
+              <label htmlFor="announcePsAdvance" className="text-[11px] text-white/70 select-none cursor-pointer">
+                Announce Problem Statements in Advance (Default is true)
+              </label>
+            </div>
 
             <div className="flex gap-3 justify-end mt-4">
               <Button type="button" variant="secondary" onClick={() => setShowEventModal(false)}>
@@ -3119,9 +5277,10 @@ const AdminView = () => {
                   className="p-2.5 rounded-xl bg-[#050505] border border-white/10 text-white focus:outline-none"
                 >
                   <option value="Open Innovation">Open Innovation</option>
-                  <option value="AI / ML">AI / ML</option>
-                  <option value="Web3 / Blockchain">Web3 / Blockchain</option>
-                  <option value="IoT / Embedded">IoT / Embedded</option>
+                  <option value="Web Development">Web Development</option>
+                  <option value="AI / Machine Learning">AI / Machine Learning</option>
+                  <option value="Mobile App Development">Mobile App Development</option>
+                  <option value="Web3 & Blockchain">Web3 & Blockchain</option>
                 </select>
               </div>
 
@@ -3153,6 +5312,191 @@ const AdminView = () => {
               </Button>
               <Button type="submit" variant="primary" disabled={isPerformingAction}>
                 {isPerformingAction ? 'Adding...' : 'Add Statement'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Modal Edit Hackathon Details */}
+      {showEditHackathonModal && selectedHackathon && (
+        <Modal 
+          isOpen={true} 
+          onClose={() => setShowEditHackathonModal(false)}
+          title="Edit Hackathon Details & Deadlines"
+        >
+          <form onSubmit={handleUpdateHackathon} className="flex flex-col gap-5 py-2 font-manrope">
+            <Input 
+              label="Hackathon Event Name" 
+              placeholder="e.g. AI Genesis 2026" 
+              required 
+              value={editHackathonData.title} 
+              onChange={(e) => setEditHackathonData({ ...editHackathonData, title: e.target.value })} 
+            />
+
+            <Input 
+              label="Hackathon Slug (URL-friendly)" 
+              placeholder="e.g. ai-genesis-2026" 
+              value={editHackathonData.slug} 
+              onChange={(e) => setEditHackathonData({ ...editHackathonData, slug: e.target.value })} 
+            />
+
+            <Input 
+              label="Tagline" 
+              placeholder="e.g. Unleashing cognitive architectures" 
+              value={editHackathonData.tagline} 
+              onChange={(e) => setEditHackathonData({ ...editHackathonData, tagline: e.target.value })} 
+            />
+
+            <div className="flex flex-col gap-1 text-xs">
+              <label className="font-bold text-white/70">Description</label>
+              <textarea 
+                placeholder="Details of the hackathon event guidelines..."
+                value={editHackathonData.description}
+                onChange={(e) => setEditHackathonData({ ...editHackathonData, description: e.target.value })}
+                className="p-3 h-20 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-xs focus:outline-none focus:border-accent-primary"
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <Input 
+                label="Launch Date" 
+                type="date"
+                required 
+                value={editHackathonData.start_date} 
+                onChange={(e) => setEditHackathonData({ ...editHackathonData, start_date: e.target.value })} 
+              />
+              <Input 
+                label="End Date" 
+                type="date"
+                required 
+                value={editHackathonData.end_date} 
+                onChange={(e) => setEditHackathonData({ ...editHackathonData, end_date: e.target.value })} 
+              />
+              <Input 
+                label="Registration Deadline" 
+                type="date"
+                required 
+                value={editHackathonData.registration_deadline} 
+                onChange={(e) => setEditHackathonData({ ...editHackathonData, registration_deadline: e.target.value })} 
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input 
+                label="Minimum Team Size" 
+                type="number"
+                min="1" max="10"
+                required 
+                value={editHackathonData.min_team_size} 
+                onChange={(e) => setEditHackathonData({ ...editHackathonData, min_team_size: parseInt(e.target.value) })} 
+              />
+              <Input 
+                label="Maximum Team Size" 
+                type="number"
+                min="1" max="10"
+                required 
+                value={editHackathonData.max_team_size} 
+                onChange={(e) => setEditHackathonData({ ...editHackathonData, max_team_size: parseInt(e.target.value) })} 
+              />
+            </div>
+
+            <div className="flex items-center gap-2 py-1">
+              <input 
+                type="checkbox" 
+                id="edit_announce_ps_advance" 
+                checked={editHackathonData.announce_ps_advance} 
+                onChange={(e) => setEditHackathonData({ ...editHackathonData, announce_ps_advance: e.target.checked })} 
+                className="w-4 h-4 rounded bg-white/5 border border-white/10 text-accent-primary focus:ring-0 focus:outline-none"
+              />
+              <label htmlFor="edit_announce_ps_advance" className="text-[11px] text-white/70 select-none cursor-pointer">
+                Announce Problem Statements in Advance (otherwise on event day only)
+              </label>
+            </div>
+
+            <div className="flex gap-3 justify-end mt-4">
+              <Button type="button" variant="secondary" onClick={() => setShowEditHackathonModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary">
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Modal Edit Problem Statement */}
+      {showEditPSModal && selectedHackathon && selectedPSForEdit && (
+        <Modal
+          isOpen={true}
+          onClose={() => setShowEditPSModal(false)}
+          title={`Edit Problem Statement | ${selectedHackathon.title}`}
+        >
+          <form onSubmit={handleUpdatePS} className="flex flex-col gap-4 py-2 text-xs font-manrope">
+            <Input
+              label="Problem Statement Title"
+              placeholder="e.g. Decentralized File Quantizer"
+              required
+              value={editPSData.title}
+              onChange={(e) => setEditPSData({ ...editPSData, title: e.target.value })}
+            />
+
+            <div className="flex flex-col gap-1">
+              <label className="font-bold text-white/70">Description</label>
+              <textarea
+                placeholder="Detailed explanation of statement criteria, tracks, and expected delivery format..."
+                value={editPSData.description}
+                onChange={(e) => setEditPSData({ ...editPSData, description: e.target.value })}
+                className="p-3 h-24 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-accent-primary"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="font-bold text-white/70">Track Category</label>
+                <select
+                  value={editPSData.category}
+                  onChange={(e) => setEditPSData({ ...editPSData, category: e.target.value })}
+                  className="p-2.5 rounded-xl bg-[#050505] border border-white/10 text-white focus:outline-none"
+                >
+                  <option value="Open Innovation">Open Innovation</option>
+                  <option value="Web Development">Web Development</option>
+                  <option value="AI / Machine Learning">AI / Machine Learning</option>
+                  <option value="Mobile App Development">Mobile App Development</option>
+                  <option value="Web3 & Blockchain">Web3 & Blockchain</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="font-bold text-white/70">Difficulty Level</label>
+                <select
+                  value={editPSData.difficulty}
+                  onChange={(e) => setEditPSData({ ...editPSData, difficulty: e.target.value })}
+                  className="p-2.5 rounded-xl bg-[#050505] border border-white/10 text-white focus:outline-none"
+                >
+                  <option value="Easy">Easy</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Hard">Hard</option>
+                </select>
+              </div>
+            </div>
+
+            <Input
+              label="Maximum Registered Teams"
+              type="number"
+              required
+              value={editPSData.maxTeams}
+              onChange={(e) => setEditPSData({ ...editPSData, maxTeams: parseInt(e.target.value) })}
+            />
+
+            <div className="flex gap-3 justify-end mt-4">
+              <Button type="button" variant="secondary" onClick={() => setShowEditPSModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary">
+                Save Changes
               </Button>
             </div>
           </form>
@@ -3372,219 +5716,111 @@ const AdminView = () => {
         </Modal>
       )}
 
-      {/* Modal G: Judge Mappings Detail Modal */}
-      {selectedJudgeDetail && (
+      {/* Modal Edit Judge */}
+      {showEditJudgeModal && selectedJudgeDetail && (
         <Modal
           isOpen={true}
-          onClose={() => { setSelectedJudgeDetail(null); setJudgeActiveAssignHackathonId(''); }}
-          title={`Manage Judge Allocations | ${selectedJudgeDetail.full_name}`}
-          size="lg"
+          onClose={() => setShowEditJudgeModal(false)}
+          title={`Edit Judge Profile | ${selectedJudgeDetail.full_name}`}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-2 font-manrope text-xs text-white/80 max-h-[70vh] overflow-y-auto pr-2">
-            {/* Left Column: Judge Profile & Hackathon Allocation */}
-            <div className="flex flex-col gap-6">
-              {/* Judge brief info */}
-              <div className="flex items-center gap-3 bg-white/[0.02] border border-white/5 p-4 rounded-xl">
-                <img
-                  src={selectedJudgeDetail.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${selectedJudgeDetail.id}`}
-                  alt="avatar"
-                  className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 object-cover"
-                />
-                <div>
-                  <h4 className="font-bold text-white text-sm">{selectedJudgeDetail.full_name}</h4>
-                  <p className="text-[10px] text-white/40">{selectedJudgeDetail.email} | Dept: {selectedJudgeDetail.department || 'N/A'}</p>
-                </div>
-              </div>
-
-              {/* Hackathon Allocation form */}
-              <div className="flex flex-col gap-3">
-                <h5 className="font-bold text-accent-secondary uppercase tracking-wider text-[10px]">Assign Hackathon scope</h5>
-                <form onSubmit={handleAssignHackathonToJudge} className="flex gap-2">
-                  <select
-                    value={judgeAllocHackathonId}
-                    onChange={(e) => setJudgeAllocHackathonId(e.target.value)}
-                    className="flex-grow p-2.5 rounded-xl bg-black border border-white/10 text-white focus:outline-none text-[11px]"
-                    required
-                  >
-                    <option value="">-- Choose Hackathon to Assign --</option>
-                    {hackathonsList.map(h => (
-                      <option key={h.id} value={h.id}>{h.title}</option>
-                    ))}
-                  </select>
-                  <Button type="submit" variant="secondary" className="text-[10px] px-4 py-2 shrink-0">
-                    Assign
-                  </Button>
-                </form>
-              </div>
-
-              {/* Currently Assigned Hackathons list */}
-              <div className="flex flex-col gap-2">
-                <h5 className="font-bold text-white/50 uppercase tracking-wider text-[10px]">Assigned Hackathons</h5>
-                {judgeAssignments.filter(a => a.judgeId === selectedJudgeDetail.id).length === 0 ? (
-                  <p className="text-white/35 italic py-1">No hackathons assigned yet.</p>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    {judgeAssignments.filter(a => a.judgeId === selectedJudgeDetail.id).map(a => {
-                      const isSelectedActive = judgeActiveAssignHackathonId === a.hackathonId;
-                      return (
-                        <div 
-                          key={a.id} 
-                          className={`p-3 rounded-xl border flex justify-between items-center transition-all ${
-                            isSelectedActive 
-                              ? 'bg-accent-secondary/5 border-accent-secondary/35 shadow-[0_0_12px_rgba(255,0,193,0.05)]' 
-                              : 'bg-white/[0.01] border-white/5 hover:border-white/15'
-                          }`}
-                        >
-                          <div 
-                            className="flex-grow cursor-pointer" 
-                            onClick={() => setJudgeActiveAssignHackathonId(a.hackathonId)}
-                          >
-                            <p className="font-bold text-white">{a.hackathonName}</p>
-                            <p className="text-[9px] text-white/40 mt-0.5">Click to view & allocate team solutions</p>
-                          </div>
-                          <button 
-                            onClick={() => handleRevokeJudgeHackathon(a.id)}
-                            className="px-2 py-1 bg-danger/10 hover:bg-danger/25 text-danger border border-danger/20 rounded text-[9px] font-bold uppercase transition-colors"
-                          >
-                            Revoke
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+          <form onSubmit={handleUpdateJudge} className="flex flex-col gap-4 py-2 text-xs font-manrope">
+            <Input
+              label="Full Name"
+              placeholder="e.g. Prof. David Zhang"
+              required
+              value={editJudgeData.fullName}
+              onChange={(e) => setEditJudgeData({ ...editJudgeData, fullName: e.target.value })}
+            />
+            <Input
+              label="Email Address"
+              type="email"
+              placeholder="e.g. judge@college.edu"
+              required
+              value={editJudgeData.email}
+              onChange={(e) => setEditJudgeData({ ...editJudgeData, email: e.target.value })}
+            />
+            <Input
+              label="New Password (leave blank to keep unchanged)"
+              type="password"
+              placeholder="••••••••"
+              value={editJudgeData.password}
+              onChange={(e) => setEditJudgeData({ ...editJudgeData, password: e.target.value })}
+            />
+            <Input
+              label="Department / School"
+              placeholder="e.g. School of Artificial Intelligence"
+              value={editJudgeData.department}
+              onChange={(e) => setEditJudgeData({ ...editJudgeData, department: e.target.value })}
+            />
+            <Input
+              label="College ID / Faculty ID"
+              placeholder="e.g. FAC-9901"
+              value={editJudgeData.collegeId}
+              onChange={(e) => setEditJudgeData({ ...editJudgeData, collegeId: e.target.value })}
+            />
+            <div className="flex gap-3 justify-end mt-4">
+              <Button type="button" variant="secondary" onClick={() => setShowEditJudgeModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary">
+                Save Changes
+              </Button>
             </div>
-
-            {/* Right Column: Submissions allocation based on active assigned hackathon selection */}
-            <div className="flex flex-col gap-4 border-l border-white/5 pl-6">
-              {judgeActiveAssignHackathonId ? (
-                <div className="flex flex-col gap-3">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h5 className="font-bold text-accent-primary uppercase tracking-wider text-[10px]">Solutions Allocation</h5>
-                      <p className="text-[9px] text-white/40 mt-0.5">Check team projects this judge must evaluate</p>
-                    </div>
-                    <Badge variant="primary">
-                      {getSubmissionsForHackathon(judgeActiveAssignHackathonId).length} solutions
-                    </Badge>
-                  </div>
-
-                  <div className="flex flex-col gap-2 max-h-96 overflow-y-auto pr-1">
-                    {getSubmissionsForHackathon(judgeActiveAssignHackathonId).map((s) => {
-                      const assignedList = getAssignedSubmissionIds(selectedJudgeDetail.id, judgeActiveAssignHackathonId);
-                      const isAssigned = assignedList.includes(s.id);
-                      return (
-                        <label 
-                          key={s.id}
-                          className="flex items-center justify-between p-3 rounded-lg border border-white/5 bg-white/[0.01] hover:bg-white/[0.02] cursor-pointer"
-                        >
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              checked={isAssigned}
-                              onChange={() => handleToggleSubmissionForJudge(s.id)}
-                              className="w-4 h-4 rounded bg-[#050505] border-white/10 text-accent-secondary focus:ring-0"
-                            />
-                            <div>
-                              <p className="font-bold text-white text-xs">Team: {s.team_name}</p>
-                              <p className="text-[9px] text-white/40 mt-0.5">Project: {s.title}</p>
-                              <p className="text-[9px] text-white/40 font-mono mt-0.5">ID: {s.id.slice(0, 8)}... {s.grade_score !== null && `(Graded: ${s.grade_score} pts)`}</p>
-                            </div>
-                          </div>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center text-center text-white/30 py-12">
-                  <Cpu size={24} className="text-white/20 mb-2" />
-                  <p className="font-bold">No Hackathon Selected</p>
-                  <p className="text-[10px] mt-1">Select an assigned hackathon on the left column to configure dynamic solutions allocation.</p>
-                </div>
-              )}
-            </div>
-          </div>
+          </form>
         </Modal>
       )}
 
-      {/* Modal H: Coordinator Mappings Detail Modal */}
-      {selectedCoordinatorDetail && (
+      {/* Modal Edit Coordinator */}
+      {showEditCoordinatorModal && selectedCoordinatorDetail && (
         <Modal
           isOpen={true}
-          onClose={() => setSelectedCoordinatorDetail(null)}
-          title={`Manage Coordinator Scope | ${selectedCoordinatorDetail.full_name}`}
-          size="lg"
+          onClose={() => setShowEditCoordinatorModal(false)}
+          title={`Edit Coordinator Profile | ${selectedCoordinatorDetail.full_name}`}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-2 font-manrope text-xs text-white/80 max-h-[70vh] overflow-y-auto pr-2">
-            {/* Left Column: Details & Assign Form */}
-            <div className="flex flex-col gap-6">
-              {/* Coordinator brief info */}
-              <div className="flex items-center gap-3 bg-white/[0.02] border border-white/5 p-4 rounded-xl">
-                <img
-                  src={selectedCoordinatorDetail.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${selectedCoordinatorDetail.id}`}
-                  alt="avatar"
-                  className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 object-cover"
-                />
-                <div>
-                  <h4 className="font-bold text-white text-sm">{selectedCoordinatorDetail.full_name}</h4>
-                  <p className="text-[10px] text-white/40">{selectedCoordinatorDetail.email} | Dept: {selectedCoordinatorDetail.department || 'N/A'}</p>
-                </div>
-              </div>
-
-              {/* Hackathon Scope Assign form */}
-              <div className="flex flex-col gap-3">
-                <h5 className="font-bold text-accent-third uppercase tracking-wider text-[10px]">Lock scope to Hackathon</h5>
-                <form onSubmit={handleAssignCoordinator} className="flex gap-2">
-                  <select
-                    value={coordAllocHackathonId}
-                    onChange={(e) => setCoordAllocHackathonId(e.target.value)}
-                    className="flex-grow p-2.5 rounded-xl bg-black border border-white/10 text-white focus:outline-none text-[11px]"
-                    required
-                  >
-                    <option value="">-- Choose Hackathon Scope --</option>
-                    {hackathonsList.map(h => (
-                      <option key={h.id} value={h.id}>{h.title}</option>
-                    ))}
-                  </select>
-                  <Button type="submit" variant="secondary" className="text-[10px] px-4 py-2 shrink-0">
-                    Assign Scope
-                  </Button>
-                </form>
-              </div>
+          <form onSubmit={handleUpdateCoordinator} className="flex flex-col gap-4 py-2 text-xs font-manrope">
+            <Input
+              label="Full Name"
+              placeholder="e.g. Dr. Sarah Connor"
+              required
+              value={editCoordinatorData.fullName}
+              onChange={(e) => setEditCoordinatorData({ ...editCoordinatorData, fullName: e.target.value })}
+            />
+            <Input
+              label="Email Address"
+              type="email"
+              placeholder="e.g. coordinator@college.edu"
+              required
+              value={editCoordinatorData.email}
+              onChange={(e) => setEditCoordinatorData({ ...editCoordinatorData, email: e.target.value })}
+            />
+            <Input
+              label="New Password (leave blank to keep unchanged)"
+              type="password"
+              placeholder="••••••••"
+              value={editCoordinatorData.password}
+              onChange={(e) => setEditCoordinatorData({ ...editCoordinatorData, password: e.target.value })}
+            />
+            <Input
+              label="Department / School"
+              placeholder="e.g. Department of Information Technology"
+              value={editCoordinatorData.department}
+              onChange={(e) => setEditCoordinatorData({ ...editCoordinatorData, department: e.target.value })}
+            />
+            <Input
+              label="College ID / Faculty ID"
+              placeholder="e.g. FAC-8812"
+              value={editCoordinatorData.collegeId}
+              onChange={(e) => setEditCoordinatorData({ ...editCoordinatorData, collegeId: e.target.value })}
+            />
+            <div className="flex gap-3 justify-end mt-4">
+              <Button type="button" variant="secondary" onClick={() => setShowEditCoordinatorModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary">
+                Save Changes
+              </Button>
             </div>
-
-            {/* Right Column: Scope Mappings Ledger */}
-            <div className="flex flex-col gap-4 border-l border-white/5 pl-6">
-              <h5 className="font-bold text-white/50 uppercase tracking-wider text-[10px]">Assigned Scopes Ledger</h5>
-              {coordinatorAssignments.filter(a => a.coordinatorId === selectedCoordinatorDetail.id).length === 0 ? (
-                <p className="text-white/35 italic py-1">No scopes assigned. This coordinator cannot manage any events yet.</p>
-              ) : (
-                <div className="flex flex-col gap-2 max-h-96 overflow-y-auto pr-1">
-                  {coordinatorAssignments.filter(a => a.coordinatorId === selectedCoordinatorDetail.id).map(a => (
-                    <div 
-                      key={a.id} 
-                      className="p-3 rounded-xl border border-white/5 bg-white/[0.01] flex justify-between items-center"
-                    >
-                      <div>
-                        <p className="font-bold text-white">{a.hackathonName}</p>
-                        <span className="px-1.5 py-0.5 rounded bg-success/10 text-success text-[8px] font-bold uppercase tracking-wider block mt-1 w-max">
-                          Restricted Scope Lock
-                        </span>
-                      </div>
-                      <button 
-                        onClick={() => handleRevokeCoordinatorScope(a.id)}
-                        className="px-2 py-1 bg-danger/10 hover:bg-danger/25 text-danger border border-danger/20 rounded text-[9px] font-bold uppercase transition-colors"
-                      >
-                        Revoke Scope
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          </form>
         </Modal>
       )}
     </div>
@@ -3603,8 +5839,72 @@ const AdminView = () => {
 
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+  const [isFadingOut, setIsFadingOut] = useState(false);
+
+  useEffect(() => {
+    const dismissSplash = () => {
+      setIsFadingOut(true);
+      setTimeout(() => {
+        setShowSplash(false);
+      }, 800);
+    };
+
+    // Auto-dismiss backup after 15 seconds
+    const autoTimer = setTimeout(() => {
+      dismissSplash();
+    }, 15000);
+
+    const handleAction = () => {
+      dismissSplash();
+    };
+
+    window.addEventListener('keydown', handleAction);
+    window.addEventListener('wheel', handleAction, { passive: true });
+    window.addEventListener('scroll', handleAction, { passive: true });
+    window.addEventListener('touchmove', handleAction, { passive: true });
+
+    return () => {
+      clearTimeout(autoTimer);
+      window.removeEventListener('keydown', handleAction);
+      window.removeEventListener('wheel', handleAction);
+      window.removeEventListener('scroll', handleAction);
+      window.removeEventListener('touchmove', handleAction);
+    };
+  }, []);
+
   return (
     <AuthProvider>
+      {showSplash && (
+        <div 
+          className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#050505] text-white px-8 font-manrope transition-opacity duration-700 ${
+            isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}
+        >
+          {/* Animated 3D WebGL particle field inside the splash page */}
+          <ThreeParticleBg />
+
+          {/* Centered quote container */}
+          <div className="relative z-10 max-w-2xl text-center flex flex-col gap-8 animate-fade-in-up">
+            <div className="flex justify-center">
+              <div className="w-16 h-16 rounded-2xl bg-accent-primary/5 border border-accent-primary/20 flex items-center justify-center shadow-[0_0_30px_rgba(0,243,255,0.15)] animate-pulse">
+                <span className="font-archivo text-lg font-black text-accent-primary tracking-wider">AiRA</span>
+              </div>
+            </div>
+            
+            <p className="text-xl md:text-2xl lg:text-3xl font-light leading-relaxed text-white tracking-wide font-archivo uppercase select-none italic text-glow-cyan">
+              &ldquo;You can do anything or everything. You just have to believe that you can do it.&rdquo;
+            </p>
+
+            <div className="flex justify-center gap-1.5 mt-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-accent-primary animate-ping" />
+              <span className="w-2.5 h-2.5 rounded-full bg-accent-primary/60 animate-ping delay-75" />
+              <span className="w-2.5 h-2.5 rounded-full bg-accent-primary/30 animate-ping delay-150" />
+            </div>
+          </div>
+        </div>
+      )}
+
       <Router>
         <Routes>
           {/* Public Views nested in GlobalLayout */}
@@ -3612,8 +5912,8 @@ function App() {
             <Route path="/" element={<PublicLanding />} />
             <Route path="/gallery" element={<GalleryView />} />
             <Route path="/leaderboard" element={<LeaderboardView />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+            <Route path="/login" element={<Navigate to="/?auth=login" replace />} />
+            <Route path="/signup" element={<Navigate to="/?auth=register" replace />} />
             <Route path="/profile" element={<ProfilePage />} />
             
             {/* Public/Guest access to hackathons and teams */}

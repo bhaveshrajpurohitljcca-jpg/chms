@@ -57,6 +57,8 @@ class TokenResponse(BaseModel):
     user: UserResponse
 
 class UserUpdateAdmin(BaseModel):
+    email: Optional[EmailStr] = None
+    password: Optional[str] = None
     full_name: Optional[str] = None
     role: Optional[UserRole] = None
     department: Optional[str] = None

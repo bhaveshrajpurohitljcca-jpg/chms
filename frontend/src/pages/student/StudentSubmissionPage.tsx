@@ -8,6 +8,7 @@ import {
   RefreshCw, Send, Loader2, Trash2, Award, ExternalLink
 } from 'lucide-react';
 import { apiService, type SubmissionRecord, STATIC_BASE } from '@/services/api';
+import { useAuth } from '@/context/AuthContext';
 
 // ─── Validation Schema ──────────────────────────────────────
 const GITHUB_REGEX = /^https:\/\/github\.com\/[\w\-\.]+\/[\w\-\.]+\/?$/;
@@ -269,8 +270,11 @@ function saveDemoSubmission(sub: SubmissionRecord) {
 
 // ─── Main Page ──────────────────────────────────────────────
 export default function StudentSubmissionPage() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [registrations, setRegistrations] = useState<any[]>([]);
+  const [selectedHackathonId, setSelectedHackathonId] = useState<string>('');
   const [activeTeam, setActiveTeam] = useState<any | null>(null);
   const [submission, setSubmission] = useState<SubmissionRecord | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -279,9 +283,11 @@ export default function StudentSubmissionPage() {
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
 
+  const isLeader = activeTeam ? activeTeam.leader_id === user?.id : false;
+
   const isLocked = submission
-    ? ['graded', 'accepted'].includes(submission.status)
-    : false;
+    ? ['graded', 'accepted'].includes(submission.status) || !isLeader
+    : !isLeader;
 
   const {
     register,
@@ -300,46 +306,110 @@ export default function StudentSubmissionPage() {
     },
   });
 
-  // ── Load team and submission on mount ──────────────────────
+  const loadHackathonSubmission = async (hackathonId: string) => {
+    if (!hackathonId) {
+      setActiveTeam(null);
+      setSubmission(null);
+      reset({
+        title: '',
+        description: '',
+        repo_url: '',
+        demo_url: '',
+        video_url: '',
+        additional_notes: '',
+      });
+      setFileUrl(null);
+      setFileName(null);
+      return;
+    }
+
+    try {
+      setSubmitError(null);
+      setSubmitSuccess(null);
+      const teamsRes = await apiService.getMyTeams();
+      const myTeams = teamsRes.data || [];
+      const team = myTeams.find((t: any) => t.hackathon_id === hackathonId);
+      
+      if (team) {
+        setActiveTeam(team);
+        try {
+          const subRes = await apiService.getMySubmission(hackathonId);
+          const existing = subRes.data ?? null;
+          setSubmission(existing);
+          if (existing) {
+            reset({
+              title: existing.title,
+              description: existing.description ?? '',
+              repo_url: existing.repo_url,
+              demo_url: existing.demo_url ?? '',
+              video_url: existing.video_url ?? '',
+              additional_notes: existing.additional_notes ?? '',
+            });
+            setFileUrl(existing.file_url ?? null);
+            setFileName(existing.file_name ?? null);
+          } else {
+            reset({
+              title: '',
+              description: '',
+              repo_url: '',
+              demo_url: '',
+              video_url: '',
+              additional_notes: '',
+            });
+            setFileUrl(null);
+            setFileName(null);
+          }
+        } catch {
+          setSubmission(null);
+          reset({
+            title: '',
+            description: '',
+            repo_url: '',
+            demo_url: '',
+            video_url: '',
+            additional_notes: '',
+          });
+          setFileUrl(null);
+          setFileName(null);
+        }
+      } else {
+        setActiveTeam(null);
+        setSubmission(null);
+      }
+    } catch (err: any) {
+      console.warn("Failed to load hackathon submission context", err.message);
+    }
+  };
+
+  // ── Load registrations and initial submission on mount ──────
   useEffect(() => {
     async function load() {
       setLoading(true);
       let usedDemoMode = false;
 
       try {
-        const teamsRes = await apiService.getMyTeams();
-        const myTeams: any[] = teamsRes.data ?? [];
+        const regsRes = await apiService.getMyRegistrations();
+        const myRegs = regsRes.data || [];
+        setRegistrations(myRegs);
 
-        if (myTeams.length > 0) {
-          // ── Real backend team found ──────────────
-          const team = myTeams[0];
-          setActiveTeam(team);
-
-          try {
-            const subRes = await apiService.getMySubmission(team.hackathon_id);
-            const existing = subRes.data ?? null;
-            setSubmission(existing);
-            if (existing) {
-              reset({
-                title: existing.title,
-                description: existing.description ?? '',
-                repo_url: existing.repo_url,
-                demo_url: existing.demo_url ?? '',
-                video_url: existing.video_url ?? '',
-                additional_notes: existing.additional_notes ?? '',
-              });
-              setFileUrl(existing.file_url ?? null);
-              setFileName(existing.file_name ?? null);
-            }
-          } catch {
-            // No submission yet — form stays empty
-          }
+        if (myRegs.length > 0) {
+          const firstHackathonId = myRegs[0].hackathon_id;
+          setSelectedHackathonId(firstHackathonId);
+          await loadHackathonSubmission(firstHackathonId);
         } else {
-          // ── No real team — use demo fallback ────
-          usedDemoMode = true;
+          // No registrations — try loading teams anyway
+          const teamsRes = await apiService.getMyTeams();
+          const myTeams = teamsRes.data || [];
+          if (myTeams.length > 0) {
+            // Mock a registration for the active team
+            const firstHackathonId = myTeams[0].hackathon_id;
+            setSelectedHackathonId(firstHackathonId);
+            await loadHackathonSubmission(firstHackathonId);
+          } else {
+            usedDemoMode = true;
+          }
         }
       } catch {
-        // ── Backend offline — use demo fallback ───
         usedDemoMode = true;
       }
 
@@ -497,6 +567,28 @@ export default function StudentSubmissionPage() {
   return (
     <div className="flex flex-col gap-8 max-w-4xl mx-auto w-full pointer-events-auto">
 
+      {/* ── Hackathon Dropdown Selector ──────────────────────── */}
+      <div className="p-6 rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl flex flex-col gap-3">
+        <label className="text-xs uppercase tracking-widest font-bold text-white/60 block">
+          Select Deployed Hackathon Context
+        </label>
+        <select
+          value={selectedHackathonId}
+          onChange={(e) => {
+            setSelectedHackathonId(e.target.value);
+            loadHackathonSubmission(e.target.value);
+          }}
+          className="w-full px-4 py-3 rounded-xl text-xs text-white bg-black/60 border border-white/10 outline-none focus:border-accent-primary transition-all duration-200"
+        >
+          <option value="">-- Choose Registered Hackathon Event --</option>
+          {registrations.map((reg) => (
+            <option key={reg.id} value={reg.hackathon_id}>
+              {reg.hackathon?.title || `Hackathon ID: ${reg.hackathon_id}`} (Team: {reg.team?.name})
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 border-b border-white/5 pb-6">
         <div>
@@ -553,8 +645,18 @@ export default function StudentSubmissionPage() {
         )}
       </div>
 
+      {/* ── Alert: Read-Only Check for non-leaders ────────── */}
+      {!isLeader && (
+        <div className="flex items-start gap-3 p-4 rounded-xl border border-yellow-500/20 bg-yellow-500/5">
+          <AlertCircle size={16} className="text-yellow-400 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-yellow-300/80 font-light">
+            <strong>Read-Only Access:</strong> Only the Team Leader (<code>{activeTeam.leader?.full_name || 'Leader'}</code>) can submit or modify project solutions. You can view the details below.
+          </p>
+        </div>
+      )}
+
       {/* ── Alert: locked submission ───────────────────────── */}
-      {isLocked && (
+      {isLeader && isLocked && (
         <div className="flex items-start gap-3 p-4 rounded-xl border border-yellow-500/20 bg-yellow-500/5">
           <AlertCircle size={16} className="text-yellow-400 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-yellow-300/80 font-light">
