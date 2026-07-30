@@ -21,15 +21,24 @@ def sync_hackathon_statuses(db: Session):
     Self-healing routine run on queries to keep DB columns accurate.
     """
     now = datetime.utcnow()
-    # 1. Update upcoming hackathons whose start_date has passed to active
+    # 1. If start_date is in the future, status MUST be UPCOMING
     db.query(Hackathon).filter(
-        Hackathon.status == HackathonStatus.UPCOMING,
-        Hackathon.start_date <= now
+        Hackathon.start_date != None,
+        Hackathon.start_date > now
+    ).update({Hackathon.status: HackathonStatus.UPCOMING}, synchronize_session=False)
+
+    # 2. If start_date <= now and (end_date is null or end_date > now), status MUST be ACTIVE
+    db.query(Hackathon).filter(
+        Hackathon.start_date != None,
+        Hackathon.start_date <= now,
+        (Hackathon.end_date == None) | (Hackathon.end_date > now)
     ).update({Hackathon.status: HackathonStatus.ACTIVE}, synchronize_session=False)
 
-    # 2. Update active/upcoming hackathons whose end_date has passed to ended
+    # 3. Only if start_date <= now AND end_date <= now, status is ENDED
     db.query(Hackathon).filter(
-        Hackathon.status.in_([HackathonStatus.UPCOMING, HackathonStatus.ACTIVE]),
+        Hackathon.start_date != None,
+        Hackathon.start_date <= now,
+        Hackathon.end_date != None,
         Hackathon.end_date <= now
     ).update({Hackathon.status: HackathonStatus.ENDED}, synchronize_session=False)
     
@@ -185,7 +194,15 @@ def update_hackathon(
     hackathon.registration_deadline = payload.registration_deadline
     hackathon.max_team_size = payload.max_team_size or 4
     hackathon.min_team_size = payload.min_team_size or 1
-    hackathon.status = payload.status or HackathonStatus.UPCOMING
+    # Calculate accurate status based on dates
+    if hackathon.start_date and hackathon.start_date > now:
+        hackathon.status = HackathonStatus.UPCOMING
+    elif hackathon.end_date and hackathon.end_date <= now and hackathon.start_date and hackathon.start_date <= now:
+        hackathon.status = HackathonStatus.ENDED
+    elif hackathon.start_date and hackathon.start_date <= now:
+        hackathon.status = HackathonStatus.ACTIVE
+    else:
+        hackathon.status = payload.status or HackathonStatus.UPCOMING
     hackathon.banner_url = payload.banner_url
     if payload.announce_ps_advance is not None:
         hackathon.announce_ps_advance = payload.announce_ps_advance
