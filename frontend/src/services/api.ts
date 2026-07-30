@@ -220,6 +220,8 @@ export const apiService = {
     department?: string;
     college_id?: string;
     bio?: string;
+    phone?: string;
+    semester?: string;
   }) {
     return request<AuthResponseData>('/auth/register', {
       method: 'POST',

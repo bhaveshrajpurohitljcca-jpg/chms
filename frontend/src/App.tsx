@@ -3060,8 +3060,8 @@ const AdminView = () => {
     maxTeams: 10 
   });
 
-  const [newJudge, setNewJudge] = useState({ fullName: '', email: '', password: '', collegeId: '', department: '' });
-  const [newCoordinator, setNewCoordinator] = useState({ fullName: '', email: '', password: '', collegeId: '', department: '' });
+  const [newJudge, setNewJudge] = useState({ fullName: '', email: '', password: '', judgeType: 'INTERNAL', department: '' });
+  const [newCoordinator, setNewCoordinator] = useState({ fullName: '', email: '', password: '', semester: '1', rollNumber: '', phone: '', stream: '' });
 
   // Allocation forms inside details
   const [judgeAllocHackathonId, setJudgeAllocHackathonId] = useState('');
@@ -3516,11 +3516,11 @@ const AdminView = () => {
         password: newJudge.password,
         full_name: newJudge.fullName,
         role: 'judge',
-        college_id: newJudge.collegeId,
+        college_id: newJudge.judgeType,
         department: newJudge.department
       });
       showToast(`Judge "${newJudge.fullName}" account successfully created!`);
-      setNewJudge({ fullName: '', email: '', password: '', collegeId: '', department: '' });
+      setNewJudge({ fullName: '', email: '', password: '', judgeType: 'INTERNAL', department: '' });
       setShowCreateJudgeModal(false);
       fetchUsers();
     } catch (err: any) {
@@ -3663,11 +3663,13 @@ const AdminView = () => {
         password: newCoordinator.password,
         full_name: newCoordinator.fullName,
         role: 'coordinator',
-        college_id: newCoordinator.collegeId,
-        department: newCoordinator.department
+        college_id: newCoordinator.rollNumber,
+        department: newCoordinator.stream,
+        phone: newCoordinator.phone,
+        semester: newCoordinator.semester
       });
       showToast(`Coordinator "${newCoordinator.fullName}" account successfully created!`);
-      setNewCoordinator({ fullName: '', email: '', password: '', collegeId: '', department: '' });
+      setNewCoordinator({ fullName: '', email: '', password: '', semester: '1', rollNumber: '', phone: '', stream: '' });
       setShowCreateCoordinatorModal(false);
       fetchUsers();
     } catch (err: any) {
@@ -5632,15 +5634,20 @@ const AdminView = () => {
               onChange={(e) => setNewJudge(prev => ({ ...prev, password: e.target.value }))}
             />
             <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="College ID"
-                placeholder="ID-98129"
-                value={newJudge.collegeId}
-                onChange={(e) => setNewJudge(prev => ({ ...prev, collegeId: e.target.value }))}
-              />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-semibold">Judge Type</label>
+                <select
+                  className="w-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.10)] focus:border-accent-primary rounded-2xl h-12 px-4 text-xs text-white focus:outline-none transition-all duration-300"
+                  value={newJudge.judgeType}
+                  onChange={(e) => setNewJudge(prev => ({ ...prev, judgeType: e.target.value }))}
+                >
+                  <option value="INTERNAL" className="bg-[#050505] text-white">Internal</option>
+                  <option value="EXTERNAL" className="bg-[#050505] text-white">External</option>
+                </select>
+              </div>
               <Input
                 label="Department"
-                placeholder="Data Science"
+                placeholder="e.g. Computer Science"
                 value={newJudge.department}
                 onChange={(e) => setNewJudge(prev => ({ ...prev, department: e.target.value }))}
               />
@@ -5665,19 +5672,60 @@ const AdminView = () => {
           onClose={() => setShowCreateCoordinatorModal(false)}
           title="Register New Coordinator Account"
         >
-          <form onSubmit={handleCreateCoordinator} className="flex flex-col gap-5 py-2 font-manrope">
+          <form onSubmit={handleCreateCoordinator} className="flex flex-col gap-4 py-2 font-manrope">
             <Input
               label="Full Name"
               required
-              placeholder="e.g. Prof. Marcus Vance"
+              placeholder="e.g. Prof. Sarah Jenkins"
               value={newCoordinator.fullName}
               onChange={(e) => setNewCoordinator(prev => ({ ...prev, fullName: e.target.value }))}
             />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-semibold">Semester</label>
+                <select
+                  className="w-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.10)] focus:border-accent-primary rounded-2xl h-12 px-4 text-xs text-white focus:outline-none transition-all duration-300"
+                  value={newCoordinator.semester}
+                  onChange={(e) => setNewCoordinator(prev => ({ ...prev, semester: e.target.value }))}
+                >
+                  {[1,2,3,4,5,6,7,8].map(s => (
+                    <option key={s} value={String(s)} className="bg-[#050505] text-white">Semester {s}</option>
+                  ))}
+                </select>
+              </div>
+              <Input
+                label="Roll Number"
+                placeholder="LJ2024001"
+                value={newCoordinator.rollNumber}
+                onChange={(e) => setNewCoordinator(prev => ({ ...prev, rollNumber: e.target.value }))}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Phone Number"
+                placeholder="9876543210"
+                value={newCoordinator.phone}
+                onChange={(e) => setNewCoordinator(prev => ({ ...prev, phone: e.target.value }))}
+              />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-semibold">Stream</label>
+                <select
+                  className="w-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.10)] focus:border-accent-primary rounded-2xl h-12 px-4 text-xs text-white focus:outline-none transition-all duration-300"
+                  value={newCoordinator.stream}
+                  onChange={(e) => setNewCoordinator(prev => ({ ...prev, stream: e.target.value }))}
+                >
+                  <option value="MCA" className="bg-[#050505] text-white">MCA</option>
+                  <option value="BCA" className="bg-[#050505] text-white">BCA</option>
+                  <option value="BSc IT" className="bg-[#050505] text-white">BSc IT</option>
+                  <option value="MSc IT" className="bg-[#050505] text-white">MSc IT</option>
+                </select>
+              </div>
+            </div>
             <Input
               label="Email Address"
               type="email"
               required
-              placeholder="marcus.vance@college.edu"
+              placeholder="coordinator@ljcollege.edu.in"
               value={newCoordinator.email}
               onChange={(e) => setNewCoordinator(prev => ({ ...prev, email: e.target.value }))}
             />
@@ -5689,21 +5737,6 @@ const AdminView = () => {
               value={newCoordinator.password}
               onChange={(e) => setNewCoordinator(prev => ({ ...prev, password: e.target.value }))}
             />
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="College ID"
-                placeholder="ID-77291"
-                value={newCoordinator.collegeId}
-                onChange={(e) => setNewCoordinator(prev => ({ ...prev, collegeId: e.target.value }))}
-              />
-              <Input
-                label="Department"
-                placeholder="Electrical Eng"
-                value={newCoordinator.department}
-                onChange={(e) => setNewCoordinator(prev => ({ ...prev, department: e.target.value }))}
-              />
-            </div>
-
             <div className="flex gap-3 justify-end mt-4">
               <Button type="button" variant="secondary" onClick={() => setShowCreateCoordinatorModal(false)}>
                 Cancel

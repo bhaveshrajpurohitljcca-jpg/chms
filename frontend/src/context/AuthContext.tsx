@@ -24,6 +24,8 @@ interface AuthContextType {
     role?: 'student' | 'coordinator' | 'judge' | 'admin';
     department?: string;
     college_id?: string;
+    phone?: string;
+    semester?: string;
   }) => Promise<UserProfile>;
   signup: (email: string, password: string, fullName: string, role: string) => Promise<UserProfile>;
   quickLoginAsRole: (role: 'student' | 'coordinator' | 'judge' | 'admin') => Promise<void>;
@@ -162,6 +164,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     role?: 'student' | 'coordinator' | 'judge' | 'admin';
     department?: string;
     college_id?: string;
+    phone?: string;
+    semester?: string;
   }): Promise<UserProfile> => {
     setIsLoading(true);
     try {

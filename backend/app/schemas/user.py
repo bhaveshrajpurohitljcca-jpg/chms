@@ -12,6 +12,7 @@ class UserRegister(BaseModel):
     college_id: Optional[str] = None
     bio: Optional[str] = None
     phone: Optional[str] = None
+    semester: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -42,6 +43,7 @@ class UserResponse(BaseModel):
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
     phone: Optional[str] = None
+    semester: Optional[str] = None
     is_active: bool
     is_deleted: bool
     created_at: datetime
@@ -66,6 +68,7 @@ class UserUpdateAdmin(BaseModel):
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
     phone: Optional[str] = None
+    semester: Optional[str] = None
     is_active: Optional[bool] = None
 
 class UserStatusUpdate(BaseModel):

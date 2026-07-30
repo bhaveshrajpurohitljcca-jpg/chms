@@ -9,29 +9,30 @@ import Button from '../components/ui/button';
 import Input from '../components/ui/input';
 import Card from '../components/ui/card';
 
+const selectClass =
+  'w-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.10)] focus:border-accent-primary focus:shadow-[0_0_12px_rgba(0,243,255,0.15)] rounded-2xl h-12 px-4 text-xs text-white placeholder-white/30 focus:outline-none transition-all duration-300';
+const labelClass =
+  'text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-semibold';
+
 const signupSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
+  semester: z.string().min(1, 'Please select a semester'),
+  rollNumber: z.string().min(1, 'Roll number is required'),
+  phone: z.string().min(10, 'Enter a valid 10-digit phone number'),
   email: z.string().email('Please enter a valid email address'),
-  role: z.enum(['Student', 'Judge', 'Coordinator', 'Administrator'], {
-    errorMap: () => ({ message: 'Please select a valid system role' }),
-  }),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword'],
+  stream: z.string().min(1, 'Please select a stream'),
 });
 
 type SignupFormValues = z.infer<typeof signupSchema>;
 
 export default function Signup() {
-  const { signup } = useAuth();
+  const { register: registerUser } = useAuth();
   const navigate = useNavigate();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const {
     register,
@@ -41,10 +42,12 @@ export default function Signup() {
     resolver: zodResolver(signupSchema),
     defaultValues: {
       fullName: '',
+      semester: '',
+      rollNumber: '',
+      phone: '',
       email: '',
-      role: 'Student',
       password: '',
-      confirmPassword: '',
+      stream: '',
     },
   });
 
@@ -53,13 +56,23 @@ export default function Signup() {
     setErrorMsg(null);
     setSuccessMsg(null);
     try {
-      await signup(data.email, data.password, data.fullName, data.role);
+      await registerUser({
+        email: data.email,
+        password: data.password,
+        full_name: data.fullName,
+        role: 'student',
+        college_id: data.rollNumber,
+        department: data.stream,
+        phone: data.phone,
+        semester: data.semester,
+      });
       setSuccessMsg('Account registered successfully! Redirecting to login...');
       setTimeout(() => {
         navigate('/login');
       }, 2000);
     } catch (err: any) {
-      const msg = err.response?.data?.detail || 'Registration failed. Try again.';
+      const msg =
+        err.response?.data?.detail || err.message || 'Registration failed. Try again.';
       setErrorMsg(msg);
     } finally {
       setIsLoading(false);
@@ -69,7 +82,6 @@ export default function Signup() {
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-[#050505] relative z-10">
       <div className="w-full max-w-md my-8">
-        
         {/* Brand Stamp */}
         <div className="flex flex-col items-center gap-3 mb-8 select-none">
           <div className="w-12 h-12 rounded-[16px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.1)] flex items-center justify-center shadow-[0_0_20px_rgba(0,243,255,0.2)]">
@@ -79,18 +91,17 @@ export default function Signup() {
             CHMS REGISTER
           </h1>
           <p className="text-xs text-[rgba(255,255,255,0.45)] uppercase tracking-wider font-light text-center">
-            Create an operator identity node in the registry
+            LJ College of Computer Applications
           </p>
         </div>
 
         <Card hoverable className="bg-white/[0.02]">
           {errorMsg && (
-            <div className="mb-6 p-4 rounded-xl bg-danger/10 border border-danger/20 text-danger text-xs flex items-center gap-3 animate-pulse">
+            <div className="mb-6 p-4 rounded-xl bg-danger/10 border border-danger/20 text-danger text-xs flex items-center gap-3">
               <ShieldAlert size={16} />
               <span>{errorMsg}</span>
             </div>
           )}
-
           {successMsg && (
             <div className="mb-6 p-4 rounded-xl bg-success/10 border border-success/20 text-success text-xs flex items-center gap-3">
               <Check size={16} />
@@ -99,43 +110,79 @@ export default function Signup() {
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+            {/* Full Name */}
             <Input
-              label="Full Operator Name"
+              label="Full Name"
               placeholder="Bhavesh Rajpurohit"
               error={errors.fullName?.message}
               {...register('fullName')}
             />
 
+            {/* Semester + Roll Number */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className={labelClass}>Semester</label>
+                <select className={selectClass} {...register('semester')}>
+                  <option value="" className="bg-[#050505] text-white/50">
+                    Select Sem
+                  </option>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+                    <option key={s} value={String(s)} className="bg-[#050505] text-white">
+                      Semester {s}
+                    </option>
+                  ))}
+                </select>
+                {errors.semester?.message && (
+                  <span className="text-[10px] text-danger">{errors.semester.message}</span>
+                )}
+              </div>
+              <Input
+                label="Roll Number"
+                placeholder="LJ2024001"
+                error={errors.rollNumber?.message}
+                {...register('rollNumber')}
+              />
+            </div>
+
+            {/* Phone + Stream */}
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Phone Number"
+                placeholder="9876543210"
+                type="tel"
+                error={errors.phone?.message}
+                {...register('phone')}
+              />
+              <div className="flex flex-col gap-1.5">
+                <label className={labelClass}>Stream</label>
+                <select className={selectClass} {...register('stream')}>
+                  <option value="" className="bg-[#050505] text-white/50">
+                    Select Stream
+                  </option>
+                  <option value="MCA" className="bg-[#050505] text-white">MCA</option>
+                  <option value="BCA" className="bg-[#050505] text-white">BCA</option>
+                  <option value="BSc IT" className="bg-[#050505] text-white">BSc IT</option>
+                  <option value="MSc IT" className="bg-[#050505] text-white">MSc IT</option>
+                </select>
+                {errors.stream?.message && (
+                  <span className="text-[10px] text-danger">{errors.stream.message}</span>
+                )}
+              </div>
+            </div>
+
+            {/* Email */}
             <Input
-              label="Email coordinates"
-              placeholder="developer@college.edu"
+              label="Email Address"
+              placeholder="student@ljcollege.edu.in"
               type="email"
               error={errors.email?.message}
               {...register('email')}
             />
 
-            {/* Custom styled select matching input style */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-semibold">
-                Registry Permission Role
-              </label>
-              <select
-                className="w-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.10)] focus:border-accent-primary focus:shadow-[0_0_12px_rgba(0,243,255,0.15)] rounded-2xl h-12 px-4 text-xs text-white placeholder-white/30 focus:outline-none transition-all duration-300"
-                {...register('role')}
-              >
-                <option value="Student" className="bg-[#050505] text-white">Student</option>
-                <option value="Judge" className="bg-[#050505] text-white">Judge</option>
-                <option value="Coordinator" className="bg-[#050505] text-white">Coordinator</option>
-                <option value="Administrator" className="bg-[#050505] text-white">Administrator</option>
-              </select>
-              {errors.role?.message && (
-                <span className="text-[10px] text-danger mt-1 pl-1">{errors.role.message}</span>
-              )}
-            </div>
-
+            {/* Password */}
             <div className="relative">
               <Input
-                label="Access Code (Password)"
+                label="Password"
                 placeholder="••••••••"
                 type={showPassword ? 'text' : 'password'}
                 error={errors.password?.message}
@@ -151,38 +198,23 @@ export default function Signup() {
               </button>
             </div>
 
-            <div className="relative">
-              <Input
-                label="Confirm Access Code"
-                placeholder="••••••••"
-                type={showConfirmPassword ? 'text' : 'password'}
-                error={errors.confirmPassword?.message}
-                className="pr-12"
-                {...register('confirmPassword')}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3.5 top-[38px] text-zinc-400 hover:text-white transition-colors z-10"
-              >
-                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-
             <Button
               type="submit"
               variant="primary"
               className="w-full justify-center mt-2 h-12 uppercase tracking-widest text-xs font-bold"
               isLoading={isLoading}
             >
-              Mint Operator Node
+              Create Account
             </Button>
           </form>
 
           <div className="border-t border-white/5 pt-6 mt-6 flex justify-between text-xs text-[rgba(255,255,255,0.45)]">
             <span>Already registered?</span>
-            <Link to="/login" className="text-accent-primary hover:text-accent-primary/80 transition-colors">
-              Operator login →
+            <Link
+              to="/login"
+              className="text-accent-primary hover:text-accent-primary/80 transition-colors"
+            >
+              Login →
             </Link>
           </div>
         </Card>

@@ -35,7 +35,8 @@ def register_user(db: Session, user_in: UserRegister) -> User:
         department=user_in.department,
         college_id=user_in.college_id,
         bio=user_in.bio,
-        phone=user_in.phone
+        phone=user_in.phone,
+        semester=user_in.semester
     )
     db.add(db_user)
     db.commit()
