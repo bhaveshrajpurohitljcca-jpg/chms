@@ -106,12 +106,22 @@ def get_hackathon(
         data=res
     )
 
+def make_naive(dt: Optional[datetime]) -> Optional[datetime]:
+    if dt is not None and dt.tzinfo is not None:
+        return dt.replace(tzinfo=None)
+    return dt
+
+
 @router.post("", response_model=StandardResponse[HackathonResponse])
 def create_hackathon(
     payload: HackathonCreate,
     db: Session = Depends(get_db),
     admin: User = Depends(RoleChecker([UserRole.ADMIN, UserRole.COORDINATOR]))
 ):
+    payload.start_date = make_naive(payload.start_date)
+    payload.end_date = make_naive(payload.end_date)
+    payload.registration_deadline = make_naive(payload.registration_deadline)
+
     existing = db.query(Hackathon).filter(Hackathon.slug == payload.slug).first()
     if existing:
         raise HTTPException(status_code=400, detail="Hackathon with this slug already exists.")
@@ -160,6 +170,10 @@ def update_hackathon(
     admin: User = Depends(RoleChecker([UserRole.ADMIN, UserRole.COORDINATOR]))
 ):
     """Update hackathon details and deadlines."""
+    payload.start_date = make_naive(payload.start_date)
+    payload.end_date = make_naive(payload.end_date)
+    payload.registration_deadline = make_naive(payload.registration_deadline)
+
     hackathon = db.query(Hackathon).filter(Hackathon.id == hackathon_id).first()
     if not hackathon:
         hackathon = db.query(Hackathon).filter(Hackathon.slug == hackathon_id).first()
@@ -171,19 +185,11 @@ def update_hackathon(
         if existing:
             raise HTTPException(status_code=400, detail="Hackathon with this slug already exists.")
 
-    # Validation: date must not be in the past (only if modified to a new value)
     now = datetime.utcnow()
-    if payload.start_date and payload.start_date != hackathon.start_date:
-        if payload.start_date.date() < now.date():
-            raise HTTPException(status_code=400, detail="Start date cannot be in the past.")
-    if payload.registration_deadline and payload.registration_deadline != hackathon.registration_deadline:
-        if payload.registration_deadline.date() < now.date():
-            raise HTTPException(status_code=400, detail="Registration deadline cannot be in the past.")
-    if payload.end_date and payload.end_date != hackathon.end_date:
-        if payload.end_date.date() < now.date():
-            raise HTTPException(status_code=400, detail="End date cannot be in the past.")
-    if payload.end_date and payload.start_date and payload.end_date < payload.start_date:
-        raise HTTPException(status_code=400, detail="End date cannot be before start date.")
+    # Auto-fix end_date if start_date is moved ahead of old end_date
+    if payload.start_date and payload.end_date and payload.end_date < payload.start_date:
+        from datetime import timedelta
+        payload.end_date = payload.start_date + timedelta(days=2)
 
     hackathon.title = payload.title
     hackathon.slug = payload.slug
