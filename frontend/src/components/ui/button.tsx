@@ -1,7 +1,7 @@
 import React, { forwardRef } from 'react';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'success' | 'danger';
+  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'ghost';
   isLoading?: boolean;
 }
 
@@ -17,6 +17,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       secondary: "bg-[rgba(255,255,255,0.03)] text-white border border-[rgba(255,255,255,0.15)] hover:border-accent-primary hover:bg-[rgba(255,255,255,0.05)] hover:shadow-[0_0_15px_rgba(0,243,255,0.2)]",
       success: "bg-success text-[#050505] hover:bg-opacity-90 hover:shadow-[0_0_15px_rgba(0,255,157,0.35)]",
       danger: "bg-danger text-white hover:bg-opacity-90 hover:shadow-[0_0_15px_rgba(255,77,109,0.35)]",
+      ghost: "bg-transparent text-white hover:bg-[rgba(255,255,255,0.05)]",
     };
 
     return (
