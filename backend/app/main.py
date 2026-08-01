@@ -50,6 +50,12 @@ elif isinstance(settings.CORS_ORIGINS, str):
 else:
     origins = [settings.CORS_ORIGINS]
 
+# Force include Vercel frontend and localhost for development
+essential_origins = ["https://chms-lj.vercel.app", "http://localhost:5173", "http://localhost:5174", "http://localhost:3000"]
+for org in essential_origins:
+    if org not in origins:
+        origins.append(org)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
