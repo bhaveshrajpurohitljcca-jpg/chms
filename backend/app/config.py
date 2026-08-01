@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     
     # CORS
     CORS_ORIGINS: Union[str, List[str]] = [
-        o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://localhost:5174").split(",")
+        o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://localhost:5174,https://chms-lj.vercel.app").split(",")
     ]
 
     # Database
