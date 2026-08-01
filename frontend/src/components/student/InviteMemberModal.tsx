@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Modal from '@/components/ui/modal';
-import Input from '@/components/ui/input';
 import Button from '@/components/ui/button';
 import { UserPlus, CheckCircle2, AlertCircle, Search, User, Loader2 } from 'lucide-react';
 import { apiService, type UserProfile } from '@/services/api';
