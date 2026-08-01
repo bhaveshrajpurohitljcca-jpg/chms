@@ -25,6 +25,7 @@ export const ProfilePage: React.FC = () => {
   const [collegeId, setCollegeId] = useState(user?.college_id || '');
   const [bio, setBio] = useState(user?.bio || '');
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || '');
+  const [autoAccept, setAutoAccept] = useState(user?.auto_accept_invites || false);
 
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -51,7 +52,8 @@ export const ProfilePage: React.FC = () => {
       department,
       college_id: collegeId,
       bio,
-      avatar_url: avatarUrl
+      avatar_url: avatarUrl,
+      auto_accept_invites: autoAccept
     });
     setIsEditing(false);
     setSaveSuccess(true);
@@ -179,6 +181,19 @@ export const ProfilePage: React.FC = () => {
                   className="w-full rounded-2xl bg-black/50 border border-white/10 p-3 text-sm text-white focus:outline-none focus:border-accent-primary"
                 />
               </div>
+              <div className="flex items-center justify-between p-4 rounded-2xl border border-white/10 bg-black/30">
+                <div>
+                  <h4 className="text-sm font-semibold text-white">Auto-Accept Invitations</h4>
+                  <p className="text-xs text-zinc-400">Automatically join teams when invited.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAutoAccept(!autoAccept)}
+                  className={`w-12 h-6 rounded-full p-1 transition-colors ${autoAccept ? 'bg-accent-primary' : 'bg-zinc-700'}`}
+                >
+                  <div className={`w-4 h-4 rounded-full bg-black transition-transform ${autoAccept ? 'translate-x-6' : 'translate-x-0'}`} />
+                </button>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-6 font-mono text-sm">
@@ -197,6 +212,12 @@ export const ProfilePage: React.FC = () => {
               <div>
                 <span className="text-xs text-zinc-500 uppercase block mb-1">College Roll No.</span>
                 <span className="text-zinc-300">{user.college_id || 'Not specified'}</span>
+              </div>
+              <div className="col-span-2 mt-2 pt-4 border-t border-white/10">
+                <span className="text-xs text-zinc-500 uppercase block mb-1">Auto-Join Feature</span>
+                <span className={`font-bold ${user.auto_accept_invites ? 'text-accent-primary' : 'text-zinc-500'}`}>
+                  {user.auto_accept_invites ? 'Enabled' : 'Disabled'}
+                </span>
               </div>
             </div>
           )}

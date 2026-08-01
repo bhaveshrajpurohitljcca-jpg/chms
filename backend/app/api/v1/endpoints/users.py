@@ -306,15 +306,15 @@ def toggle_user_status(
 
 @router.get("/search", response_model=StandardResponse[List[UserResponse]])
 def search_users(
-    email: Optional[str] = Query(None, description="Partial email to search"),
+    q: Optional[str] = Query(None, description="Partial name or email to search"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
-    Search for users by email prefix — accessible by any authenticated user.
+    Search for users by name or email prefix — accessible by any authenticated user.
     Used by team leaders to find invitees. Returns max 10 results.
     """
-    if not email or len(email.strip()) < 3:
+    if not q or len(q.strip()) < 3:
         return StandardResponse(
             success=True,
             message="Please enter at least 3 characters to search.",
@@ -323,7 +323,10 @@ def search_users(
 
     users = (
         db.query(User)
-        .filter(User.email.ilike(f"%{email.strip()}%"), User.is_active == True)
+        .filter(
+            (User.email.ilike(f"%{q.strip()}%")) | (User.full_name.ilike(f"%{q.strip()}%")), 
+            User.is_active == True
+        )
         .limit(10)
         .all()
     )

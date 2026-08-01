@@ -25,6 +25,7 @@ class UserProfileUpdate(BaseModel):
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
     phone: Optional[str] = None
+    auto_accept_invites: Optional[bool] = None
 
 class UserRoleUpdate(BaseModel):
     role: UserRole
@@ -46,6 +47,7 @@ class UserResponse(BaseModel):
     semester: Optional[str] = None
     is_active: bool
     is_deleted: bool
+    auto_accept_invites: bool
     created_at: datetime
     updated_at: datetime
 
@@ -70,6 +72,7 @@ class UserUpdateAdmin(BaseModel):
     phone: Optional[str] = None
     semester: Optional[str] = None
     is_active: Optional[bool] = None
+    auto_accept_invites: Optional[bool] = None
 
 class UserStatusUpdate(BaseModel):
     is_active: bool

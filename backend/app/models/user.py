@@ -28,5 +28,6 @@ class User(BaseTable):
     phone = Column(String(20), nullable=True)
     semester = Column(String(10), nullable=True)
     is_deleted = Column(Boolean, default=False, nullable=False)
+    auto_accept_invites = Column(Boolean, default=False, nullable=False)
 
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")

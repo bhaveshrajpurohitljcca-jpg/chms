@@ -10,6 +10,7 @@ from app.models.invitation import TeamInvitation, InvitationStatus
 from app.schemas.team import TeamCreate, TeamJoin, TeamResponse
 from app.schemas.invitation import InvitationCreate, InvitationResponse
 from app.schemas.response import StandardResponse
+from app.schemas.user import UserResponse
 from app.api.deps import get_current_active_user
 
 router = APIRouter(prefix="/teams", tags=["Teams"])
@@ -224,6 +225,34 @@ def send_invitation(
             detail="A pending invitation has already been sent to this email address."
         )
 
+    # Check for auto-accept feature
+    if getattr(invitee, 'auto_accept_invites', False):
+        # Auto-join logic
+        new_member = TeamMember(
+            team_id=team.id,
+            user_id=invitee.id,
+            role_in_team=MemberRole.MEMBER
+        )
+        db.add(new_member)
+        
+        # We still create an ACCEPTED invitation record for history/tracking
+        invitation = TeamInvitation(
+            team_id=team.id,
+            invited_by_id=current_user.id,
+            invitee_email=payload.invitee_email.lower(),
+            status=InvitationStatus.ACCEPTED
+        )
+        db.add(invitation)
+        db.commit()
+        db.refresh(invitation)
+        
+        return StandardResponse(
+            success=True,
+            message=f"{invitee.full_name} had Auto-Join enabled and has been added to your team immediately!",
+            data=InvitationResponse.from_orm(invitation)
+        )
+
+    # Standard invitation process
     invitation = TeamInvitation(
         team_id=team.id,
         invited_by_id=current_user.id,
@@ -238,6 +267,39 @@ def send_invitation(
         success=True,
         message=f"Invitation sent to {payload.invitee_email}.",
         data=InvitationResponse.from_orm(invitation)
+    )
+
+@router.get("/{team_id}/eligible-users", response_model=StandardResponse[List[UserResponse]])
+def get_eligible_users(
+    team_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Returns a list of students who have NOT joined any team in the hackathon that this team belongs to.
+    """
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found.")
+        
+    hackathon_id = team.hackathon_id
+    
+    # Subquery: get all user_ids of students who are already in a team for this hackathon
+    busy_user_ids_query = db.query(TeamMember.user_id).join(Team).filter(Team.hackathon_id == hackathon_id)
+    
+    # Query: get all active students NOT in the subquery
+    eligible_users = db.query(User).filter(
+        User.role == UserRole.STUDENT,
+        User.is_active == True,
+        ~User.id.in_(busy_user_ids_query)
+    ).limit(50).all()
+    
+    results = [UserResponse.from_orm(u) for u in eligible_users]
+    
+    return StandardResponse(
+        success=True,
+        message=f"Found {len(results)} eligible students.",
+        data=results
     )
 
 

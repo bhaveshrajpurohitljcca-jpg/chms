@@ -98,6 +98,8 @@ def update_profile(db: Session, db_user: User, update_in: UserProfileUpdate) -> 
         db_user.bio = update_in.bio
     if update_in.phone is not None:
         db_user.phone = update_in.phone
+    if update_in.auto_accept_invites is not None:
+        db_user.auto_accept_invites = update_in.auto_accept_invites
 
     db.commit()
     db.refresh(db_user)
@@ -128,6 +130,8 @@ def update_user_admin(db: Session, db_user: User, update_in: UserUpdateAdmin) ->
         db_user.phone = update_in.phone
     if update_in.is_active is not None:
         db_user.is_active = update_in.is_active
+    if update_in.auto_accept_invites is not None:
+        db_user.auto_accept_invites = update_in.auto_accept_invites
 
     db.commit()
     db.refresh(db_user)

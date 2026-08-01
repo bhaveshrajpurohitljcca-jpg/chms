@@ -17,6 +17,7 @@ export interface UserProfile {
   avatar_url?: string;
   bio?: string;
   is_active: boolean;
+  auto_accept_invites?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -240,6 +241,7 @@ export const apiService = {
     college_id?: string;
     avatar_url?: string;
     bio?: string;
+    auto_accept_invites?: boolean;
   }) {
     return request<UserProfile>('/users/profile', {
       method: 'PUT',
@@ -277,9 +279,9 @@ export const apiService = {
     });
   },
 
-  /** Search users by email (min 3 chars). Accessible to all authenticated users. */
-  async searchUsers(email: string) {
-    return request<UserProfile[]>(`/users/search?email=${encodeURIComponent(email)}`);
+  /** Search users by name or email (min 3 chars). Accessible to all authenticated users. */
+  async searchUsers(query: string) {
+    return request<UserProfile[]>(`/users/search?q=${encodeURIComponent(query)}`);
   },
 
   async updateUserStatus(userId: string, isActive: boolean) {
@@ -471,6 +473,11 @@ export const apiService = {
       method: 'POST',
       body: JSON.stringify({ invitee_email }),
     });
+  },
+
+  /** Get eligible students who haven't joined any team in the hackathon */
+  async getEligibleUsers(teamId: string) {
+    return request<UserProfile[]>(`/teams/${teamId}/eligible-users`);
   },
 
   /** Get invitations received by the current user */
