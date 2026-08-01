@@ -166,6 +166,134 @@ def join_team(
         data=TeamResponse.from_orm(team)
     )
 
+# ==========================================
+# LEAVE TEAM
+# ==========================================
+
+@router.post("/{team_id}/leave", response_model=StandardResponse[dict])
+def leave_team(
+    team_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Student leaves a team they are a member of. Leaders cannot leave — they must transfer leadership first or delete the team."""
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found.")
+
+    # Check if user is a member
+    member = db.query(TeamMember).filter(
+        TeamMember.team_id == team.id,
+        TeamMember.user_id == current_user.id
+    ).first()
+    if not member:
+        raise HTTPException(status_code=400, detail="You are not a member of this team.")
+
+    # Leader cannot leave
+    if team.leader_id == current_user.id:
+        raise HTTPException(
+            status_code=400,
+            detail="As the team leader, you cannot leave the team. Transfer leadership first or delete the team."
+        )
+
+    db.delete(member)
+    db.commit()
+
+    return StandardResponse(
+        success=True,
+        message=f"You have left team '{team.name}'.",
+        data={"team_id": team.id}
+    )
+
+# ==========================================
+# DELETE TEAM
+# ==========================================
+
+@router.delete("/{team_id}", response_model=StandardResponse[dict])
+def delete_team(
+    team_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Only the team leader can delete the team. Removes all members and invitations."""
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found.")
+
+    if team.leader_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the team leader can delete the team.")
+
+    # Delete all members
+    db.query(TeamMember).filter(TeamMember.team_id == team.id).delete()
+    # Delete all invitations
+    db.query(TeamInvitation).filter(TeamInvitation.team_id == team.id).delete()
+    # Delete the team
+    db.delete(team)
+    db.commit()
+
+    return StandardResponse(
+        success=True,
+        message=f"Team '{team.name}' has been permanently deleted.",
+        data={"team_id": team_id}
+    )
+
+
+# ==========================================
+# TRANSFER LEADERSHIP
+# ==========================================
+
+@router.post("/{team_id}/transfer-leadership", response_model=StandardResponse[TeamResponse])
+def transfer_leadership(
+    team_id: str,
+    payload: dict,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Transfer leadership to another member of the team."""
+    new_leader_id = payload.get("new_leader_id")
+    if not new_leader_id:
+        raise HTTPException(status_code=400, detail="new_leader_id is required.")
+
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found.")
+
+    if team.leader_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the current leader can transfer leadership.")
+
+    # Verify new leader is a member
+    new_leader_member = db.query(TeamMember).filter(
+        TeamMember.team_id == team.id,
+        TeamMember.user_id == new_leader_id
+    ).first()
+    if not new_leader_member:
+        raise HTTPException(status_code=400, detail="The selected user is not a member of this team.")
+
+    # Cannot transfer to self
+    if new_leader_id == current_user.id:
+        raise HTTPException(status_code=400, detail="You are already the leader.")
+
+    # Update team leader
+    team.leader_id = new_leader_id
+
+    # Update roles
+    old_leader_member = db.query(TeamMember).filter(
+        TeamMember.team_id == team.id,
+        TeamMember.user_id == current_user.id
+    ).first()
+    if old_leader_member:
+        old_leader_member.role_in_team = MemberRole.MEMBER
+    new_leader_member.role_in_team = MemberRole.LEADER
+
+    db.commit()
+    db.refresh(team)
+
+    return StandardResponse(
+        success=True,
+        message=f"Leadership transferred successfully.",
+        data=TeamResponse.from_orm(team)
+    )
+
 
 # ==========================================
 # TEAM INVITATIONS

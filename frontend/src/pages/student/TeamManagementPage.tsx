@@ -18,6 +18,7 @@ import {
   Mail,
   Trash2,
   AlertCircle,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { apiService } from '@/services/api';
 import type { BackendTeam, BackendInvitation } from '@/services/api';
@@ -534,18 +535,81 @@ export const TeamManagementPage: React.FC = () => {
                 <span>Go to Registration Console</span>
               </Button>
 
-              <Button
-                variant="danger"
-                onClick={() => {
-                  if (confirm('Are you sure you want to leave this team?')) {
-                    alert('Leave team functionality will be available in the next sprint update.');
-                  }
-                }}
-                className="h-11 text-xs w-full flex items-center justify-center gap-2 mt-2"
-              >
-                <LogOut size={16} />
-                <span>Leave Team</span>
-              </Button>
+              {isLeader ? (
+                <>
+                  {/* Transfer Leadership - only if there are other members */}
+                  {activeTeam.members.length > 1 && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        const otherMembers = activeTeam.members.filter(m => m.user_id !== user?.id);
+                        if (otherMembers.length === 0) {
+                          alert('No other members to transfer leadership to.');
+                          return;
+                        }
+                        const memberList = otherMembers.map((m, i) => `${i + 1}. ${m.user?.full_name || m.user?.email || m.user_id}`).join('\n');
+                        const choice = prompt(`Select member number to transfer leadership:\n\n${memberList}`);
+                        if (choice) {
+                          const idx = parseInt(choice) - 1;
+                          if (idx >= 0 && idx < otherMembers.length) {
+                            const targetId = otherMembers[idx].user_id;
+                            const targetName = otherMembers[idx].user?.full_name || otherMembers[idx].user?.email;
+                            if (confirm(`Transfer leadership to ${targetName}? You will become a regular member.`)) {
+                              apiService.transferLeadership(activeTeam.id, targetId)
+                                .then(() => { alert('Leadership transferred!'); window.location.reload(); })
+                                .catch((err: any) => alert(err.message || 'Transfer failed.'));
+                            }
+                          } else {
+                            alert('Invalid selection.');
+                          }
+                        }
+                      }}
+                      className="h-11 text-xs w-full flex items-center justify-center gap-2 mt-2"
+                    >
+                      <ArrowRightLeft size={16} />
+                      <span>Transfer Leadership</span>
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="danger"
+                    onClick={async () => {
+                      if (confirm('⚠️ Are you sure you want to DELETE this team? All members will be removed. This action cannot be undone!')) {
+                        try {
+                          await apiService.deleteTeam(activeTeam.id);
+                          alert('Team deleted successfully.');
+                          window.location.reload();
+                        } catch (err: any) {
+                          alert(err.message || 'Failed to delete team.');
+                        }
+                      }
+                    }}
+                    className="h-11 text-xs w-full flex items-center justify-center gap-2 mt-2"
+                  >
+                    <Trash2 size={16} />
+                    <span>Delete Team</span>
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="danger"
+                  onClick={async () => {
+                    if (confirm('Are you sure you want to leave this team?')) {
+                      try {
+                        await apiService.leaveTeam(activeTeam.id);
+                        alert('You have left the team successfully.');
+                        window.location.reload();
+                      } catch (err: any) {
+                        alert(err.message || 'Failed to leave team.');
+                      }
+                    }
+                  }}
+                  className="h-11 text-xs w-full flex items-center justify-center gap-2 mt-2"
+                >
+                  <LogOut size={16} />
+                  <span>Leave Team</span>
+                </Button>
+              )}
             </Card>
 
             {/* Team Info Summary */}

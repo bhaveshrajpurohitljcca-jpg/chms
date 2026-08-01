@@ -466,6 +466,25 @@ export const apiService = {
     });
   },
 
+  async leaveTeam(teamId: string) {
+    return request<{ team_id: string }>(`/teams/${teamId}/leave`, {
+      method: 'POST',
+    });
+  },
+
+  async deleteTeam(teamId: string) {
+    return request<{ team_id: string }>(`/teams/${teamId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async transferLeadership(teamId: string, newLeaderId: string) {
+    return request<BackendTeam>(`/teams/${teamId}/transfer-leadership`, {
+      method: 'POST',
+      body: JSON.stringify({ new_leader_id: newLeaderId }),
+    });
+  },
+
   // ─── Team Invitations ──────────────────────────────────────
   /** Team leader sends invitation to student by email */
   async sendInvitation(teamId: string, invitee_email: string) {

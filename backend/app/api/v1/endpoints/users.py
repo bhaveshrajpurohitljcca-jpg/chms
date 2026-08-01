@@ -73,6 +73,40 @@ def get_current_user_profile(current_user: User = Depends(get_current_active_use
         data=UserResponse.from_orm(current_user)
     )
 
+@router.get("/search", response_model=StandardResponse[List[UserResponse]])
+def search_users(
+    q: Optional[str] = Query(None, description="Partial name or email to search"),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Search for users by name or email prefix — accessible by any authenticated user.
+    Used by team leaders to find invitees. Returns max 10 results.
+    """
+    if not q or len(q.strip()) < 3:
+        return StandardResponse(
+            success=True,
+            message="Please enter at least 3 characters to search.",
+            data=[]
+        )
+
+    users = (
+        db.query(User)
+        .filter(
+            (User.email.ilike(f"%{q.strip()}%")) | (User.full_name.ilike(f"%{q.strip()}%")), 
+            User.is_active == True
+        )
+        .limit(10)
+        .all()
+    )
+    results = [UserResponse.from_orm(u) for u in users]
+    return StandardResponse(
+        success=True,
+        message=f"Found {len(results)} user(s).",
+        data=results
+    )
+
+
 @router.get("/{user_id}", response_model=StandardResponse[UserResponse])
 def get_user_profile_by_id(
     user_id: str,
@@ -303,39 +337,6 @@ def toggle_user_status(
         data=UserResponse.from_orm(updated_user)
     )
 
-
-@router.get("/search", response_model=StandardResponse[List[UserResponse]])
-def search_users(
-    q: Optional[str] = Query(None, description="Partial name or email to search"),
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Search for users by name or email prefix — accessible by any authenticated user.
-    Used by team leaders to find invitees. Returns max 10 results.
-    """
-    if not q or len(q.strip()) < 3:
-        return StandardResponse(
-            success=True,
-            message="Please enter at least 3 characters to search.",
-            data=[]
-        )
-
-    users = (
-        db.query(User)
-        .filter(
-            (User.email.ilike(f"%{q.strip()}%")) | (User.full_name.ilike(f"%{q.strip()}%")), 
-            User.is_active == True
-        )
-        .limit(10)
-        .all()
-    )
-    results = [UserResponse.from_orm(u) for u in users]
-    return StandardResponse(
-        success=True,
-        message=f"Found {len(results)} user(s).",
-        data=results
-    )
 
 
 @router.put("/{user_id}/role", response_model=StandardResponse[UserResponse])
