@@ -235,6 +235,11 @@ export const TeamManagementPage: React.FC = () => {
     );
   }
 
+  const getHackathonName = (hackId: string) => {
+    const hack = allHackathons.find(h => h.id === hackId);
+    return hack ? hack.title : hackId;
+  };
+
   const eligibleHackathons = allHackathons.filter(h => {
     // Show only ongoing/upcoming hackathons where student does not have a team yet
     const hasTeam = myTeamsList.some(t => t.hackathon_id === h.id);
@@ -287,7 +292,7 @@ export const TeamManagementPage: React.FC = () => {
           >
             {myTeamsList.map((t) => (
               <option key={t.id} value={t.id}>
-                {t.name} (Event: {t.hackathon?.title || `ID: ${t.hackathon_id}`})
+                {t.name} — (Hackathon: {getHackathonName(t.hackathon_id)})
               </option>
             ))}
           </select>
@@ -318,68 +323,59 @@ export const TeamManagementPage: React.FC = () => {
         </div>
       ) : (
         /* Active Team Dashboard */
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="flex flex-col gap-6">
           
-          {/* Left 2 Cols: Team Identity & Member Roster */}
-          <div className="lg:col-span-2 flex flex-col gap-6">
+          {/* Top Banner: Team Identity */}
+          <div className="relative overflow-hidden rounded-3xl border border-accent-primary/30 bg-gradient-to-br from-black/80 to-accent-primary/10 p-8 shadow-[0_0_40px_rgba(0,243,255,0.05)] backdrop-blur-xl">
+            {/* Decorative background blur */}
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-accent-primary/20 rounded-full blur-[80px] pointer-events-none" />
             
-            {/* Team Identity Card */}
-            <Card className="flex flex-col gap-6 border-accent-primary/20">
-              
-              <div className="flex items-center justify-between border-b border-white/10 pb-4 flex-wrap gap-4">
-                <div>
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-white/40 block font-semibold">
-                    Hackathon: {activeTeam.hackathon?.title || activeTeam.hackathon_id}
-                  </span>
-                  <h3 className="font-archivo text-2xl font-black text-glow-cyan text-white uppercase mt-1">
-                    {activeTeam.name}
-                  </h3>
+            <div className="relative z-10 flex flex-col md:flex-row md:items-start justify-between gap-6">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-3">
+                  <Badge variant="primary" className="uppercase tracking-widest text-[10px]">
+                    {getHackathonName(activeTeam.hackathon_id)}
+                  </Badge>
+                  <Badge variant={activeTeam.status === 'approved' ? 'success' : 'warning'}>
+                    Team {activeTeam.status}
+                  </Badge>
                 </div>
-
-                <Badge variant={activeTeam.status === 'approved' ? 'success' : 'warning'}>
-                  Team {activeTeam.status}
-                </Badge>
+                <h3 className="font-archivo text-4xl md:text-5xl font-black text-white uppercase tracking-tight mt-2 drop-shadow-lg">
+                  {activeTeam.name}
+                </h3>
               </div>
 
-              {/* Team Leader Info */}
-              {activeTeam.leader && (
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-accent-primary/5 border border-accent-primary/20">
-                  <div className="w-8 h-8 rounded-full bg-accent-primary/10 border border-accent-primary/30 flex items-center justify-center text-accent-primary flex-shrink-0">
-                    <Crown size={14} />
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-accent-primary font-bold block">
-                      Team Leader
-                    </span>
-                    <span className="text-xs font-semibold text-white">
-                      {activeTeam.leader.full_name}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Team Join Code Box */}
-              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 flex items-center justify-between gap-4">
-                <div>
-                  <span className="text-[10px] uppercase tracking-wider text-white/40 block font-semibold">
-                    Unique Team Join Code (Share with classmates to invite them)
-                  </span>
-                  <span className="font-mono text-lg font-bold text-accent-primary tracking-wider">
+              {/* Join Code Display */}
+              <div className="flex flex-col gap-2 md:items-end">
+                <span className="text-[10px] uppercase tracking-wider text-white/50 font-bold">
+                  Unique Team Join Code
+                </span>
+                <div className="flex items-center gap-3 bg-black/40 border border-white/10 p-2 pr-3 rounded-xl backdrop-blur-md">
+                  <div className="px-4 py-2 bg-white/5 rounded-lg border border-white/5 font-mono text-xl font-bold text-accent-primary tracking-[0.2em]">
                     {activeTeam.join_code}
-                  </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    onClick={handleCopyCode}
+                    className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/70 hover:text-white"
+                    title="Copy Join Code"
+                  >
+                    {copiedCode ? <Check size={18} className="text-success" /> : <Copy size={18} />}
+                  </Button>
                 </div>
-
-                <Button
-                  variant="secondary"
-                  onClick={handleCopyCode}
-                  className="h-9 px-4 text-xs flex items-center gap-1.5"
-                >
-                  {copiedCode ? <Check size={14} className="text-success" /> : <Copy size={14} />}
-                  <span>{copiedCode ? 'Copied' : 'Copy Code'}</span>
-                </Button>
+                <p className="text-[10px] text-white/40 text-right max-w-[200px] leading-tight">
+                  Share this code with classmates so they can join your team directly.
+                </p>
               </div>
+            </div>
+          </div>
 
-            </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Left 2 Cols: Member Roster & Invitations */}
+            <div className="lg:col-span-2 flex flex-col gap-6">
+
+
 
             {/* Member Roster Card */}
             <Card className="flex flex-col gap-4">
