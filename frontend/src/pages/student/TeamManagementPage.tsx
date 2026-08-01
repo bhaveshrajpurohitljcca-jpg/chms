@@ -660,6 +660,7 @@ export const TeamManagementPage: React.FC = () => {
           </div>
 
         </div>
+      </div>
       )}
 
       {/* Invite Member Modal */}
