@@ -105,3 +105,15 @@ class Evaluation(BaseTable):
     __table_args__ = (
         UniqueConstraint("submission_id", "judge_id", name="unique_judge_submission_evaluation"),
     )
+
+class JudgeAssignment(BaseTable):
+    __tablename__ = "judge_assignment"
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    judge_id = Column(String(36), ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
+    hackathon_id = Column(String(36), ForeignKey("hackathon.id", ondelete="CASCADE"), nullable=False)
+    submission_id = Column(String(36), ForeignKey("submission.id", ondelete="CASCADE"), nullable=True)
+
+    judge = relationship("User")
+    hackathon = relationship("Hackathon")
+    submission = relationship("Submission")
+

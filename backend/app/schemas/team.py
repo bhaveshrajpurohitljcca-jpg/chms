@@ -32,6 +32,7 @@ class TeamResponse(BaseModel):
     leader: Optional[UserResponse] = None
     members: List[TeamMemberResponse] = []
     created_at: datetime
+    problem_statement_id: Optional[str] = None
 
     class Config:
         orm_mode = True

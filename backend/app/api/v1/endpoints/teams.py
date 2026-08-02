@@ -4,12 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.team import Team, TeamMember, TeamStatus, MemberRole
-from app.models.hackathon import Hackathon
-from app.models.user import User
+from app.models.hackathon import Hackathon, CoordinatorAssignment
+from app.models.user import User, UserRole
 from app.models.invitation import TeamInvitation, InvitationStatus
 from app.schemas.team import TeamCreate, TeamJoin, TeamResponse
 from app.schemas.invitation import InvitationCreate, InvitationResponse
 from app.schemas.response import StandardResponse
+from app.schemas.user import UserResponse
 from app.api.deps import get_current_active_user
 
 router = APIRouter(prefix="/teams", tags=["Teams"])
@@ -18,10 +19,26 @@ router = APIRouter(prefix="/teams", tags=["Teams"])
 @router.get("", response_model=StandardResponse[List[TeamResponse]])
 def list_teams(
     hackathon_id: str = None,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     query = db.query(Team)
-    if hackathon_id:
+    
+    if current_user.role == UserRole.COORDINATOR:
+        # Get assigned hackathons for this coordinator
+        assigned_ids = [a.hackathon_id for a in db.query(CoordinatorAssignment).filter(
+            CoordinatorAssignment.coordinator_id == current_user.id
+        ).all()]
+        if hackathon_id:
+            if hackathon_id not in assigned_ids:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied. This hackathon is not assigned to you."
+                )
+            query = query.filter(Team.hackathon_id == hackathon_id)
+        else:
+            query = query.filter(Team.hackathon_id.in_(assigned_ids))
+    elif hackathon_id:
         query = query.filter(Team.hackathon_id == hackathon_id)
     
     teams = query.order_by(Team.created_at.desc()).all()
@@ -31,6 +48,7 @@ def list_teams(
         message="Teams list retrieved.",
         data=results
     )
+
 
 
 @router.get("/my-teams", response_model=StandardResponse[List[TeamResponse]])
@@ -60,6 +78,20 @@ def create_team(
     hackathon = db.query(Hackathon).filter(Hackathon.id == payload.hackathon_id).first()
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found.")
+
+    # Prevent duplicate team participation in the same hackathon
+    member_records = db.query(TeamMember).filter(TeamMember.user_id == current_user.id).all()
+    team_ids = [m.team_id for m in member_records]
+    if team_ids:
+        already_joined = db.query(Team).filter(
+            Team.id.in_(team_ids),
+            Team.hackathon_id == hackathon.id
+        ).first()
+        if already_joined:
+            raise HTTPException(
+                status_code=400,
+                detail="You are already participating in a team for this hackathon."
+            )
 
     join_code = secrets.token_hex(4).upper()
     team = Team(
@@ -98,6 +130,20 @@ def join_team(
     if not team:
         raise HTTPException(status_code=404, detail="Invalid team join code.")
 
+    # Prevent duplicate team participation in the same hackathon
+    member_records = db.query(TeamMember).filter(TeamMember.user_id == current_user.id).all()
+    team_ids = [m.team_id for m in member_records]
+    if team_ids:
+        already_joined = db.query(Team).filter(
+            Team.id.in_(team_ids),
+            Team.hackathon_id == team.hackathon_id
+        ).first()
+        if already_joined:
+            raise HTTPException(
+                status_code=400,
+                detail="You are already participating in a team for this hackathon."
+            )
+
     existing_member = db.query(TeamMember).filter(
         TeamMember.team_id == team.id,
         TeamMember.user_id == current_user.id
@@ -117,6 +163,134 @@ def join_team(
     return StandardResponse(
         success=True,
         message=f"Successfully joined team '{team.name}'!",
+        data=TeamResponse.from_orm(team)
+    )
+
+# ==========================================
+# LEAVE TEAM
+# ==========================================
+
+@router.post("/{team_id}/leave", response_model=StandardResponse[dict])
+def leave_team(
+    team_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Student leaves a team they are a member of. Leaders cannot leave — they must transfer leadership first or delete the team."""
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found.")
+
+    # Check if user is a member
+    member = db.query(TeamMember).filter(
+        TeamMember.team_id == team.id,
+        TeamMember.user_id == current_user.id
+    ).first()
+    if not member:
+        raise HTTPException(status_code=400, detail="You are not a member of this team.")
+
+    # Leader cannot leave
+    if team.leader_id == current_user.id:
+        raise HTTPException(
+            status_code=400,
+            detail="As the team leader, you cannot leave the team. Transfer leadership first or delete the team."
+        )
+
+    db.delete(member)
+    db.commit()
+
+    return StandardResponse(
+        success=True,
+        message=f"You have left team '{team.name}'.",
+        data={"team_id": team.id}
+    )
+
+# ==========================================
+# DELETE TEAM
+# ==========================================
+
+@router.delete("/{team_id}", response_model=StandardResponse[dict])
+def delete_team(
+    team_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Only the team leader can delete the team. Removes all members and invitations."""
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found.")
+
+    if team.leader_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the team leader can delete the team.")
+
+    # Delete all members
+    db.query(TeamMember).filter(TeamMember.team_id == team.id).delete()
+    # Delete all invitations
+    db.query(TeamInvitation).filter(TeamInvitation.team_id == team.id).delete()
+    # Delete the team
+    db.delete(team)
+    db.commit()
+
+    return StandardResponse(
+        success=True,
+        message=f"Team '{team.name}' has been permanently deleted.",
+        data={"team_id": team_id}
+    )
+
+
+# ==========================================
+# TRANSFER LEADERSHIP
+# ==========================================
+
+@router.post("/{team_id}/transfer-leadership", response_model=StandardResponse[TeamResponse])
+def transfer_leadership(
+    team_id: str,
+    payload: dict,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Transfer leadership to another member of the team."""
+    new_leader_id = payload.get("new_leader_id")
+    if not new_leader_id:
+        raise HTTPException(status_code=400, detail="new_leader_id is required.")
+
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found.")
+
+    if team.leader_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the current leader can transfer leadership.")
+
+    # Verify new leader is a member
+    new_leader_member = db.query(TeamMember).filter(
+        TeamMember.team_id == team.id,
+        TeamMember.user_id == new_leader_id
+    ).first()
+    if not new_leader_member:
+        raise HTTPException(status_code=400, detail="The selected user is not a member of this team.")
+
+    # Cannot transfer to self
+    if new_leader_id == current_user.id:
+        raise HTTPException(status_code=400, detail="You are already the leader.")
+
+    # Update team leader
+    team.leader_id = new_leader_id
+
+    # Update roles
+    old_leader_member = db.query(TeamMember).filter(
+        TeamMember.team_id == team.id,
+        TeamMember.user_id == current_user.id
+    ).first()
+    if old_leader_member:
+        old_leader_member.role_in_team = MemberRole.MEMBER
+    new_leader_member.role_in_team = MemberRole.LEADER
+
+    db.commit()
+    db.refresh(team)
+
+    return StandardResponse(
+        success=True,
+        message=f"Leadership transferred successfully.",
         data=TeamResponse.from_orm(team)
     )
 
@@ -179,6 +353,34 @@ def send_invitation(
             detail="A pending invitation has already been sent to this email address."
         )
 
+    # Check for auto-accept feature
+    if getattr(invitee, 'auto_accept_invites', False):
+        # Auto-join logic
+        new_member = TeamMember(
+            team_id=team.id,
+            user_id=invitee.id,
+            role_in_team=MemberRole.MEMBER
+        )
+        db.add(new_member)
+        
+        # We still create an ACCEPTED invitation record for history/tracking
+        invitation = TeamInvitation(
+            team_id=team.id,
+            invited_by_id=current_user.id,
+            invitee_email=payload.invitee_email.lower(),
+            status=InvitationStatus.ACCEPTED
+        )
+        db.add(invitation)
+        db.commit()
+        db.refresh(invitation)
+        
+        return StandardResponse(
+            success=True,
+            message=f"{invitee.full_name} had Auto-Join enabled and has been added to your team immediately!",
+            data=InvitationResponse.from_orm(invitation)
+        )
+
+    # Standard invitation process
     invitation = TeamInvitation(
         team_id=team.id,
         invited_by_id=current_user.id,
@@ -193,6 +395,39 @@ def send_invitation(
         success=True,
         message=f"Invitation sent to {payload.invitee_email}.",
         data=InvitationResponse.from_orm(invitation)
+    )
+
+@router.get("/{team_id}/eligible-users", response_model=StandardResponse[List[UserResponse]])
+def get_eligible_users(
+    team_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Returns a list of students who have NOT joined any team in the hackathon that this team belongs to.
+    """
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found.")
+        
+    hackathon_id = team.hackathon_id
+    
+    # Subquery: get all user_ids of students who are already in a team for this hackathon
+    busy_user_ids_query = db.query(TeamMember.user_id).join(Team).filter(Team.hackathon_id == hackathon_id)
+    
+    # Query: get all active students NOT in the subquery
+    eligible_users = db.query(User).filter(
+        User.role == UserRole.STUDENT,
+        User.is_active == True,
+        ~User.id.in_(busy_user_ids_query)
+    ).limit(50).all()
+    
+    results = [UserResponse.from_orm(u) for u in eligible_users]
+    
+    return StandardResponse(
+        success=True,
+        message=f"Found {len(results)} eligible students.",
+        data=results
     )
 
 
@@ -258,6 +493,20 @@ def accept_invitation(
     team = db.query(Team).filter(Team.id == invitation.team_id).first()
     if not team:
         raise HTTPException(status_code=404, detail="Team no longer exists.")
+
+    # Prevent duplicate team participation in the same hackathon
+    member_records = db.query(TeamMember).filter(TeamMember.user_id == current_user.id).all()
+    team_ids = [m.team_id for m in member_records]
+    if team_ids:
+        already_joined = db.query(Team).filter(
+            Team.id.in_(team_ids),
+            Team.hackathon_id == team.hackathon_id
+        ).first()
+        if already_joined:
+            raise HTTPException(
+                status_code=400,
+                detail="You are already participating in a team for this hackathon."
+            )
 
     # Check capacity again at acceptance time
     current_member_count = db.query(TeamMember).filter(TeamMember.team_id == team.id).count()

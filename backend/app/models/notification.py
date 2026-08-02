@@ -14,6 +14,7 @@ class NotificationType(str, enum.Enum):
     HACKATHON_EVENT = "hackathon_event"
     SUBMISSION_EVENT = "submission_event"
     RESULT_PUBLICATION = "result_publication"
+    ANNOUNCEMENT = "announcement"
 
 
 class Notification(BaseTable):

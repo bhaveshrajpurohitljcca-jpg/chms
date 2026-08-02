@@ -68,7 +68,51 @@ def seed_database(db: Session, engine):
         bio="Platform Administrator."
     )
 
-    db.add_all([student, coordinator, judge, admin])
+    # 5 Dummy Students for testing search and auto-join
+    dummy1 = User(
+        email="john.doe@college.edu",
+        hashed_password=pwd,
+        full_name="John Doe",
+        role=UserRole.STUDENT,
+        department="Computer Science & Engineering",
+        college_id="CS2026-001"
+    )
+    dummy2 = User(
+        email="jane.smith@college.edu",
+        hashed_password=pwd,
+        full_name="Jane Smith",
+        role=UserRole.STUDENT,
+        department="Information Technology",
+        college_id="IT2026-002"
+    )
+    dummy3 = User(
+        email="mark.zuk@college.edu",
+        hashed_password=pwd,
+        full_name="Mark Zuckerberg",
+        role=UserRole.STUDENT,
+        department="Computer Science & Engineering",
+        college_id="CS2026-003",
+        auto_accept_invites=True # For testing auto-join
+    )
+    dummy4 = User(
+        email="ada.lovelace@college.edu",
+        hashed_password=pwd,
+        full_name="Ada Lovelace",
+        role=UserRole.STUDENT,
+        department="Mathematics",
+        college_id="MT2026-004",
+        auto_accept_invites=True
+    )
+    dummy5 = User(
+        email="alan.turing@college.edu",
+        hashed_password=pwd,
+        full_name="Alan Turing",
+        role=UserRole.STUDENT,
+        department="Computer Science & Engineering",
+        college_id="CS2026-005"
+    )
+
+    db.add_all([student, coordinator, judge, admin, dummy1, dummy2, dummy3, dummy4, dummy5])
     db.flush()
 
     # 2. Create Hackathons

@@ -35,7 +35,8 @@ def register_user(db: Session, user_in: UserRegister) -> User:
         department=user_in.department,
         college_id=user_in.college_id,
         bio=user_in.bio,
-        phone=user_in.phone
+        phone=user_in.phone,
+        semester=user_in.semester
     )
     db.add(db_user)
     db.commit()
@@ -97,6 +98,8 @@ def update_profile(db: Session, db_user: User, update_in: UserProfileUpdate) -> 
         db_user.bio = update_in.bio
     if update_in.phone is not None:
         db_user.phone = update_in.phone
+    if update_in.auto_accept_invites is not None:
+        db_user.auto_accept_invites = update_in.auto_accept_invites
 
     db.commit()
     db.refresh(db_user)
@@ -106,6 +109,11 @@ def update_user_admin(db: Session, db_user: User, update_in: UserUpdateAdmin) ->
     """
     Allows Admin to update any user profile field including role and active state.
     """
+    if update_in.email is not None:
+        db_user.email = update_in.email
+    if update_in.password is not None and update_in.password.strip() != "":
+        from app.core.security import hash_password
+        db_user.hashed_password = hash_password(update_in.password)
     if update_in.full_name is not None:
         db_user.full_name = update_in.full_name
     if update_in.role is not None:
@@ -122,6 +130,8 @@ def update_user_admin(db: Session, db_user: User, update_in: UserUpdateAdmin) ->
         db_user.phone = update_in.phone
     if update_in.is_active is not None:
         db_user.is_active = update_in.is_active
+    if update_in.auto_accept_invites is not None:
+        db_user.auto_accept_invites = update_in.auto_accept_invites
 
     db.commit()
     db.refresh(db_user)

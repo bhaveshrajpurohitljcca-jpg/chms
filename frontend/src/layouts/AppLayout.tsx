@@ -232,9 +232,10 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setIsMobileOpen(true)}
-              className="lg:hidden p-2 -ml-2 rounded-lg text-white/60 hover:text-white hover:bg-[rgba(255,255,255,0.05)]"
+              className="lg:hidden p-2.5 rounded-xl border border-[rgba(255,255,255,0.18)] text-white bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(0,243,255,0.08)] hover:border-accent-primary/50 hover:text-accent-primary transition-all duration-300 shadow-[0_0_10px_rgba(0,0,0,0.3)]"
+              aria-label="Open navigation menu"
             >
-              <Menu size={20} />
+              <Menu size={22} />
             </button>
             <h1 className="font-archivo text-xl uppercase tracking-wider font-black text-white">
               CHMS Platform
@@ -272,10 +273,10 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
             onClick={() => setIsMobileOpen(false)}
           />
           {/* Drawer Panel */}
-          <div className="relative w-64 max-w-xs h-full bg-[#050505] flex flex-col z-50">
+          <div className="relative w-72 max-w-xs h-full bg-[#050505] flex flex-col z-50 shadow-[4px_0_40px_rgba(0,0,0,0.6)] border-r border-[rgba(255,255,255,0.08)] animate-[slideInLeft_0.25s_ease-out]">
             <button 
               onClick={() => setIsMobileOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-white"
+              className="absolute top-4 right-4 p-2 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-white hover:text-accent-primary hover:border-accent-primary/30 transition-all"
             >
               <X size={16} />
             </button>

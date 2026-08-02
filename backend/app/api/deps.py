@@ -66,6 +66,25 @@ def get_current_active_user(current_user: User = Depends(get_current_user)) -> U
         )
     return current_user
 
+def get_current_user_optional(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    db: Session = Depends(get_db)
+) -> Optional[User]:
+    """
+    Optional authentication handler. Decodes token if provided,
+    but does NOT raise HTTP 401 exceptions if token is missing or expired.
+    """
+    if not credentials or not credentials.credentials:
+        return None
+    try:
+        payload = decode_access_token(credentials.credentials)
+        if not payload or "sub" not in payload:
+            return None
+        user_id = payload["sub"]
+        return db.query(User).filter(User.id == user_id, User.is_deleted == False).first()
+    except Exception:
+        return None
+
 ROLE_RANK = {
     UserRole.STUDENT: 1,
     UserRole.JUDGE: 2,

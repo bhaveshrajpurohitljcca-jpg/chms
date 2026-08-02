@@ -1,42 +1,52 @@
-from typing import List, Optional
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.registration import Registration, RegistrationStatus
 from app.models.team import Team, TeamMember
-from app.models.hackathon import Hackathon, ProblemStatement
+from app.models.hackathon import Hackathon, ProblemStatement, CoordinatorAssignment
 from app.models.user import User, UserRole
 from app.schemas.registration import RegistrationCreate, RegistrationResponse
 from app.schemas.response import StandardResponse
-from app.api.deps import get_current_active_user, RoleChecker
+from app.api.deps import get_current_active_user
+from typing import Optional
 
 router = APIRouter(prefix="/registrations", tags=["Registrations"])
 
 
 @router.get("", response_model=StandardResponse[List[RegistrationResponse]])
-def list_all_registrations(
+def list_registrations(
     hackathon_id: Optional[str] = None,
-    status_filter: Optional[RegistrationStatus] = None,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(RoleChecker([UserRole.ADMIN, UserRole.COORDINATOR]))
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
 ):
     """
-    List all registrations. Coordinator/Admin only.
-    Optionally filter by hackathon_id or status.
+    List all registrations. Admin sees all. Coordinator sees only assigned hackathons.
+    Optionally filter by hackathon_id.
     """
     query = db.query(Registration)
 
-    if hackathon_id:
-        query = query.filter(Registration.hackathon_id == hackathon_id)
-    if status_filter:
-        query = query.filter(Registration.status == status_filter)
+    if current_user.role == UserRole.COORDINATOR:
+        assigned_ids = [a.hackathon_id for a in db.query(CoordinatorAssignment).filter(
+            CoordinatorAssignment.coordinator_id == current_user.id
+        ).all()]
+        if hackathon_id:
+            if hackathon_id not in assigned_ids:
+                raise HTTPException(status_code=403, detail="You are not assigned to this hackathon.")
+            query = query.filter(Registration.hackathon_id == hackathon_id)
+        else:
+            query = query.filter(Registration.hackathon_id.in_(assigned_ids))
+    elif current_user.role == UserRole.ADMIN:
+        if hackathon_id:
+            query = query.filter(Registration.hackathon_id == hackathon_id)
+    else:
+        raise HTTPException(status_code=403, detail="Only admin or coordinator can list all registrations.")
 
     registrations = query.order_by(Registration.created_at.desc()).all()
     results = [RegistrationResponse.from_orm(r) for r in registrations]
-
     return StandardResponse(
         success=True,
-        message="All registrations retrieved.",
+        message=f"Found {len(results)} registration(s).",
         data=results
     )
 
@@ -168,5 +178,57 @@ def get_registration(
     return StandardResponse(
         success=True,
         message="Registration retrieved.",
+        data=RegistrationResponse.from_orm(registration)
+    )
+
+
+@router.put("/{registration_id}/problem-statement", response_model=StandardResponse[RegistrationResponse])
+def select_problem_statement(
+    registration_id: str,
+    payload: dict,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Allows the team leader to select or change their problem statement choice.
+    Used particularly for hackathons that release problem statements on the event day.
+    """
+    registration = db.query(Registration).filter(Registration.id == registration_id).first()
+    if not registration:
+        raise HTTPException(status_code=404, detail="Registration not found.")
+
+    team = registration.team
+    if not team:
+        raise HTTPException(status_code=404, detail="Associated team not found.")
+
+    # Only the team leader can select the problem statement
+    if team.leader_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the team leader can select or modify the problem statement choice."
+        )
+
+    ps_id = payload.get("problem_statement_id")
+    if not ps_id:
+        raise HTTPException(status_code=400, detail="problem_statement_id is required.")
+
+    # Validate problem statement belongs to this hackathon
+    ps = db.query(ProblemStatement).filter(
+        ProblemStatement.id == ps_id,
+        ProblemStatement.hackathon_id == registration.hackathon_id
+    ).first()
+    if not ps:
+        raise HTTPException(
+            status_code=400,
+            detail="Selected problem statement does not belong to this hackathon."
+        )
+
+    registration.problem_statement_id = ps_id
+    db.commit()
+    db.refresh(registration)
+
+    return StandardResponse(
+        success=True,
+        message=f"Successfully selected problem statement '{ps.title}' for team '{team.name}'!",
         data=RegistrationResponse.from_orm(registration)
     )

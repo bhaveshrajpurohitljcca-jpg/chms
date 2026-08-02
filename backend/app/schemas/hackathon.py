@@ -43,6 +43,7 @@ class HackathonCreate(BaseModel):
     min_team_size: Optional[int] = 1
     status: Optional[HackathonStatus] = HackathonStatus.UPCOMING
     banner_url: Optional[str] = None
+    announce_ps_advance: Optional[bool] = True
 
 class HackathonUpdate(BaseModel):
     title: Optional[str] = None
@@ -70,6 +71,8 @@ class HackathonResponse(BaseModel):
     min_team_size: int
     status: HackathonStatus
     banner_url: Optional[str] = None
+    results_published: bool = False
+    announce_ps_advance: bool = True
     problem_statements: List[ProblemStatementResponse] = []
     created_at: datetime
 

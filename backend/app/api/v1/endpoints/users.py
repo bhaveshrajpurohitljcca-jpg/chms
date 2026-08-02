@@ -19,6 +19,49 @@ from app.services import user_service
 
 router = APIRouter(prefix="/users", tags=["Users & Profiles"])
 
+@router.post("/reset-system", response_model=StandardResponse[bool])
+def reset_system(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Wipes all data in the system and re-seeds it. Restricted to Admin role.
+    """
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Only system administrators can reset the platform."
+        )
+
+    try:
+        from app.models.submission import Evaluation, Submission
+        from app.models.team import TeamMember, Team
+        from app.models.hackathon import ProblemStatement, Hackathon, CoordinatorAssignment
+        from app.models.registration import Registration
+        from app.models.base import Base
+        from app.core.seed import seed_database
+        from app.database import engine
+
+        # Wiping database completely by dropping and recreating tables
+        Base.metadata.drop_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
+
+        # Trigger re-seed
+        seed_database(db, engine)
+
+        return StandardResponse(
+            success=True,
+            message="System database wiped and re-seeded successfully.",
+            data=True
+        )
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Reset failed: {str(e)}"
+        )
+
+
 @router.get("/me", response_model=StandardResponse[UserResponse])
 def get_current_user_profile(current_user: User = Depends(get_current_active_user)):
     """
@@ -29,6 +72,40 @@ def get_current_user_profile(current_user: User = Depends(get_current_active_use
         message="Current user profile retrieved.",
         data=UserResponse.from_orm(current_user)
     )
+
+@router.get("/search", response_model=StandardResponse[List[UserResponse]])
+def search_users(
+    q: Optional[str] = Query(None, description="Partial name or email to search"),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Search for users by name or email prefix — accessible by any authenticated user.
+    Used by team leaders to find invitees. Returns max 10 results.
+    """
+    if not q or len(q.strip()) < 3:
+        return StandardResponse(
+            success=True,
+            message="Please enter at least 3 characters to search.",
+            data=[]
+        )
+
+    users = (
+        db.query(User)
+        .filter(
+            (User.email.ilike(f"%{q.strip()}%")) | (User.full_name.ilike(f"%{q.strip()}%")), 
+            User.is_active == True
+        )
+        .limit(10)
+        .all()
+    )
+    results = [UserResponse.from_orm(u) for u in users]
+    return StandardResponse(
+        success=True,
+        message=f"Found {len(results)} user(s).",
+        data=results
+    )
+
 
 @router.get("/{user_id}", response_model=StandardResponse[UserResponse])
 def get_user_profile_by_id(
@@ -261,32 +338,34 @@ def toggle_user_status(
     )
 
 
-@router.get("/search", response_model=StandardResponse[List[UserResponse]])
-def search_users(
-    email: Optional[str] = Query(None, description="Partial email to search"),
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+
+@router.put("/{user_id}/role", response_model=StandardResponse[UserResponse])
+def update_user_role(
+    user_id: str,
+    payload: UserUpdateAdmin,
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(RoleChecker([UserRole.ADMIN]))
 ):
     """
-    Search for users by email prefix — accessible by any authenticated user.
-    Used by team leaders to find invitees. Returns max 10 results.
+    Updates a user's role. Restricted to Admin.
     """
-    if not email or len(email.strip()) < 3:
-        return StandardResponse(
-            success=True,
-            message="Please enter at least 3 characters to search.",
-            data=[]
+    db_user = user_service.get_user_by_id(db, user_id=user_id)
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found."
         )
-
-    users = (
-        db.query(User)
-        .filter(User.email.ilike(f"%{email.strip()}%"), User.is_active == True)
-        .limit(10)
-        .all()
-    )
-    results = [UserResponse.from_orm(u) for u in users]
+    if payload.role is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Role parameter is required."
+        )
+    db_user.role = payload.role
+    db.commit()
+    db.refresh(db_user)
     return StandardResponse(
         success=True,
-        message=f"Found {len(results)} user(s).",
-        data=results
+        message="User role updated successfully.",
+        data=UserResponse.from_orm(db_user)
     )
+

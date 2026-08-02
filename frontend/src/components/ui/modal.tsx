@@ -38,18 +38,18 @@ export const Modal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
       {/* Backdrop overlay */}
       <div 
-        className="absolute inset-0 bg-black/80 backdrop-blur-[6px] transition-opacity duration-500" 
+        className="fixed inset-0 bg-black/80 backdrop-blur-[6px] transition-opacity duration-500" 
         onClick={onClose}
       />
       
       {/* Modal Dialog */}
-      <div className={`relative w-full ${sizes[size]} rounded-dialog glass-card bg-[#050505]/95 border border-[rgba(255,255,255,0.12)] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-10 transform scale-100 transition-transform duration-500 ease-out flex flex-col gap-4 max-h-[90vh]`}>
+      <div className={`relative w-full ${sizes[size]} rounded-dialog glass-card bg-[#050505]/95 border border-[rgba(255,255,255,0.12)] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-10 my-auto transform scale-100 transition-transform duration-500 ease-out flex flex-col gap-4 max-h-[90vh] overflow-hidden`}>
         
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] pb-4">
+        <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] pb-4 flex-shrink-0">
           {title ? (
             <h3 className="font-archivo text-lg uppercase tracking-wider font-black text-white">
               {title}
@@ -64,7 +64,7 @@ export const Modal = ({
         </div>
 
         {/* Content body */}
-        <div className="overflow-y-auto pr-1 flex-1">
+        <div className="overflow-y-auto pr-1 flex-1 min-h-0">
           {children}
         </div>
       </div>

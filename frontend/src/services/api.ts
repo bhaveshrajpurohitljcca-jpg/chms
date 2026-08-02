@@ -1,6 +1,6 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
-const STATIC_BASE = import.meta.env.VITE_API_BASE_URL
-  ? import.meta.env.VITE_API_BASE_URL.replace('/api/v1', '')
+export const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+const STATIC_BASE = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL)
+  ? (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL).replace('/api/v1', '')
   : 'http://localhost:8000';
 
 // ==========================================
@@ -17,6 +17,7 @@ export interface UserProfile {
   avatar_url?: string;
   bio?: string;
   is_active: boolean;
+  auto_accept_invites?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -59,6 +60,7 @@ export interface BackendHackathon {
   status: 'draft' | 'upcoming' | 'active' | 'ended';
   banner_url?: string;
   problem_statements: BackendProblemStatement[];
+  announce_ps_advance: boolean;
   created_at: string;
 }
 
@@ -80,6 +82,7 @@ export interface BackendTeam {
   status: 'pending' | 'approved' | 'rejected';
   leader?: UserProfile;
   members: BackendTeamMember[];
+  hackathon?: BackendHackathon;
   created_at: string;
 }
 
@@ -249,6 +252,8 @@ export const apiService = {
     department?: string;
     college_id?: string;
     bio?: string;
+    phone?: string;
+    semester?: string;
   }) {
     return request<AuthResponseData>('/auth/register', {
       method: 'POST',
@@ -267,6 +272,7 @@ export const apiService = {
     college_id?: string;
     avatar_url?: string;
     bio?: string;
+    auto_accept_invites?: boolean;
   }) {
     return request<UserProfile>('/users/profile', {
       method: 'PUT',
@@ -304,9 +310,9 @@ export const apiService = {
     });
   },
 
-  /** Search users by email (min 3 chars). Accessible to all authenticated users. */
-  async searchUsers(email: string) {
-    return request<UserProfile[]>(`/users/search?email=${encodeURIComponent(email)}`);
+  /** Search users by name or email (min 3 chars). Accessible to all authenticated users. */
+  async searchUsers(query: string) {
+    return request<UserProfile[]>(`/users/search?q=${encodeURIComponent(query)}`);
   },
 
   async updateUserStatus(userId: string, isActive: boolean) {
@@ -321,6 +327,69 @@ export const apiService = {
       method: 'DELETE',
     });
   },
+
+  async updateUser(userId: string, payload: {
+    email?: string;
+    password?: string;
+    full_name?: string;
+    role?: string;
+    department?: string;
+    college_id?: string;
+    avatar_url?: string;
+    bio?: string;
+    is_active?: boolean;
+  }) {
+    return request<UserProfile>(`/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  // ─── Assignments ───────────────────────────────────────────
+  async listJudgeAssignments() {
+    return request<any[]>('/assignments/judges');
+  },
+
+  async createJudgeAssignment(judgeId: string, hackathonId: string, submissionId?: string) {
+    return request<any>('/assignments/judges', {
+      method: 'POST',
+      body: JSON.stringify({
+        judge_id: judgeId,
+        hackathon_id: hackathonId,
+        submission_id: submissionId || null
+      }),
+    });
+  },
+
+  async deleteJudgeAssignment(judgeId: string, hackathonId: string, submissionId?: string) {
+    const url = submissionId 
+      ? `/assignments/judges/${judgeId}/${hackathonId}/${submissionId}`
+      : `/assignments/judges/${judgeId}/${hackathonId}`;
+    return request<any>(url, {
+      method: 'DELETE',
+    });
+  },
+
+  async listCoordinatorAssignments() {
+    return request<any[]>('/assignments/coordinators');
+  },
+
+  async createCoordinatorAssignment(coordinatorId: string, hackathonId: string) {
+    return request<any>('/assignments/coordinators', {
+      method: 'POST',
+      body: JSON.stringify({
+        coordinator_id: coordinatorId,
+        hackathon_id: hackathonId
+      }),
+    });
+  },
+
+  async deleteCoordinatorAssignment(coordinatorId: string, hackathonId: string) {
+    return request<any>(`/assignments/coordinators/${coordinatorId}/${hackathonId}`, {
+      method: 'DELETE',
+    });
+  },
+
 
   // ─── Hackathons ────────────────────────────────────────────
   async listHackathons(statusFilter?: string) {
@@ -352,6 +421,7 @@ export const apiService = {
     max_team_size?: number;
     min_team_size?: number;
     status?: string;
+    announce_ps_advance?: boolean;
   }) {
     return request<any>('/hackathons', {
       method: 'POST',
@@ -362,6 +432,46 @@ export const apiService = {
   async getHackathon(idOrSlug: string) {
     return request<BackendHackathon>(`/hackathons/${idOrSlug}`);
   },
+
+  async updateHackathon(hackathonId: string, payload: {
+    title: string;
+    slug: string;
+    tagline?: string;
+    description?: string;
+    start_date?: string;
+    end_date?: string;
+    registration_deadline?: string;
+    max_team_size?: number;
+    min_team_size?: number;
+    status?: string;
+    banner_url?: string;
+    announce_ps_advance?: boolean;
+  }) {
+    return request<any>(`/hackathons/${hackathonId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async updateProblemStatement(hackathonId: string, problemId: string, payload: {
+    title: string;
+    description: string;
+    category?: string;
+    difficulty?: string;
+    max_teams?: number;
+  }) {
+    return request<any>(`/hackathons/${hackathonId}/problem-statements/${problemId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async deleteProblemStatement(hackathonId: string, problemId: string) {
+    return request<any>(`/hackathons/${hackathonId}/problem-statements/${problemId}`, {
+      method: 'DELETE',
+    });
+  },
+
 
   // ─── Teams ────────────────────────────────────────────────
   async listTeams(hackathonId?: string) {
@@ -387,6 +497,25 @@ export const apiService = {
     });
   },
 
+  async leaveTeam(teamId: string) {
+    return request<{ team_id: string }>(`/teams/${teamId}/leave`, {
+      method: 'POST',
+    });
+  },
+
+  async deleteTeam(teamId: string) {
+    return request<{ team_id: string }>(`/teams/${teamId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async transferLeadership(teamId: string, newLeaderId: string) {
+    return request<BackendTeam>(`/teams/${teamId}/transfer-leadership`, {
+      method: 'POST',
+      body: JSON.stringify({ new_leader_id: newLeaderId }),
+    });
+  },
+
   // ─── Team Invitations ──────────────────────────────────────
   /** Team leader sends invitation to student by email */
   async sendInvitation(teamId: string, invitee_email: string) {
@@ -394,6 +523,11 @@ export const apiService = {
       method: 'POST',
       body: JSON.stringify({ invitee_email }),
     });
+  },
+
+  /** Get eligible students who haven't joined any team in the hackathon */
+  async getEligibleUsers(teamId: string) {
+    return request<UserProfile[]>(`/teams/${teamId}/eligible-users`);
   },
 
   /** Get invitations received by the current user */
@@ -422,6 +556,12 @@ export const apiService = {
   },
 
   // ─── Registrations ──────────────────────────────────────────
+  /** List all registrations for a hackathon (admin/coordinator only) */
+  async listRegistrations(hackathonId?: string) {
+    const query = hackathonId ? `?hackathon_id=${hackathonId}` : '';
+    return request<BackendRegistration[]>(`/registrations${query}`);
+  },
+
   /** Register a team for a hackathon with a problem statement */
   async createRegistration(payload: {
     team_id: string;
@@ -437,6 +577,14 @@ export const apiService = {
   /** Get all registrations for teams the current user belongs to */
   async getMyRegistrations() {
     return request<BackendRegistration[]>('/registrations/my');
+  },
+
+  /** Select or update the problem statement choice for a registration */
+  async selectProblemStatement(registrationId: string, problemStatementId: string) {
+    return request<BackendRegistration>(`/registrations/${registrationId}/problem-statement`, {
+      method: 'PUT',
+      body: JSON.stringify({ problem_statement_id: problemStatementId }),
+    });
   },
 
   // ─── Submissions ───────────────────────────────────────────
@@ -660,4 +808,48 @@ export const apiService = {
       method: 'PUT',
     });
   },
+
+  async sendAnnouncement(payload: {
+    hackathon_id?: string;
+    title: string;
+    message: string;
+    target: string; // "all_users" | "team_leaders" | team_id
+  }) {
+    return request<number>('/notifications/announce', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  // ─── Sprint 5 Leaderboard, Stats & Certificates ────────────
+  async publishResults(hackathonId: string) {
+    return request<any>(`/hackathons/${hackathonId}/publish-results`, {
+      method: 'PUT',
+    });
+  },
+
+  async unpublishResults(hackathonId: string) {
+    return request<any>(`/hackathons/${hackathonId}/unpublish-results`, {
+      method: 'PUT',
+    });
+  },
+
+  async getLeaderboard(hackathonId: string) {
+    return request<any[]>(`/hackathons/${hackathonId}/leaderboard`);
+  },
+
+  async getCertificateEligibility(hackathonId: string) {
+    return request<any>(`/hackathons/${hackathonId}/certificates/eligibility`);
+  },
+
+  async getHackathonStats(hackathonId: string) {
+    return request<any>(`/hackathons/${hackathonId}/stats`);
+  },
+
+  async resetSystem() {
+    return request<any>('/users/reset-system', {
+      method: 'POST',
+    });
+  },
 };
+

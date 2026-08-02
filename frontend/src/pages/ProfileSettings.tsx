@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuth } from '@/context/AuthContext';
-import { ShieldAlert, Check, User as UserIcon, Lock } from 'lucide-react';
+import { ShieldAlert, Check, User as UserIcon, Lock, Eye, EyeOff } from 'lucide-react';
 import Button from '../components/ui/button';
 import Input from '../components/ui/input';
 import Card from '../components/ui/card';
@@ -33,6 +33,10 @@ export default function ProfileSettings() {
   const [pwdError, setPwdError] = useState<string | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [pwdLoading, setPwdLoading] = useState(false);
+
+  const [showCurrentPwd, setShowCurrentPwd] = useState(false);
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [showConfirmNewPwd, setShowConfirmNewPwd] = useState(false);
 
   const {
     register: registerProfile,
@@ -186,29 +190,59 @@ export default function ProfileSettings() {
           )}
 
           <form onSubmit={handlePwdSubmit(onChangePassword)} className="flex flex-col gap-4">
-            <Input
-              label="Current Access Code"
-              placeholder="••••••••"
-              type="password"
-              error={pwdErrors.currentPassword?.message}
-              {...registerPwd('currentPassword')}
-            />
+            <div className="relative">
+              <Input
+                label="Current Access Code"
+                placeholder="••••••••"
+                type={showCurrentPwd ? 'text' : 'password'}
+                error={pwdErrors.currentPassword?.message}
+                className="pr-12"
+                {...registerPwd('currentPassword')}
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrentPwd(!showCurrentPwd)}
+                className="absolute right-3.5 top-[38px] text-zinc-400 hover:text-white transition-colors z-10"
+              >
+                {showCurrentPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
 
-            <Input
-              label="New Access Code"
-              placeholder="••••••••"
-              type="password"
-              error={pwdErrors.newPassword?.message}
-              {...registerPwd('newPassword')}
-            />
+            <div className="relative">
+              <Input
+                label="New Access Code"
+                placeholder="••••••••"
+                type={showNewPwd ? 'text' : 'password'}
+                error={pwdErrors.newPassword?.message}
+                className="pr-12"
+                {...registerPwd('newPassword')}
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPwd(!showNewPwd)}
+                className="absolute right-3.5 top-[38px] text-zinc-400 hover:text-white transition-colors z-10"
+              >
+                {showNewPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
 
-            <Input
-              label="Confirm New Access Code"
-              placeholder="••••••••"
-              type="password"
-              error={pwdErrors.confirmPassword?.message}
-              {...registerPwd('confirmPassword')}
-            />
+            <div className="relative">
+              <Input
+                label="Confirm New Access Code"
+                placeholder="••••••••"
+                type={showConfirmNewPwd ? 'text' : 'password'}
+                error={pwdErrors.confirmPassword?.message}
+                className="pr-12"
+                {...registerPwd('confirmPassword')}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmNewPwd(!showConfirmNewPwd)}
+                className="absolute right-3.5 top-[38px] text-zinc-400 hover:text-white transition-colors z-10"
+              >
+                {showConfirmNewPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
 
             <Button
               type="submit"

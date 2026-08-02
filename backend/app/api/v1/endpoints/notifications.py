@@ -1,8 +1,12 @@
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 from app.database import get_db
-from app.models.user import User
+from app.models.user import User, UserRole
+from app.models.team import Team, TeamMember
+from app.models.notification import NotificationType
+from app.models.hackathon import CoordinatorAssignment
 from app.api.deps import get_current_active_user
 from app.schemas.response import StandardResponse
 from app.schemas.notification import (
@@ -13,6 +17,100 @@ from app.schemas.notification import (
 from app.services.notification_service import notification_service
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
+
+
+# ─── Announcement Schema ───
+class AnnouncementCreate(BaseModel):
+    hackathon_id: Optional[str] = None
+    title: str
+    message: str
+    target: str  # "all_platform_users" | "all_users" | "team_leaders" | team_id (UUID)
+
+
+@router.post("/announce", response_model=StandardResponse[int])
+def send_announcement(
+    payload: AnnouncementCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Send an announcement notification.
+    Target options:
+    - "all_platform_users": all active users in the system (requires admin/coordinator)
+    - "all_users": all team members registered in the hackathon (requires hackathon_id)
+    - "team_leaders": only team leaders in the hackathon (requires hackathon_id)
+    - "<team_id>": all members of a specific team (requires hackathon_id)
+    """
+    # Authorization check
+    if payload.target != "all_platform_users" and payload.hackathon_id:
+        if current_user.role == UserRole.COORDINATOR:
+            assigned = db.query(CoordinatorAssignment).filter(
+                CoordinatorAssignment.coordinator_id == current_user.id,
+                CoordinatorAssignment.hackathon_id == payload.hackathon_id
+            ).first()
+            if not assigned:
+                raise HTTPException(status_code=403, detail="You are not assigned to this hackathon.")
+        elif current_user.role != UserRole.ADMIN:
+            raise HTTPException(status_code=403, detail="Only coordinators and admins can send announcements.")
+    else:
+        # Platform-wide announcement
+        if current_user.role not in [UserRole.ADMIN, UserRole.COORDINATOR]:
+            raise HTTPException(status_code=403, detail="Only coordinators and admins can send platform-wide announcements.")
+
+    # Resolve target user IDs
+    target_user_ids: list[str] = []
+
+    if payload.target == "all_platform_users":
+        # All active users on the platform
+        active_users = db.query(User).filter(User.is_active == True).all()
+        target_user_ids = [u.id for u in active_users]
+    else:
+        if not payload.hackathon_id:
+            raise HTTPException(status_code=400, detail="hackathon_id is required for this target type.")
+        
+        # Get all teams in this hackathon
+        hackathon_teams = db.query(Team).filter(Team.hackathon_id == payload.hackathon_id).all()
+        hackathon_team_ids = [t.id for t in hackathon_teams]
+
+        if payload.target == "all_users":
+            # All members of all teams in this hackathon
+            members = db.query(TeamMember).filter(TeamMember.team_id.in_(hackathon_team_ids)).all()
+            target_user_ids = list(set(m.user_id for m in members))
+        elif payload.target == "team_leaders":
+            # Only leaders
+            members = db.query(TeamMember).filter(
+                TeamMember.team_id.in_(hackathon_team_ids),
+                TeamMember.role_in_team == "leader"
+            ).all()
+            target_user_ids = list(set(m.user_id for m in members))
+        else:
+            # Specific team ID
+            team = db.query(Team).filter(Team.id == payload.target, Team.hackathon_id == payload.hackathon_id).first()
+            if not team:
+                raise HTTPException(status_code=404, detail="Team not found in this hackathon.")
+            members = db.query(TeamMember).filter(TeamMember.team_id == team.id).all()
+            target_user_ids = [m.user_id for m in members]
+
+    if not target_user_ids:
+        raise HTTPException(status_code=400, detail="No recipients found for this announcement target.")
+
+    # Create notifications for each user
+    count = 0
+    for uid in target_user_ids:
+        notification_service.create_notification(
+            db=db,
+            user_id=uid,
+            type=NotificationType.ANNOUNCEMENT,
+            title=payload.title,
+            message=payload.message
+        )
+        count += 1
+
+    return StandardResponse(
+        success=True,
+        message=f"Announcement sent to {count} user(s).",
+        data=count
+    )
 
 
 @router.get("", response_model=StandardResponse[NotificationListResponse])

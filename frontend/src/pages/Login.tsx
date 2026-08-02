@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { Zap, ShieldAlert } from 'lucide-react';
+import { Zap, ShieldAlert, Eye, EyeOff } from 'lucide-react';
 import Button from '../components/ui/button';
 import Input from '../components/ui/input';
 import Card from '../components/ui/card';
@@ -21,6 +21,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -84,13 +85,23 @@ export default function Login() {
               {...register('email')}
             />
 
-            <Input
-              label="Access Code (Password)"
-              placeholder="••••••••"
-              type="password"
-              error={errors.password?.message}
-              {...register('password')}
-            />
+            <div className="relative">
+              <Input
+                label="Access Code (Password)"
+                placeholder="••••••••"
+                type={showPassword ? 'text' : 'password'}
+                error={errors.password?.message}
+                className="pr-12"
+                {...register('password')}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-[38px] text-zinc-400 hover:text-white transition-colors z-10"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
 
             <Button
               type="submit"
