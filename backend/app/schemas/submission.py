@@ -1,9 +1,13 @@
 from typing import Optional, List
 from datetime import datetime
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 import re
 
 GITHUB_URL_REGEX = re.compile(r'^https://github\.com/[\w\-\.]+/[\w\-\.]+/?$')
+
+# ─────────────────────────────────────────────────────────────────
+# Submission Schemas
+# ─────────────────────────────────────────────────────────────────
 
 class SubmissionCreate(BaseModel):
     team_id: str
@@ -60,6 +64,102 @@ class SubmissionUpdate(BaseModel):
         return v
 
 
+# ─────────────────────────────────────────────────────────────────
+# Judge Assignment Schemas
+# ─────────────────────────────────────────────────────────────────
+
+class JudgeAssignmentCreate(BaseModel):
+    submission_id: str
+    judge_id: str
+
+
+class JudgeUserInfo(BaseModel):
+    id: str
+    full_name: str
+    email: str
+
+    class Config:
+        from_attributes = True
+
+
+class JudgeAssignmentResponse(BaseModel):
+    id: str
+    submission_id: str
+    judge_id: str
+    assigned_by_id: Optional[str] = None
+    assigned_at: datetime
+    judge: Optional[JudgeUserInfo] = None
+
+    class Config:
+        from_attributes = True
+
+
+# ─────────────────────────────────────────────────────────────────
+# Evaluation Schemas
+# ─────────────────────────────────────────────────────────────────
+
+VALID_SCORES = range(0, 11)  # 0–10 inclusive
+
+
+class EvaluationScores(BaseModel):
+    """Shared score fields — used by both draft and final submit."""
+    score_innovation: float = 0.0
+    score_technical: float = 0.0
+    score_uiux: float = 0.0
+    score_impact: float = 0.0
+    score_presentation: float = 0.0
+
+    @model_validator(mode='after')
+    def validate_score_ranges(self) -> 'EvaluationScores':
+        fields = {
+            'score_innovation': self.score_innovation,
+            'score_technical': self.score_technical,
+            'score_uiux': self.score_uiux,
+            'score_impact': self.score_impact,
+            'score_presentation': self.score_presentation,
+        }
+        for name, val in fields.items():
+            if not (0.0 <= val <= 10.0):
+                raise ValueError(f'{name} must be between 0 and 10. Got: {val}')
+        return self
+
+
+class EvaluationDraftSave(EvaluationScores):
+    """Payload for saving a draft evaluation (partial, no feedback required)."""
+    submission_id: str
+    feedback: Optional[str] = None
+    strengths: Optional[str] = None
+    weaknesses: Optional[str] = None
+    suggestions: Optional[str] = None
+    recommendation: Optional[str] = "pending"
+
+
+class EvaluationFinalSubmit(EvaluationScores):
+    """Payload for final evaluation submission (feedback required)."""
+    submission_id: str
+    feedback: str
+    strengths: Optional[str] = None
+    weaknesses: Optional[str] = None
+    suggestions: Optional[str] = None
+    recommendation: str = "pending"
+
+    @field_validator('feedback')
+    @classmethod
+    def feedback_not_empty(cls, v: str) -> str:
+        if not v or len(v.strip()) < 10:
+            raise ValueError('Feedback must be at least 10 characters for final submission.')
+        return v.strip()
+
+    @field_validator('recommendation')
+    @classmethod
+    def validate_recommendation(cls, v: str) -> str:
+        valid = {'pending', 'shortlist', 'accepted', 'rejected'}
+        if v not in valid:
+            raise ValueError(f'Recommendation must be one of: {", ".join(valid)}')
+        return v
+
+
+# ─── Legacy support (old 3-field evaluations endpoint) ──────────
 class EvaluationCreate(BaseModel):
     submission_id: str
     score_innovation: float
@@ -68,18 +168,30 @@ class EvaluationCreate(BaseModel):
     feedback: Optional[str] = None
 
 
+# ─────────────────────────────────────────────────────────────────
+# Response Schemas
+# ─────────────────────────────────────────────────────────────────
+
 class EvaluationResponse(BaseModel):
     id: str
     submission_id: str
     judge_id: str
     score_innovation: float
-    score_execution: float
+    score_technical: float
+    score_uiux: float
+    score_impact: float
     score_presentation: float
     total_score: float
     feedback: Optional[str] = None
+    strengths: Optional[str] = None
+    weaknesses: Optional[str] = None
+    suggestions: Optional[str] = None
+    recommendation: str
+    is_draft: bool
+    submitted_at: Optional[datetime] = None
+    judge: Optional[JudgeUserInfo] = None
 
     class Config:
-        orm_mode = True
         from_attributes = True
 
 
@@ -99,7 +211,7 @@ class SubmissionResponse(BaseModel):
     status: str
     submitted_at: datetime
     evaluations: List[EvaluationResponse] = []
+    judge_assignments: List[JudgeAssignmentResponse] = []
 
     class Config:
-        orm_mode = True
         from_attributes = True

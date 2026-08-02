@@ -2,7 +2,7 @@ from app.models.base import Base, BaseTable
 from app.models.user import User, UserRole
 from app.models.hackathon import Hackathon, ProblemStatement, HackathonStatus, ProblemCategory
 from app.models.team import Team, TeamMember, TeamStatus, MemberRole
-from app.models.submission import Submission, Evaluation
+from app.models.submission import Submission, Evaluation, JudgeAssignment, SubmissionStatus, EvaluationRecommendation
 from app.models.invitation import TeamInvitation, InvitationStatus
 from app.models.registration import Registration, RegistrationStatus
 from app.models.announcement import Announcement, AnnouncementType
@@ -22,7 +22,10 @@ __all__ = [
     "TeamStatus",
     "MemberRole",
     "Submission",
+    "SubmissionStatus",
     "Evaluation",
+    "EvaluationRecommendation",
+    "JudgeAssignment",
     "TeamInvitation",
     "InvitationStatus",
     "Registration",

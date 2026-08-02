@@ -109,17 +109,33 @@ export interface BackendRegistration {
   created_at: string;
 }
 
-// Announcement (matches backend AnnouncementResponse)
-export interface BackendAnnouncement {
+export interface JudgeAssignmentRecord {
   id: string;
-  title: string;
-  content: string;
-  announcement_type: 'info' | 'warning' | 'success' | 'urgent';
-  is_published: boolean;
-  hackathon_id?: string;
-  created_by_id?: string;
-  created_at: string;
-  updated_at: string;
+  submission_id: string;
+  judge_id: string;
+  assigned_by_id?: string;
+  assigned_at: string;
+  judge?: UserProfile;
+}
+
+export interface EvaluationRecord {
+  id: string;
+  submission_id: string;
+  judge_id: string;
+  score_innovation: number;
+  score_technical: number;
+  score_uiux: number;
+  score_impact: number;
+  score_presentation: number;
+  total_score: number;
+  feedback?: string;
+  strengths?: string;
+  weaknesses?: string;
+  suggestions?: string;
+  recommendation: 'pending' | 'shortlist' | 'accepted' | 'rejected';
+  is_draft: boolean;
+  submitted_at?: string;
+  judge?: UserProfile;
 }
 
 export interface SubmissionRecord {
@@ -137,7 +153,9 @@ export interface SubmissionRecord {
   file_name?: string;
   status: string;
   submitted_at: string;
-  evaluations?: any[];
+  evaluations?: EvaluationRecord[];
+  judge_assignments?: JudgeAssignmentRecord[];
+  team?: BackendTeam;
 }
 
 export { STATIC_BASE };
@@ -421,150 +439,6 @@ export const apiService = {
     return request<BackendRegistration[]>('/registrations/my');
   },
 
-  // ─── Coordinator — Registrations ───────────────────────────────────
-  /** Coordinator/Admin: list all registrations with optional filters */
-  async listAllRegistrations(hackathonId?: string, statusFilter?: string) {
-    const params = new URLSearchParams();
-    if (hackathonId) params.append('hackathon_id', hackathonId);
-    if (statusFilter) params.append('status_filter', statusFilter);
-    const query = params.toString() ? `?${params.toString()}` : '';
-    return request<BackendRegistration[]>(`/registrations${query}`);
-  },
-
-  // ─── Coordinator — Hackathon CRUD ──────────────────────────────────
-  /** Create a new hackathon */
-  async createHackathon(payload: {
-    title: string;
-    slug: string;
-    tagline?: string;
-    description?: string;
-    start_date?: string;
-    end_date?: string;
-    registration_deadline?: string;
-    max_team_size?: number;
-    min_team_size?: number;
-    status?: string;
-    banner_url?: string;
-  }) {
-    return request<BackendHackathon>('/hackathons', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-  },
-
-  /** Update an existing hackathon */
-  async updateHackathon(hackathonId: string, payload: Partial<{
-    title: string;
-    slug: string;
-    tagline: string;
-    description: string;
-    start_date: string;
-    end_date: string;
-    registration_deadline: string;
-    max_team_size: number;
-    min_team_size: number;
-    status: string;
-    banner_url: string;
-  }>) {
-    return request<BackendHackathon>(`/hackathons/${hackathonId}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    });
-  },
-
-  /** Delete or cancel a hackathon */
-  async deleteHackathon(hackathonId: string, force = false) {
-    return request<{ deleted?: boolean; cancelled?: boolean; registration_count?: number }>(
-      `/hackathons/${hackathonId}?force=${force}`,
-      { method: 'DELETE' }
-    );
-  },
-
-  // ─── Coordinator — Problem Statements ─────────────────────────────
-  /** Get problem statements for a hackathon */
-  async getProblemStatements(hackathonId: string) {
-    return request<BackendProblemStatement[]>(`/hackathons/${hackathonId}/problem-statements`);
-  },
-
-  /** Create a problem statement under a hackathon */
-  async createProblemStatement(hackathonId: string, payload: {
-    title: string;
-    description: string;
-    category?: string;
-    difficulty?: string;
-    max_teams?: number;
-  }) {
-    return request<BackendProblemStatement>(`/hackathons/${hackathonId}/problem-statements`, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-  },
-
-  /** Update a problem statement */
-  async updateProblemStatement(hackathonId: string, psId: string, payload: Partial<{
-    title: string;
-    description: string;
-    category: string;
-    difficulty: string;
-    max_teams: number;
-  }>) {
-    return request<BackendProblemStatement>(`/hackathons/${hackathonId}/problem-statements/${psId}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    });
-  },
-
-  /** Delete a problem statement */
-  async deleteProblemStatement(hackathonId: string, psId: string) {
-    return request<{ deleted: boolean }>(`/hackathons/${hackathonId}/problem-statements/${psId}`, {
-      method: 'DELETE',
-    });
-  },
-
-  // ─── Announcements ─────────────────────────────────────────────────
-  /** List published announcements (optionally filtered by hackathon) */
-  async getAnnouncements(hackathonId?: string, publishedOnly = true) {
-    const params = new URLSearchParams();
-    if (hackathonId) params.append('hackathon_id', hackathonId);
-    params.append('published_only', String(publishedOnly));
-    return request<BackendAnnouncement[]>(`/announcements?${params.toString()}`);
-  },
-
-  /** Create a new announcement */
-  async createAnnouncement(payload: {
-    title: string;
-    content: string;
-    announcement_type?: string;
-    is_published?: boolean;
-    hackathon_id?: string;
-  }) {
-    return request<BackendAnnouncement>('/announcements', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-  },
-
-  /** Update an announcement */
-  async updateAnnouncement(announcementId: string, payload: Partial<{
-    title: string;
-    content: string;
-    announcement_type: string;
-    is_published: boolean;
-    hackathon_id: string;
-  }>) {
-    return request<BackendAnnouncement>(`/announcements/${announcementId}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    });
-  },
-
-  /** Delete an announcement */
-  async deleteAnnouncement(announcementId: string) {
-    return request<{ deleted: boolean }>(`/announcements/${announcementId}`, {
-      method: 'DELETE',
-    });
-  },
-
   // ─── Submissions ───────────────────────────────────────────
   /** List all submissions (admin/judge console), optionally filtered by hackathon */
   async listSubmissions(hackathonId?: string) {
@@ -633,7 +507,7 @@ export const apiService = {
     });
   },
 
-  /** Submit a judge evaluation score for a submission */
+  /** Submit a judge evaluation score for a submission (legacy) */
   async evaluateSubmission(payload: {
     submission_id: string;
     score_innovation: number;
@@ -645,6 +519,121 @@ export const apiService = {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  },
+
+  // ─── Sprint 3: Judge Assignment & Evaluation ─────────────────
+
+  /** Assign a judge to a submission (Admin/Coordinator) */
+  async assignJudge(submissionId: string, judgeId: string) {
+    return request<JudgeAssignmentRecord>('/evaluations/assign', {
+      method: 'POST',
+      body: JSON.stringify({ submission_id: submissionId, judge_id: judgeId }),
+    });
+  },
+
+  /** Remove a judge assignment (Admin/Coordinator) */
+  async removeAssignment(assignmentId: string) {
+    return request<Record<string, unknown>>(`/evaluations/assign/${assignmentId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  /** List judge assignments (Admin/Coordinator) */
+  async listAssignments(submissionId?: string, judgeId?: string) {
+    const params = new URLSearchParams();
+    if (submissionId) params.append('submission_id', submissionId);
+    if (judgeId) params.append('judge_id', judgeId);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return request<JudgeAssignmentRecord[]>(`/evaluations/assignments${query}`);
+  },
+
+  /** Get submissions assigned to the logged-in judge */
+  async getMyAssignments() {
+    return request<SubmissionRecord[]>('/evaluations/my-assignments');
+  },
+
+  /** List users with JUDGE role (for dropdown) */
+  async listJudges() {
+    return request<Array<{ id: string; full_name: string; email: string; department?: string }>>(
+      '/evaluations/judges'
+    );
+  },
+
+  /** Get evaluation for a submission */
+  async getEvaluation(submissionId: string) {
+    return request<EvaluationRecord | null>(`/evaluations/submission/${submissionId}`);
+  },
+
+  /** Save a draft evaluation (Judge) */
+  async saveDraftEvaluation(payload: {
+    submission_id: string;
+    score_innovation: number;
+    score_technical: number;
+    score_uiux: number;
+    score_impact: number;
+    score_presentation: number;
+    feedback?: string;
+    strengths?: string;
+    weaknesses?: string;
+    suggestions?: string;
+    recommendation?: string;
+  }) {
+    return request<EvaluationRecord>('/evaluations/draft', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** Final submit an evaluation (Judge) */
+  async submitFinalEvaluation(payload: {
+    submission_id: string;
+    score_innovation: number;
+    score_technical: number;
+    score_uiux: number;
+    score_impact: number;
+    score_presentation: number;
+    feedback: string;
+    strengths?: string;
+    weaknesses?: string;
+    suggestions?: string;
+    recommendation?: string;
+  }) {
+    return request<EvaluationRecord>('/evaluations/submit', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** Edit an evaluation (Admin only) */
+  async adminUpdateEvaluation(
+    evaluationId: string,
+    payload: {
+      submission_id: string;
+      score_innovation: number;
+      score_technical: number;
+      score_uiux: number;
+      score_impact: number;
+      score_presentation: number;
+      feedback: string;
+      strengths?: string;
+      weaknesses?: string;
+      suggestions?: string;
+      recommendation?: string;
+    }
+  ) {
+    return request<EvaluationRecord>(`/evaluations/${evaluationId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** Get full evaluation history (Admin/Coordinator) */
+  async getEvaluationHistory(submissionId?: string, judgeId?: string) {
+    const params = new URLSearchParams();
+    if (submissionId) params.append('submission_id', submissionId);
+    if (judgeId) params.append('judge_id', judgeId);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return request<EvaluationRecord[]>(`/evaluations/history${query}`);
   },
 
   // ─── Notifications ─────────────────────────────────────────

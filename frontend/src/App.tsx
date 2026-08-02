@@ -53,16 +53,11 @@ import { TeamManagementPage } from '@/pages/student/TeamManagementPage';
 import { CreateTeamPage } from '@/pages/student/CreateTeamPage';
 import { RegistrationPage } from '@/pages/student/RegistrationPage';
 import StudentSubmissionPage from '@/pages/student/StudentSubmissionPage';
+import JudgeDashboardPage from '@/pages/judge/JudgeDashboardPage';
+import JudgeAssignmentPage from '@/pages/admin/JudgeAssignmentPage';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { ProfilePage } from '@/pages/ProfilePage';
-
-// Coordinator Pages Import
-import { CoordinatorDashboardPage } from '@/pages/coordinator/CoordinatorDashboardPage';
-import { CoordinatorHackathonsPage } from '@/pages/coordinator/CoordinatorHackathonsPage';
-import { CoordinatorProblemStatementsPage } from '@/pages/coordinator/CoordinatorProblemStatementsPage';
-import { CoordinatorRegistrationsPage } from '@/pages/coordinator/CoordinatorRegistrationsPage';
-import { CoordinatorAnnouncementsPage } from '@/pages/coordinator/CoordinatorAnnouncementsPage';
 
 // Auth Imports
 import Login from './pages/Login';
@@ -1213,8 +1208,8 @@ const AnnouncementsView = () => {
   );
 };
 
-// 9. JUDGE PANEL
-const JudgeView = () => {
+// 9. JUDGE PANEL (Legacy UI preserved for reference)
+export const JudgeView = () => {
   // Assigned submissions mock state
   const [submissions, setSubmissions] = useState([
     {
@@ -1656,7 +1651,34 @@ const JudgeView = () => {
   );
 };
 
-// 10. COORDINATOR HUB (Replaced by full Sprint 3 Coordinator Modules under /pages/coordinator)
+// 10. COORDINATOR HUB
+const CoordinatorView = () => {
+  return (
+    <div className="flex flex-col gap-8 w-full max-w-5xl">
+      <div>
+        <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-glow-cyan text-white">
+          Operations Console
+        </h2>
+        <p className="text-xs text-text-secondary mt-1 font-light">Track submissions progress, publish announcements, and verify team registrations.</p>
+      </div>
+      <Card hoverable className="bg-white/[0.02]">
+        <h3 className="text-sm font-bold text-white mb-4">Pending Registrations</h3>
+        <Table headers={['Team Name', 'Members Count', 'Chosen PS', 'Action']}>
+          <TableRow>
+            <TableCell className="font-semibold text-white">Zero_Gravity</TableCell>
+            <TableCell className="font-mono text-xs">2 Members</TableCell>
+            <TableCell className="text-xs text-white/60">PS-01: Generative LLM Interface</TableCell>
+            <TableCell>
+              <Button variant="success" className="h-8 text-xs font-bold" onClick={() => alert('Team Verified successfully!')}>
+                Verify Team
+              </Button>
+            </TableCell>
+          </TableRow>
+        </Table>
+      </Card>
+    </div>
+  );
+};
 
 // 11. ADMIN VIEW
 const AdminView = () => {
@@ -3549,25 +3571,24 @@ function App() {
 
           {/* Judge Protected Portal */}
           <Route path="/judge" element={<RoleLayout allowedRoles={['judge']} />}>
-            <Route index element={<JudgeView />} />
+            <Route index element={<JudgeDashboardPage />} />
             <Route path="history" element={<LeaderboardView />} />
             <Route path="profile" element={<ProfileSettings />} />
           </Route>
 
           {/* Coordinator Protected Portal */}
-          <Route path="/coordinator" element={<RoleLayout allowedRoles={['coordinator', 'admin']} />}>
-            <Route index element={<CoordinatorDashboardPage />} />
-            <Route path="hackathons" element={<CoordinatorHackathonsPage />} />
-            <Route path="problem-statements" element={<CoordinatorProblemStatementsPage />} />
-            <Route path="registrations" element={<CoordinatorRegistrationsPage />} />
-            <Route path="announcements" element={<CoordinatorAnnouncementsPage />} />
+          <Route path="/coordinator" element={<RoleLayout allowedRoles={['coordinator']} />}>
+            <Route index element={<CoordinatorView />} />
             <Route path="submissions" element={<SubmissionsView />} />
+            <Route path="assignments" element={<JudgeAssignmentPage />} />
+            <Route path="announcements" element={<AnnouncementsView />} />
             <Route path="profile" element={<ProfileSettings />} />
           </Route>
 
           {/* Admin Protected Portal */}
           <Route path="/admin" element={<RoleLayout allowedRoles={['admin']} />}>
             <Route index element={<AdminView />} />
+            <Route path="assignments" element={<JudgeAssignmentPage />} />
             <Route path="users" element={<LeaderboardView />} />
             <Route path="settings" element={<AnnouncementsView />} />
             <Route path="profile" element={<ProfileSettings />} />
