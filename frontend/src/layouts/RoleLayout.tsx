@@ -106,7 +106,7 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
           { label: 'Manage Hackathons', path: '/admin?tab=hackathons', icon: Calendar },
           { label: 'Manage Users', path: '/admin?tab=users', icon: Users },
           { label: 'Manage Judges', path: '/admin?tab=judges', icon: Cpu },
-          { label: 'Manage Coordinators', path: '/admin?tab=coordinators', icon: Terminal }
+          { label: 'Manage Coordinators', path: '/admin?tab=coordinators', icon: Users }
         ];
       default:
         return [];

@@ -206,10 +206,13 @@ def seed_database(db: Session, engine):
         submission_id=sub1.id,
         judge_id=judge.id,
         score_innovation=9.5,
-        score_execution=9.0,
+        score_technical=9.0,
+        score_uiux=8.5,
+        score_impact=9.0,
         score_presentation=8.8,
-        total_score=9.1,
-        feedback="Outstanding UI design, brilliant agentic architecture, and robust real-time API response times."
+        total_score=round((9.5 + 9.0 + 8.5 + 9.0 + 8.8) * 2.0, 2),
+        feedback="Outstanding UI design, brilliant agentic architecture, and robust real-time API response times.",
+        is_draft=False
     )
     db.add(eval1)
 

@@ -597,3 +597,36 @@ def get_hackathon_stats(
         }
     )
 
+
+@router.delete("/{hackathon_id}", response_model=StandardResponse[dict])
+def delete_hackathon(
+    hackathon_id: str,
+    force: bool = False,
+    current_user: User = Depends(RoleChecker([UserRole.ADMIN, UserRole.COORDINATOR])),
+    db: Session = Depends(get_db)
+):
+    hackathon = db.query(Hackathon).filter(Hackathon.id == hackathon_id).first()
+    if not hackathon:
+        raise HTTPException(status_code=404, detail="Hackathon not found.")
+
+    from app.models.registration import Registration
+    reg_count = db.query(Registration).filter(Registration.hackathon_id == hackathon_id).count()
+
+    if reg_count > 0 and not force:
+        hackathon.status = HackathonStatus.ENDED
+        db.commit()
+        return StandardResponse(
+            success=True,
+            message=f"Hackathon has {reg_count} active registration(s). Status updated to ENDED.",
+            data={"cancelled": True}
+        )
+
+    db.delete(hackathon)
+    db.commit()
+    return StandardResponse(
+        success=True,
+        message="Hackathon deleted successfully.",
+        data={"cancelled": False}
+    )
+
+

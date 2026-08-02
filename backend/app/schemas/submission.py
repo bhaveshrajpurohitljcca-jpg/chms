@@ -69,8 +69,9 @@ class SubmissionUpdate(BaseModel):
 # ─────────────────────────────────────────────────────────────────
 
 class JudgeAssignmentCreate(BaseModel):
-    submission_id: str
     judge_id: str
+    hackathon_id: Optional[str] = None
+    submission_id: Optional[str] = None
 
 
 class JudgeUserInfo(BaseModel):
@@ -84,14 +85,20 @@ class JudgeUserInfo(BaseModel):
 
 class JudgeAssignmentResponse(BaseModel):
     id: str
-    submission_id: str
     judge_id: str
+    hackathon_id: Optional[str] = None
+    submission_id: Optional[str] = None
     assigned_by_id: Optional[str] = None
-    assigned_at: datetime
+    assigned_at: Optional[datetime] = None
     judge: Optional[JudgeUserInfo] = None
+    judge_name: Optional[str] = None
+    judge_email: Optional[str] = None
+    hackathon_name: Optional[str] = None
+    team_name: Optional[str] = None
 
     class Config:
         from_attributes = True
+
 
 
 # ─────────────────────────────────────────────────────────────────

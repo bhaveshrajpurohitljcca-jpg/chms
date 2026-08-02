@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models.submission import Submission, Evaluation, SubmissionStatus
+from app.models.submission import Submission, Evaluation, JudgeAssignment, SubmissionStatus
 from app.models.team import Team, TeamMember
 from app.models.hackathon import Hackathon, CoordinatorAssignment
 from app.models.user import User, UserRole

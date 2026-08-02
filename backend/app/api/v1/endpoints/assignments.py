@@ -189,16 +189,12 @@ def list_judge_assignments(
 def assign_judge(
     payload: JudgeAssignmentCreate,
     db: Session = Depends(get_db),
-    admin_user: User = Depends(RoleChecker([UserRole.ADMIN]))
+    admin_user: User = Depends(RoleChecker([UserRole.ADMIN, UserRole.COORDINATOR]))
 ):
     """Assign a hackathon or specific submission to a judge."""
     judge = db.query(User).filter(User.id == payload.judge_id, User.role == UserRole.JUDGE).first()
     if not judge:
         raise HTTPException(status_code=404, detail="Judge user not found.")
-
-    hack = db.query(Hackathon).filter(Hackathon.id == payload.hackathon_id).first()
-    if not hack:
-        raise HTTPException(status_code=404, detail="Hackathon not found.")
 
     team_name = None
     if payload.submission_id:
@@ -207,13 +203,28 @@ def assign_judge(
             raise HTTPException(status_code=404, detail="Submission not found.")
         if sub.team:
             team_name = sub.team.name
+        if not payload.hackathon_id:
+            payload.hackathon_id = sub.hackathon_id
+        if sub.status == SubmissionStatus.SUBMITTED:
+            sub.status = SubmissionStatus.UNDER_REVIEW
 
-    existing = db.query(JudgeAssignment).filter(
+    if not payload.hackathon_id:
+        raise HTTPException(status_code=400, detail="hackathon_id is required.")
+
+    hack = db.query(Hackathon).filter(Hackathon.id == payload.hackathon_id).first()
+    if not hack:
+        raise HTTPException(status_code=404, detail="Hackathon not found.")
+
+    query = db.query(JudgeAssignment).filter(
         JudgeAssignment.judge_id == payload.judge_id,
-        JudgeAssignment.hackathon_id == payload.hackathon_id,
-        JudgeAssignment.submission_id == payload.submission_id
-    ).first()
+        JudgeAssignment.hackathon_id == payload.hackathon_id
+    )
+    if payload.submission_id:
+        query = query.filter(JudgeAssignment.submission_id == payload.submission_id)
+    else:
+        query = query.filter(JudgeAssignment.submission_id.is_(None))
 
+    existing = query.first()
     if existing:
         raise HTTPException(status_code=409, detail="This assignment already exists for the judge.")
 
@@ -246,7 +257,7 @@ def revoke_judge_hackathon_assignment(
     judge_id: str,
     hackathon_id: str,
     db: Session = Depends(get_db),
-    admin_user: User = Depends(RoleChecker([UserRole.ADMIN]))
+    admin_user: User = Depends(RoleChecker([UserRole.ADMIN, UserRole.COORDINATOR]))
 ):
     """Revoke a judge's hackathon scope assignment (and all associated submissions)."""
     hack_assign = db.query(JudgeAssignment).filter(
@@ -281,7 +292,7 @@ def revoke_judge_submission_assignment(
     hackathon_id: str,
     submission_id: str,
     db: Session = Depends(get_db),
-    admin_user: User = Depends(RoleChecker([UserRole.ADMIN]))
+    admin_user: User = Depends(RoleChecker([UserRole.ADMIN, UserRole.COORDINATOR]))
 ):
     """Revoke a judge's assignment to a specific team submission."""
     assign = db.query(JudgeAssignment).filter(
@@ -299,3 +310,4 @@ def revoke_judge_submission_assignment(
         message="Judge submission assignment revoked.",
         data={}
     )
+

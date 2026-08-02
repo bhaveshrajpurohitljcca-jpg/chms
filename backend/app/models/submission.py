@@ -49,21 +49,23 @@ class Submission(BaseTable):
 # ─── Judge Assignment ───────────────────────────────────────────
 class JudgeAssignment(BaseTable):
     """
-    Links a judge (User with role=JUDGE) to a specific Submission.
+    Links a judge (User with role=JUDGE) to a specific Hackathon or Submission.
     Ensures each judge sees only their assigned work.
     """
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    submission_id = Column(String(36), ForeignKey("submission.id", ondelete="CASCADE"), nullable=False)
+    hackathon_id = Column(String(36), ForeignKey("hackathon.id", ondelete="CASCADE"), nullable=False)
+    submission_id = Column(String(36), ForeignKey("submission.id", ondelete="CASCADE"), nullable=True)
     judge_id = Column(String(36), ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
     assigned_by_id = Column(String(36), ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
     assigned_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     submission = relationship("Submission", back_populates="judge_assignments")
+    hackathon = relationship("Hackathon")
     judge = relationship("User", foreign_keys=[judge_id])
     assigned_by = relationship("User", foreign_keys=[assigned_by_id])
 
     __table_args__ = (
-        UniqueConstraint("submission_id", "judge_id", name="unique_judge_submission_assignment"),
+        UniqueConstraint("hackathon_id", "judge_id", "submission_id", name="unique_judge_hackathon_submission_assignment"),
     )
 
 
@@ -106,14 +108,5 @@ class Evaluation(BaseTable):
         UniqueConstraint("submission_id", "judge_id", name="unique_judge_submission_evaluation"),
     )
 
-class JudgeAssignment(BaseTable):
-    __tablename__ = "judge_assignment"
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    judge_id = Column(String(36), ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
-    hackathon_id = Column(String(36), ForeignKey("hackathon.id", ondelete="CASCADE"), nullable=False)
-    submission_id = Column(String(36), ForeignKey("submission.id", ondelete="CASCADE"), nullable=True)
 
-    judge = relationship("User")
-    hackathon = relationship("Hackathon")
-    submission = relationship("Submission")
 

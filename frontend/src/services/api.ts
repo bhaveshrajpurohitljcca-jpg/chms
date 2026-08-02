@@ -112,14 +112,33 @@ export interface BackendRegistration {
   created_at: string;
 }
 
+export interface BackendAnnouncement {
+  id: string;
+  title: string;
+  content: string;
+  announcement_type: 'info' | 'warning' | 'success' | 'urgent';
+  is_published: boolean;
+  hackathon_id?: string;
+  created_by_id?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+
 export interface JudgeAssignmentRecord {
   id: string;
-  submission_id: string;
   judge_id: string;
+  hackathon_id?: string;
+  submission_id?: string;
   assigned_by_id?: string;
-  assigned_at: string;
+  assigned_at?: string;
+  judge_name?: string;
+  judge_email?: string;
+  hackathon_name?: string;
+  team_name?: string;
   judge?: UserProfile;
 }
+
 
 export interface EvaluationRecord {
   id: string;
@@ -346,6 +365,8 @@ export const apiService = {
   },
 
   // ─── Assignments ───────────────────────────────────────────
+
+
   async listJudgeAssignments() {
     return request<any[]>('/assignments/judges');
   },
@@ -364,6 +385,7 @@ export const apiService = {
   async deleteJudgeAssignment(judgeId: string, hackathonId: string, submissionId?: string) {
     const url = submissionId 
       ? `/assignments/judges/${judgeId}/${hackathonId}/${submissionId}`
+
       : `/assignments/judges/${judgeId}/${hackathonId}`;
     return request<any>(url, {
       method: 'DELETE',
@@ -453,6 +475,32 @@ export const apiService = {
     });
   },
 
+  async deleteHackathon(id: string, force = false) {
+    const query = force ? '?force=true' : '';
+    return request<any>(`/hackathons/${id}${query}`, {
+      method: 'DELETE',
+    });
+  },
+
+
+  async getProblemStatements(hackathonId: string) {
+    const res = await this.getHackathon(hackathonId);
+    return {
+      ...res,
+      data: res.data ? res.data.problem_statements || [] : []
+    };
+  },
+
+  async createProblemStatement(hackathonId: string, payload: {
+    title: string;
+    description: string;
+    category?: string;
+    difficulty?: string;
+    max_teams?: number;
+  }) {
+    return this.addProblemStatement(hackathonId, payload);
+  },
+
   async updateProblemStatement(hackathonId: string, problemId: string, payload: {
     title: string;
     description: string;
@@ -471,6 +519,7 @@ export const apiService = {
       method: 'DELETE',
     });
   },
+
 
 
   // ─── Teams ────────────────────────────────────────────────
@@ -557,10 +606,20 @@ export const apiService = {
 
   // ─── Registrations ──────────────────────────────────────────
   /** List all registrations for a hackathon (admin/coordinator only) */
-  async listRegistrations(hackathonId?: string) {
-    const query = hackathonId ? `?hackathon_id=${hackathonId}` : '';
+  async listRegistrations(hackathonId?: string, statusFilter?: string) {
+    const params = new URLSearchParams();
+    if (hackathonId) params.append('hackathon_id', hackathonId);
+    if (statusFilter) params.append('status', statusFilter);
+    const query = params.toString() ? `?${params.toString()}` : '';
     return request<BackendRegistration[]>(`/registrations${query}`);
   },
+
+  async listAllRegistrations(hackathonId?: string, statusFilter?: string) {
+    return this.listRegistrations(hackathonId, statusFilter);
+  },
+
+
+
 
   /** Register a team for a hackathon with a problem statement */
   async createRegistration(payload: {
@@ -672,12 +731,28 @@ export const apiService = {
   // ─── Sprint 3: Judge Assignment & Evaluation ─────────────────
 
   /** Assign a judge to a submission (Admin/Coordinator) */
-  async assignJudge(submissionId: string, judgeId: string) {
-    return request<JudgeAssignmentRecord>('/evaluations/assign', {
+  async assignJudge(submissionId: string, judgeId: string, hackathonId?: string) {
+    let hId = hackathonId;
+    if (!hId) {
+      try {
+        const subRes = await request<SubmissionRecord>(`/submissions/${submissionId}`);
+        if (subRes.data && subRes.data.hackathon_id) {
+          hId = subRes.data.hackathon_id;
+        }
+      } catch (err) {
+        console.warn('Could not auto-fetch hackathon_id for submission', err);
+      }
+    }
+    return request<JudgeAssignmentRecord>('/assignments/judges', {
       method: 'POST',
-      body: JSON.stringify({ submission_id: submissionId, judge_id: judgeId }),
+      body: JSON.stringify({
+        judge_id: judgeId,
+        hackathon_id: hId || '',
+        submission_id: submissionId,
+      }),
     });
   },
+
 
   /** Remove a judge assignment (Admin/Coordinator) */
   async removeAssignment(assignmentId: string) {
@@ -820,6 +895,50 @@ export const apiService = {
       body: JSON.stringify(payload),
     });
   },
+
+  async getAnnouncements(hackathonId?: string, publishedOnly = true) {
+    const params = new URLSearchParams();
+    if (hackathonId) params.append('hackathon_id', hackathonId);
+    if (!publishedOnly) params.append('published_only', 'false');
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return request<BackendAnnouncement[]>(`/announcements${query}`);
+  },
+
+  async createAnnouncement(payload: {
+    title: string;
+    content: string;
+    announcement_type?: string;
+    is_published?: boolean;
+    hackathon_id?: string;
+  }) {
+    return request<BackendAnnouncement>('/announcements', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async updateAnnouncement(
+    id: string,
+    payload: {
+      title?: string;
+      content?: string;
+      announcement_type?: string;
+      is_published?: boolean;
+      hackathon_id?: string;
+    }
+  ) {
+    return request<BackendAnnouncement>(`/announcements/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async deleteAnnouncement(id: string) {
+    return request<any>(`/announcements/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
 
   // ─── Sprint 5 Leaderboard, Stats & Certificates ────────────
   async publishResults(hackathonId: string) {

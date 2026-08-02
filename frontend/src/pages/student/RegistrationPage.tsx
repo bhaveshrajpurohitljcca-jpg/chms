@@ -29,6 +29,7 @@ export const RegistrationPage: React.FC = () => {
   // Data loading state
   const [hackathons, setHackathons] = useState<BackendHackathon[]>([]);
   const [myTeams, setMyTeams] = useState<BackendTeam[]>([]);
+  const [myRegistrations, setMyRegistrations] = useState<BackendRegistration[]>([]);
   const [existingRegistration, setExistingRegistration] = useState<BackendRegistration | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState('');
@@ -44,6 +45,20 @@ export const RegistrationPage: React.FC = () => {
   const [submitError, setSubmitError] = useState('');
   const [registrationResult, setRegistrationResult] = useState<BackendRegistration | null>(null);
 
+  const handleSelectHackathon = (hack: BackendHackathon) => {
+    setSelectedHackathon(hack);
+    setSelectedProblem(null);
+    setSubmitError('');
+
+    // Auto-select matching team for this hackathon
+    const matchingTeam = myTeams.find(t => t.hackathon_id === hack.id);
+    setSelectedTeam(matchingTeam || null);
+
+    // Check existing registration for this hackathon
+    const existing = myRegistrations.find(r => r.hackathon_id === hack.id);
+    setExistingRegistration(existing || null);
+  };
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -58,6 +73,7 @@ export const RegistrationPage: React.FC = () => {
 
         let loadedHackathons: BackendHackathon[] = [];
         let loadedTeams: BackendTeam[] = [];
+        let loadedRegistrations: BackendRegistration[] = [];
 
         if (hackathonsRes.status === 'fulfilled' && hackathonsRes.value.data) {
           loadedHackathons = hackathonsRes.value.data.filter(h => h.status === 'active');
@@ -71,38 +87,40 @@ export const RegistrationPage: React.FC = () => {
           setMyTeams(loadedTeams);
         }
 
-        // Pre-select from URL params
-        if (initialHackathonId && loadedHackathons.length > 0) {
-          const preHackathon = loadedHackathons.find(h => h.id === initialHackathonId);
-          if (preHackathon) {
-            setSelectedHackathon(preHackathon);
-            if (initialProblemId) {
-              const prePs = preHackathon.problem_statements.find(p => p.id === initialProblemId);
-              if (prePs) {
-                setSelectedProblem(prePs);
-                setCurrentStep(3); // Jump to team selection
-              }
-            }
-          }
-        } else if (loadedHackathons.length > 0) {
-          setSelectedHackathon(loadedHackathons[0]);
+        if (registrationsRes.status === 'fulfilled' && registrationsRes.value.data) {
+          loadedRegistrations = registrationsRes.value.data;
+          setMyRegistrations(loadedRegistrations);
         }
 
-        // Check for existing registration
-        if (registrationsRes.status === 'fulfilled' && registrationsRes.value.data && initialHackathonId) {
-          const existing = registrationsRes.value.data.find(r => r.hackathon_id === initialHackathonId);
+        // Determine initial selected hackathon
+        let initialHack: BackendHackathon | null = null;
+        if (initialHackathonId && loadedHackathons.length > 0) {
+          initialHack = loadedHackathons.find(h => h.id === initialHackathonId) || loadedHackathons[0];
+        } else if (loadedHackathons.length > 0) {
+          initialHack = loadedHackathons[0];
+        }
+
+        if (initialHack) {
+          setSelectedHackathon(initialHack);
+
+          // Problem statement pre-selection
+          if (initialProblemId) {
+            const prePs = initialHack.problem_statements.find(p => p.id === initialProblemId);
+            if (prePs) {
+              setSelectedProblem(prePs);
+              setCurrentStep(3); // Jump to team selection
+            }
+          }
+
+          // Scope team pre-selection strictly to the initial hackathon
+          const matchingTeam = loadedTeams.find(t => t.hackathon_id === initialHack!.id);
+          setSelectedTeam(matchingTeam || null);
+
+          // Check if already registered for this hackathon
+          const existing = loadedRegistrations.find(r => r.hackathon_id === initialHack!.id);
           if (existing) {
             setExistingRegistration(existing);
           }
-        }
-
-        // Pre-select team scoped to the hackathon
-        if (loadedTeams.length > 0 && initialHackathonId) {
-          const teamForHackathon = loadedTeams.find(t => t.hackathon_id === initialHackathonId);
-          if (teamForHackathon) setSelectedTeam(teamForHackathon);
-          else setSelectedTeam(loadedTeams[0]);
-        } else if (loadedTeams.length > 0) {
-          setSelectedTeam(loadedTeams[0]);
         }
 
       } catch (err: any) {
@@ -117,6 +135,11 @@ export const RegistrationPage: React.FC = () => {
   const handleCompleteRegistration = async () => {
     if (!selectedHackathon || !selectedTeam) {
       setSubmitError('Please select a hackathon and a team before registering.');
+      return;
+    }
+
+    if (selectedTeam.hackathon_id !== selectedHackathon.id) {
+      setSubmitError(`Selected team '${selectedTeam.name}' belongs to a different hackathon. Please select a team created for ${selectedHackathon.title}.`);
       return;
     }
 
@@ -384,10 +407,7 @@ export const RegistrationPage: React.FC = () => {
                 {hackathons.map((hack) => (
                   <div
                     key={hack.id}
-                    onClick={() => {
-                      setSelectedHackathon(hack);
-                      setSelectedProblem(null);
-                    }}
+                    onClick={() => handleSelectHackathon(hack)}
                     className={`p-5 rounded-2xl border cursor-pointer transition-all duration-300 ${
                       selectedHackathon?.id === hack.id
                         ? 'bg-accent-primary/10 border-accent-primary shadow-[0_0_20px_rgba(0,243,255,0.15)]'

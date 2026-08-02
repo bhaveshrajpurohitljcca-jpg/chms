@@ -92,8 +92,10 @@ def assign_judge(
     assignment = JudgeAssignment(
         submission_id=payload.submission_id,
         judge_id=payload.judge_id,
+        hackathon_id=payload.hackathon_id or submission.hackathon_id,
         assigned_by_id=current_user.id
     )
+
     db.add(assignment)
     submission.status = SubmissionStatus.UNDER_REVIEW
     db.commit()
