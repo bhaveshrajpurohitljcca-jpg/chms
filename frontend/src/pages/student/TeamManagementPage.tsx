@@ -25,6 +25,7 @@ import type { BackendTeam, BackendInvitation } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { InviteMemberModal } from '@/components/student/InviteMemberModal';
 import { InvitationsPanel } from '@/components/student/InvitationsPanel';
+import { StudentProfileModal } from '@/components/student/StudentProfileModal';
 import { EmptyState, LoadingState, ErrorState } from '@/components/student/StateContainer';
 
 export const TeamManagementPage: React.FC = () => {
@@ -43,6 +44,8 @@ export const TeamManagementPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [profileModalUserId, setProfileModalUserId] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
   const [removeError, setRemoveError] = useState('');
 
@@ -449,9 +452,20 @@ export const TeamManagementPage: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-3 flex-shrink-0">
-                        <Badge variant="success" className="capitalize">
+                        <Badge variant="success" className="capitalize hidden sm:inline-flex">
                           {member.role_in_team}
                         </Badge>
+                        
+                        <button
+                          onClick={() => {
+                            setProfileModalUserId(member.user_id);
+                            setIsProfileModalOpen(true);
+                          }}
+                          title="View Profile"
+                          className="px-3 py-1.5 rounded-lg bg-accent-primary/10 border border-accent-primary/30 text-accent-primary text-xs font-semibold hover:bg-accent-primary hover:text-black transition-all duration-300"
+                        >
+                          View Profile
+                        </button>
 
                         {isLeader && !isThisMemberLeader && !isMe && (
                           <button
@@ -781,6 +795,13 @@ export const TeamManagementPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Profile Modal */}
+      <StudentProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        userId={profileModalUserId}
+      />
 
     </div>
   );

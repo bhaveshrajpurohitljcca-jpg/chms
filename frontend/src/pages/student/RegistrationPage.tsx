@@ -17,6 +17,7 @@ import {
 import { apiService } from '@/services/api';
 import type { BackendHackathon, BackendProblemStatement, BackendTeam, BackendRegistration } from '@/services/api';
 import { ProblemStatementCard } from '@/components/student/ProblemStatementCard';
+import { ProblemStatementModal } from '@/components/student/ProblemStatementModal';
 import { LoadingState, ErrorState, EmptyState } from '@/components/student/StateContainer';
 
 export const RegistrationPage: React.FC = () => {
@@ -38,6 +39,10 @@ export const RegistrationPage: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [selectedHackathon, setSelectedHackathon] = useState<BackendHackathon | null>(null);
   const [selectedProblem, setSelectedProblem] = useState<BackendProblemStatement | null>(null);
+  
+  // Modal for viewing problem statement before selecting
+  const [isProblemModalOpen, setIsProblemModalOpen] = useState(false);
+  const [viewingProblem, setViewingProblem] = useState<BackendProblemStatement | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<BackendTeam | null>(null);
 
   // Registration state
@@ -452,21 +457,41 @@ export const RegistrationPage: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredProblems.map((ps) => (
+                {filteredProblems.map((p) => (
                   <ProblemStatementCard
-                    key={ps.id}
-                    problem={ps}
-                    isSelected={selectedProblem?.id === ps.id}
-                    onSelect={(p) => setSelectedProblem(selectedProblem?.id === p.id ? null : p)}
+                    key={p.id}
+                    problem={p}
+                    isSelected={selectedProblem?.id === p.id}
+                    onSelect={(p) => {
+                      setViewingProblem(p);
+                      setIsProblemModalOpen(true);
+                    }}
                   />
                 ))}
               </div>
             )}
             {filteredProblems.length > 0 && (
-              <p className="text-xs text-white/40">
-                {selectedProblem ? `Selected: ${selectedProblem.title}` : 'No problem statement selected (optional)'}
-              </p>
+              <div className="flex flex-col gap-2">
+                <p className="text-xs text-white/40">
+                  {selectedProblem ? `Selected: ${selectedProblem.title}` : 'No problem statement selected (optional)'}
+                </p>
+                {selectedProblem && (
+                  <Button variant="secondary" onClick={() => setSelectedProblem(null)} className="w-fit text-xs h-8 px-4">
+                    Clear Selection
+                  </Button>
+                )}
+              </div>
             )}
+            
+            <ProblemStatementModal 
+              isOpen={isProblemModalOpen}
+              onClose={() => setIsProblemModalOpen(false)}
+              problem={viewingProblem}
+              onRegister={() => {
+                setSelectedProblem(viewingProblem);
+              }}
+            />
+            
           </div>
         )}
 

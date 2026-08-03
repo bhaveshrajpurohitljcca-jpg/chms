@@ -22,6 +22,7 @@ import type { BackendHackathon, BackendRegistration, BackendInvitation } from '@
 import { useAuth } from '@/context/AuthContext';
 import { HackathonCard } from '@/components/student/HackathonCard';
 import { LoadingState } from '@/components/student/StateContainer';
+import { StudentProfileModal } from '@/components/student/StudentProfileModal';
 
 export const StudentDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -42,6 +43,10 @@ export const StudentDashboard: React.FC = () => {
   const [selectedPSId, setSelectedPSId] = useState('');
   const [psError, setPsError] = useState('');
   const [psLoading, setPsLoading] = useState(false);
+
+  // Profile Modal State
+  const [profileModalUserId, setProfileModalUserId] = useState<string | null>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const loadDashboard = async () => {
     try {
@@ -168,8 +173,7 @@ export const StudentDashboard: React.FC = () => {
     <div className="flex flex-col gap-8 max-w-7xl mx-auto w-full font-manrope">
       
       {/* 1. Welcome Banner */}
-      <div className="relative overflow-hidden glass-card rounded-[28px] md:rounded-[40px] p-6 md:p-10 border-accent-primary/20 bg-gradient-to-r from-accent-primary/10 via-transparent to-accent-secondary/10">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-accent-primary/10 rounded-full filter blur-[60px] pointer-events-none" />
+      <div className="relative overflow-hidden p-6 md:p-10 border border-white/10 bg-black/40 rounded-[28px] md:rounded-[40px]">
 
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex flex-col gap-2">
@@ -304,9 +308,22 @@ export const StudentDashboard: React.FC = () => {
                 <Crown size={13} className="text-accent-primary" />
                 <span>Leader: <strong>{isLeader ? 'You' : (activeReg.team?.leader?.full_name || 'Leader')}</strong></span>
               </div>
-              <div className="flex items-center gap-2 text-white/70 mt-1">
-                <Users size={13} className="text-white/40" />
-                <span>Roster size: {activeReg.team?.members?.length || 1} members</span>
+              <div className="flex flex-col gap-2 mt-2 border-t border-white/5 pt-2">
+                <span className="text-[10px] uppercase text-white/40 font-semibold mb-1">Roster ({activeReg.team?.members?.length || 1} members)</span>
+                {activeReg.team?.members?.map((member: any) => (
+                  <div key={member.id} className="flex items-center justify-between p-2 rounded-lg bg-black/40 border border-white/5">
+                    <span className="text-xs text-white truncate max-w-[120px]">{member.user?.full_name || 'Member'}</span>
+                    <button 
+                      onClick={() => {
+                        setProfileModalUserId(member.user_id);
+                        setIsProfileModalOpen(true);
+                      }}
+                      className="text-[10px] font-bold text-accent-primary hover:underline"
+                    >
+                      View Profile
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -429,25 +446,37 @@ export const StudentDashboard: React.FC = () => {
 
         </div>
       ) : (
-        /* Empty registrations state */
-        <div className="p-12 rounded-[30px] border border-white/10 bg-white/[0.01] text-center max-w-xl mx-auto flex flex-col items-center gap-6">
-          <div className="w-16 h-16 rounded-full bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center text-accent-primary">
-            <Calendar size={28} />
-          </div>
-          <div>
-            <h3 className="font-archivo text-xl font-black text-white uppercase tracking-tight">Not Registered for Any Event</h3>
-            <p className="text-xs text-white/50 mt-2 font-light max-w-sm mx-auto leading-relaxed">
-              Form or join a team inside the Team Portal first, then head to the hackathon directory to lock in registrations.
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button variant="secondary" onClick={() => navigate('/student/hackathons')} className="h-10 text-xs px-6">
-              Browse Hackathons
-            </Button>
-            <Button variant="primary" onClick={() => navigate('/student/team')} className="h-10 text-xs px-6">
+        /* Improved Empty Flow state */
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          <Card className="flex flex-col items-center justify-center text-center p-8 border-white/10 gap-4">
+            <div className="w-16 h-16 rounded-full bg-accent-secondary/10 border border-accent-secondary/20 flex items-center justify-center text-accent-secondary">
+              <Users size={28} />
+            </div>
+            <div>
+              <h3 className="font-archivo text-xl font-black text-white uppercase tracking-tight">Step 1: Form Squad</h3>
+              <p className="text-xs text-white/50 mt-2 font-light leading-relaxed">
+                You need a team to register for an event. Go to the Team Portal to create or join a squad.
+              </p>
+            </div>
+            <Button variant="secondary" onClick={() => navigate('/student/team')} className="h-10 text-xs w-full mt-2">
               Go to Team Portal
             </Button>
-          </div>
+          </Card>
+
+          <Card className="flex flex-col items-center justify-center text-center p-8 border-white/10 gap-4">
+            <div className="w-16 h-16 rounded-full bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center text-accent-primary">
+              <Calendar size={28} />
+            </div>
+            <div>
+              <h3 className="font-archivo text-xl font-black text-white uppercase tracking-tight">Step 2: Register</h3>
+              <p className="text-xs text-white/50 mt-2 font-light leading-relaxed">
+                Once you have your squad, browse the active hackathons and submit your registration.
+              </p>
+            </div>
+            <Button variant="primary" onClick={() => navigate('/student/hackathons')} className="h-10 text-xs w-full mt-2">
+              Browse Hackathons
+            </Button>
+          </Card>
         </div>
       )}
 
@@ -503,6 +532,11 @@ export const StudentDashboard: React.FC = () => {
         )}
       </div>
 
+      <StudentProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        userId={profileModalUserId}
+      />
     </div>
   );
 };

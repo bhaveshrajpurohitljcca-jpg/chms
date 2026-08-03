@@ -53,11 +53,16 @@ export const ProfilePage: React.FC = () => {
       college_id: collegeId,
       bio,
       avatar_url: avatarUrl,
-      auto_accept_invites: autoAccept
     });
     setIsEditing(false);
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
+  };
+
+  const handleToggleAutoAccept = async () => {
+    const newValue = !autoAccept;
+    setAutoAccept(newValue);
+    await updateProfile({ auto_accept_invites: newValue });
   };
 
   const roleColor: Record<string, 'primary' | 'secondary' | 'success' | 'warning'> = {
@@ -145,6 +150,37 @@ export const ProfilePage: React.FC = () => {
         </div>
       )}
 
+      {/* Auto-Accept Card - Prominently Displayed */}
+      <div className="max-w-4xl mx-auto">
+        <Card className={`p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 transition-all duration-300 border ${
+          autoAccept ? 'bg-accent-primary/10 border-accent-primary/50 shadow-[0_0_30px_rgba(0,243,255,0.2)]' : 'bg-white/[0.02] border-white/10'
+        }`}>
+          <div className="flex gap-4">
+            <div className={`w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center ${
+              autoAccept ? 'bg-accent-primary text-black' : 'bg-white/5 text-zinc-500'
+            }`}>
+              <Sparkles size={24} />
+            </div>
+            <div>
+              <h3 className={`font-archivo text-xl font-bold tracking-wide mb-1 ${autoAccept ? 'text-accent-primary' : 'text-white'}`}>
+                Auto-Join Hackathon Teams
+              </h3>
+              <p className="text-sm text-zinc-400 max-w-xl">
+                When enabled, you will instantly join a team whenever a team leader sends you an invitation. 
+                This skips the manual approval step and is great if you already have a predefined team offline!
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleToggleAutoAccept}
+            className={`w-16 h-8 rounded-full p-1 transition-colors shrink-0 ${autoAccept ? 'bg-accent-primary' : 'bg-zinc-700'}`}
+          >
+            <div className={`w-6 h-6 rounded-full bg-black transition-transform ${autoAccept ? 'translate-x-8' : 'translate-x-0'}`} />
+          </button>
+        </Card>
+      </div>
+
       {/* Main Settings Card */}
       <div className="max-w-4xl mx-auto">
         <Card className="p-8 space-y-6 border border-white/10 bg-black/40 backdrop-blur-xl">
@@ -181,19 +217,6 @@ export const ProfilePage: React.FC = () => {
                   className="w-full rounded-2xl bg-black/50 border border-white/10 p-3 text-sm text-white focus:outline-none focus:border-accent-primary"
                 />
               </div>
-              <div className="flex items-center justify-between p-4 rounded-2xl border border-white/10 bg-black/30">
-                <div>
-                  <h4 className="text-sm font-semibold text-white">Auto-Accept Invitations</h4>
-                  <p className="text-xs text-zinc-400">Automatically join teams when invited.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setAutoAccept(!autoAccept)}
-                  className={`w-12 h-6 rounded-full p-1 transition-colors ${autoAccept ? 'bg-accent-primary' : 'bg-zinc-700'}`}
-                >
-                  <div className={`w-4 h-4 rounded-full bg-black transition-transform ${autoAccept ? 'translate-x-6' : 'translate-x-0'}`} />
-                </button>
-              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 font-mono text-sm">
@@ -212,12 +235,6 @@ export const ProfilePage: React.FC = () => {
               <div>
                 <span className="text-xs text-zinc-500 uppercase block mb-1">College Roll No.</span>
                 <span className="text-zinc-300">{user.college_id || 'Not specified'}</span>
-              </div>
-              <div className="col-span-2 mt-2 pt-4 border-t border-white/10">
-                <span className="text-xs text-zinc-500 uppercase block mb-1">Auto-Join Feature</span>
-                <span className={`font-bold ${user.auto_accept_invites ? 'text-accent-primary' : 'text-zinc-500'}`}>
-                  {user.auto_accept_invites ? 'Enabled' : 'Disabled'}
-                </span>
               </div>
             </div>
           )}

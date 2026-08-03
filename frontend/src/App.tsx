@@ -7,7 +7,8 @@ import {
   NavLink,
   Navigate,
   Outlet,
-  useSearchParams
+  useSearchParams,
+  useLocation
 } from 'react-router-dom';
 import { 
   Zap, 
@@ -45,6 +46,10 @@ import ThreeParticleBg from '@/components/ui/ThreeParticleBg';
 import StatusPulseBadge from '@/components/ui/StatusPulseBadge';
 import GlassProductCard from '@/components/ui/GlassProductCard';
 import Button from '@/components/ui/button';
+import { ProjectDetailModal } from '@/components/student/ProjectDetailModal';
+import type { MockProjectData } from '@/components/student/ProjectDetailModal';
+import { TeamDetailModal } from '@/components/student/TeamDetailModal';
+import type { MockTeamData } from '@/components/student/TeamDetailModal';
 import Input from '@/components/ui/input';
 import Card from '@/components/ui/card';
 import { Table, TableRow, TableCell } from '@/components/ui/table';
@@ -52,7 +57,7 @@ import Modal from '@/components/ui/modal';
 import { StudentDashboard } from '@/pages/student/StudentDashboard';
 import { HackathonsListPage } from '@/pages/student/HackathonsListPage';
 import { HackathonDetailPage } from '@/pages/student/HackathonDetailPage';
-import { ProblemStatementDetailPage } from '@/pages/student/ProblemStatementDetailPage';
+
 import { TeamManagementPage } from '@/pages/student/TeamManagementPage';
 import { CreateTeamPage } from '@/pages/student/CreateTeamPage';
 import { RegistrationPage } from '@/pages/student/RegistrationPage';
@@ -76,6 +81,7 @@ const GlobalLayout = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, openAuthModal, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const location = useLocation();
 
   const navigationLinks = [
     { label: 'Explore Hackathons', path: '/hackathons' },
@@ -87,7 +93,7 @@ const GlobalLayout = () => {
     <div className="relative min-h-screen bg-[#050505] text-white flex flex-col font-manrope selection:bg-accent-primary selection:text-black overflow-x-hidden">
       
       {/* Dynamic 3D WebGL particle field */}
-      <ThreeParticleBg />
+      <ThreeParticleBg isInteractive={location.pathname === '/'} />
 
       {/* FIXED TOPBAR NAVIGATION */}
       <header className="fixed top-0 left-0 right-0 h-16 md:h-24 z-40 px-4 md:px-8 py-4 md:py-6 flex items-center justify-between bg-[#050505]/40 backdrop-blur-md border-b border-[rgba(255,255,255,0.05)] pointer-events-auto">
@@ -520,14 +526,58 @@ const PublicLanding = () => {
 
 // 3. EXPLORE GALLERY (Completed Submissions Showcase)
 const GalleryView = () => {
-  const showcaseProjects = [
-    { id: '1', title: 'ZeroG LLM Quantizer', description: 'Advanced local quantization pipeline reducing large model footprint by 70%.', author: 'Team Zero_Gravity', award: 'Winner', color: 'cyan' },
-    { id: '2', title: 'Eco-Glow Controller', description: 'Wearable display dashboard tracking carbon offsets in real-time.', author: 'Team Volt_Tech', award: '2nd Place', color: 'pink' },
-    { id: '3', title: 'Synthetix Routing Node', description: 'FastAPI routing architecture mapping database indices with low latency.', author: 'Team Neural_Knights', award: 'Finalist', color: 'purple' }
+  const [selectedProject, setSelectedProject] = useState<MockProjectData | null>(null);
+
+  const showcaseProjects: MockProjectData[] = [
+    {
+      id: '1',
+      title: 'ZeroG LLM Quantizer',
+      description: 'Advanced local quantization pipeline reducing large model footprint by 70%. Built with highly optimized C++ extensions and Python bindings.',
+      techStack: ['Python', 'C++', 'PyTorch', 'CUDA'],
+      team: {
+        id: 't1',
+        name: 'Team Zero_Gravity',
+        projectTitle: 'ZeroG LLM Quantizer',
+        members: [
+          { id: 'u1', name: 'Alice Chen', role: 'ML Engineer' },
+          { id: 'u2', name: 'Bob Smith', role: 'Systems Developer' }
+        ]
+      }
+    },
+    {
+      id: '2',
+      title: 'Eco-Glow Controller',
+      description: 'Wearable display dashboard tracking carbon offsets in real-time. Interfaces with IoT sensors to provide immediate environmental feedback.',
+      techStack: ['React Native', 'Node.js', 'MQTT', 'ESP32'],
+      team: {
+        id: 't2',
+        name: 'Team Volt_Tech',
+        projectTitle: 'Eco-Glow Controller',
+        members: [
+          { id: 'u3', name: 'Charlie Davis', role: 'Hardware Lead' },
+          { id: 'u4', name: 'Diana Prince', role: 'Mobile Dev' }
+        ]
+      }
+    },
+    {
+      id: '3',
+      title: 'Synthetix Routing Node',
+      description: 'FastAPI routing architecture mapping database indices with ultra-low latency. Handles 10k+ RPS with minimal resource footprint.',
+      techStack: ['FastAPI', 'Redis', 'PostgreSQL', 'Docker'],
+      team: {
+        id: 't3',
+        name: 'Team Neural_Knights',
+        projectTitle: 'Synthetix Routing Node',
+        members: [
+          { id: 'u5', name: 'Eve Carter', role: 'Backend Dev' },
+          { id: 'u6', name: 'Frank Lee', role: 'DevOps' }
+        ]
+      }
+    }
   ];
 
   return (
-    <div className="flex flex-col gap-8 w-full max-w-5xl">
+    <div className="flex flex-col gap-10 w-full max-w-6xl pl-4 md:pl-12">
       <div>
         <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-glow-cyan text-white">
           Explore Gallery
@@ -535,18 +585,32 @@ const GalleryView = () => {
         <p className="text-xs text-text-secondary mt-1 font-light">Showcase of outstanding student deliverables and technical submissions.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="flex flex-wrap gap-8">
         {showcaseProjects.map((proj) => (
-          <GlassProductCard 
+          <div 
             key={proj.id}
-            icon={Layers2}
-            title={proj.title}
-            description={`${proj.description} Developed by ${proj.author}.`}
-            price={proj.award}
-            accentColor={proj.color as 'cyan' | 'pink' | 'purple'}
-          />
+            onClick={() => setSelectedProject(proj)}
+            className="w-full sm:w-[320px] h-[380px] glass-card rounded-[32px] p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-accent-primary/40 hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden"
+          >
+            {/* Subtle background glow */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-accent-primary/5 rounded-full blur-[30px] pointer-events-none group-hover:bg-accent-primary/10 transition-colors" />
+            
+            <div className="w-16 h-16 rounded-2xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.1)] flex items-center justify-center mb-6 group-hover:scale-110 group-hover:border-accent-primary/30 transition-all duration-500">
+              <Layers2 size={28} className="text-white/60 group-hover:text-accent-primary transition-colors" />
+            </div>
+            
+            <h3 className="font-archivo text-2xl font-black text-white uppercase tracking-tight group-hover:text-glow-cyan transition-colors">
+              {proj.title}
+            </h3>
+          </div>
         ))}
       </div>
+
+      <ProjectDetailModal 
+        isOpen={!!selectedProject}
+        onClose={() => setSelectedProject(null)}
+        project={selectedProject}
+      />
     </div>
   );
 };
@@ -557,6 +621,7 @@ const LeaderboardView = () => {
   const [selectedHackathonId, setSelectedHackathonId] = useState<string>('');
   const [activeLeaderboard, setActiveLeaderboard] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [selectedTeam, setSelectedTeam] = useState<MockTeamData | null>(null);
 
   useEffect(() => {
     const loadHackathons = async () => {
@@ -581,7 +646,7 @@ const LeaderboardView = () => {
       try {
         setIsLoading(true);
         const res = await apiService.getLeaderboard(selectedHackathonId);
-        if (res && res.data) {
+        if (res && res.data && res.data.length > 0) {
           const mapped = res.data.map((item: any) => ({
             rank: item.rank,
             team: item.team_name,
@@ -593,7 +658,13 @@ const LeaderboardView = () => {
           }));
           setActiveLeaderboard(mapped);
         } else {
-          setActiveLeaderboard([]);
+          setActiveLeaderboard([
+            { rank: 1, team: 'Neural Knights', project: 'Eco-Glow Controller', branch: 'Computer Science', problemStatement: 'IoT Integration', score: 98.5, feedback: 'Excellent execution.' },
+            { rank: 2, team: 'Code Breakers', project: 'Smart Traffic AI', branch: 'Electronics', problemStatement: 'AI Optimization', score: 94.2, feedback: 'Great algorithmic approach.' },
+            { rank: 3, team: 'Byte Me', project: 'Campus Nav App', branch: 'IT', problemStatement: 'Campus Life', score: 89.0, feedback: 'Very useful utility.' },
+            { rank: 4, team: 'Debuggers', project: 'Library System', branch: 'Computer Science', problemStatement: 'Resource Mgmt', score: 85.5, feedback: 'Solid architecture.' },
+            { rank: 5, team: 'Syntax Errors', project: 'Cafeteria Pass', branch: 'IT', problemStatement: 'Campus Life', score: 82.0, feedback: 'Good UI/UX.' }
+          ]);
         }
       } catch (err: any) {
         console.warn("Failed to load leaderboard", err.message);
@@ -670,21 +741,33 @@ const LeaderboardView = () => {
 
                 if (isFirst) {
                   cardHeight = 'h-88 md:-translate-y-4';
-                  accentBorder = 'border-accent-primary';
-                  glowShadow = 'shadow-[0_0_30px_rgba(0,243,255,0.15)]';
-                  medalColor = 'text-accent-primary';
+                  accentBorder = 'border-[#FFD700]';
+                  glowShadow = 'shadow-[0_0_30px_rgba(255,215,0,0.15)]';
+                  medalColor = 'text-[#FFD700]';
                 } else if (isSecond) {
-                  accentBorder = 'border-accent-secondary';
-                  medalColor = 'text-accent-secondary';
+                  accentBorder = 'border-[#C0C0C0]';
+                  medalColor = 'text-[#C0C0C0]';
+                  glowShadow = 'shadow-[0_0_20px_rgba(192,192,192,0.1)]';
                 } else if (isThird) {
-                  accentBorder = 'border-accent-third';
-                  medalColor = 'text-accent-third';
+                  accentBorder = 'border-[#CD7F32]';
+                  medalColor = 'text-[#CD7F32]';
+                  glowShadow = 'shadow-[0_0_20px_rgba(205,127,50,0.1)]';
                 }
 
                 return (
                   <div 
                     key={winner.team} 
-                    className={`glass-card rounded-[24px] md:rounded-[40px] border p-5 md:p-8 flex flex-col justify-between items-center text-center relative ${accentBorder} ${glowShadow} min-h-[200px] md:${cardHeight}`}
+                    onClick={() => setSelectedTeam({
+                      id: winner.team,
+                      name: winner.team,
+                      projectTitle: winner.project,
+                      members: [
+                        { id: 'u1', name: 'Alice Chen', role: 'Full Stack Dev', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&q=80' },
+                        { id: 'u2', name: 'Bob Smith', role: 'UI/UX Designer', avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=150&q=80' },
+                        { id: 'u3', name: 'Charlie Davis', role: 'Backend Engineer', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80' }
+                      ]
+                    })}
+                    className={`glass-card rounded-[24px] md:rounded-[40px] border p-5 md:p-8 flex flex-col justify-between items-center text-center relative ${accentBorder} ${glowShadow} min-h-[200px] md:${cardHeight} hover:-translate-y-2 hover:bg-white/[0.08] cursor-pointer transition-all duration-300`}
                   >
                     {/* Ranking Medals Badge */}
                     <div className={`w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-archivo text-lg font-black ${medalColor} mb-2`}>
@@ -728,16 +811,29 @@ const LeaderboardView = () => {
             <div className="overflow-x-auto">
               <Table headers={['Rank', 'Team & Project', 'Academic Branch', 'Problem Statement', 'Evaluated Score', 'Feedback Comments']}>
                 {activeLeaderboard.map((team) => (
-                  <TableRow key={team.team} className="hover:bg-white/[0.01] transition-all">
+                  <TableRow 
+                    key={team.team} 
+                    onClick={() => setSelectedTeam({
+                      id: team.team,
+                      name: team.team,
+                      projectTitle: team.project,
+                      members: [
+                        { id: 'u1', name: 'Alice Chen', role: 'Full Stack Dev', avatar: 'https://images.unsplash.com/photo-1494790108377-w=150&q=80' },
+                        { id: 'u2', name: 'Bob Smith', role: 'UI/UX Designer', avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=150&q=80' },
+                        { id: 'u3', name: 'Charlie Davis', role: 'Backend Engineer', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80' }
+                      ]
+                    })}
+                    className="hover:bg-white/[0.05] cursor-pointer transition-all"
+                  >
                     {/* Rank */}
                     <TableCell className="font-mono text-md font-bold text-center">
                       <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-black ${
                         team.rank === 1 
-                          ? 'bg-accent-primary/10 border border-accent-primary text-accent-primary shadow-[0_0_10px_rgba(0,243,255,0.2)]'
+                          ? 'bg-[#FFD700]/10 border border-[#FFD700] text-[#FFD700] shadow-[0_0_10px_rgba(255,215,0,0.2)]'
                           : team.rank === 2
-                          ? 'bg-accent-secondary/10 border border-accent-secondary text-accent-secondary'
+                          ? 'bg-[#C0C0C0]/10 border border-[#C0C0C0] text-[#C0C0C0]'
                           : team.rank === 3
-                          ? 'bg-accent-third/10 border border-accent-third text-accent-third'
+                          ? 'bg-[#CD7F32]/10 border border-[#CD7F32] text-[#CD7F32]'
                           : 'bg-white/5 border border-white/10 text-white/60'
                       }`}>
                         {team.rank}
@@ -795,6 +891,12 @@ const LeaderboardView = () => {
           </Card>
         </>
       )}
+
+      <TeamDetailModal 
+        isOpen={!!selectedTeam}
+        onClose={() => setSelectedTeam(null)}
+        team={selectedTeam}
+      />
     </div>
   );
 };
@@ -5991,6 +6093,7 @@ function App() {
             
             {/* Public/Guest access to hackathons and teams */}
             <Route path="/hackathons" element={<HackathonsListPage />} />
+            <Route path="/hackathons/:id" element={<HackathonDetailPage />} />
             <Route path="/teams" element={<TeamManagementPage />} />
           </Route>
 
@@ -5999,8 +6102,7 @@ function App() {
             <Route index element={<StudentDashboard />} />
             <Route path="dashboard" element={<StudentDashboard />} />
             <Route path="hackathons" element={<HackathonsListPage />} />
-            <Route path="hackathons/:id" element={<HackathonDetailPage />} />
-            <Route path="hackathons/:id/problems/:problemId" element={<ProblemStatementDetailPage />} />
+            {/* <Route path="hackathons/:id/problems/:problemId" element={<ProblemStatementDetailPage />} /> */}
             <Route path="team" element={<TeamManagementPage />} />
             <Route path="team/create" element={<CreateTeamPage />} />
             <Route path="registration" element={<RegistrationPage />} />

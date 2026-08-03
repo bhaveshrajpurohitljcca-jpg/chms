@@ -13,8 +13,9 @@ import {
   Clock
 } from 'lucide-react';
 import { apiService } from '@/services/api';
-import type { BackendHackathon, BackendRegistration } from '@/services/api';
+import type { BackendHackathon, BackendRegistration, BackendProblemStatement } from '@/services/api';
 import { ProblemStatementCard } from '@/components/student/ProblemStatementCard';
+import { ProblemStatementModal } from '@/components/student/ProblemStatementModal';
 import { LoadingState, ErrorState, EmptyState } from '@/components/student/StateContainer';
 
 const statusVariantMap: Record<string, 'success' | 'warning' | 'primary' | 'secondary'> = {
@@ -32,6 +33,9 @@ export const HackathonDetailPage: React.FC = () => {
   const [registration, setRegistration] = useState<BackendRegistration | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  const [selectedProblem, setSelectedProblem] = useState<BackendProblemStatement | null>(null);
+  const [isProblemModalOpen, setIsProblemModalOpen] = useState(false);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return 'TBD';
@@ -208,17 +212,28 @@ export const HackathonDetailPage: React.FC = () => {
             icon={BookOpen}
           />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="flex flex-col gap-3">
             {hackathon.problem_statements.map((ps) => (
               <ProblemStatementCard
                 key={ps.id}
                 problem={ps}
-                onSelect={() => navigate(`/student/hackathons/${hackathon.id}/problems/${ps.id}`)}
+                showSelectButton={false}
+                onSelect={() => {
+                  setSelectedProblem(ps);
+                  setIsProblemModalOpen(true);
+                }}
               />
             ))}
           </div>
         )}
       </div>
+
+      <ProblemStatementModal 
+        isOpen={isProblemModalOpen}
+        onClose={() => setIsProblemModalOpen(false)}
+        problem={selectedProblem}
+        // Notice we do NOT pass onRegister here, so it acts as read-only explore mode
+      />
 
     </div>
   );

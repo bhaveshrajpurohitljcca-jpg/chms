@@ -1,8 +1,20 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { useTheme } from '@/context/ThemeContext';
 
-export const ThreeParticleBg = () => {
+interface ThreeParticleBgProps {
+  isInteractive?: boolean;
+}
+
+export const ThreeParticleBg = ({ isInteractive = true }: ThreeParticleBgProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const isHomeRef = useRef(isInteractive);
+  const { theme } = useTheme();
+  const materialRef = useRef<THREE.PointsMaterial | null>(null);
+
+  useEffect(() => {
+    isHomeRef.current = isInteractive;
+  }, [isInteractive]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -47,15 +59,17 @@ export const ThreeParticleBg = () => {
 
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
-    // 5. Material Setup: color #00f3ff, size 0.005
+    // 5. Material Setup: color changes based on theme
     const material = new THREE.PointsMaterial({
-      color: 0x00f3ff,
-      size: 0.006,
+      color: theme === 'light' ? 0x6366f1 : 0x00f3ff, // Indigo-500 instead of slate
+      size: theme === 'light' ? 0.012 : 0.006, // Slightly larger to show color better
       transparent: true,
-      opacity: 0.8,
+      opacity: theme === 'light' ? 0.35 : (isInteractive ? 0.8 : 0.3),
       sizeAttenuation: true,
-      blending: THREE.AdditiveBlending
+      blending: theme === 'light' ? THREE.NormalBlending : THREE.AdditiveBlending
     });
+    
+    materialRef.current = material;
 
     const particles = new THREE.Points(geometry, material);
     scene.add(particles);
@@ -83,13 +97,25 @@ export const ThreeParticleBg = () => {
 
       const elapsedTime = (performance.now() - startTime) / 1000;
 
-      // Smooth mouse tracking interpolation (Lerp)
-      targetX += (mouseX - targetX) * 0.08;
-      targetY += (mouseY - targetY) * 0.08;
+      if (isHomeRef.current) {
+        // Smooth mouse tracking interpolation (Lerp)
+        targetX += (mouseX - targetX) * 0.08;
+        targetY += (mouseY - targetY) * 0.08;
 
-      // Apply base rotation + mouse responsive offset
-      particles.rotation.y = (elapsedTime * 0.05) + (targetX * 1.8);
-      particles.rotation.x = (elapsedTime * 0.025) + (targetY * 1.8);
+        // Apply base rotation + mouse responsive offset
+        particles.rotation.y = (elapsedTime * 0.05) + (targetX * 1.8);
+        particles.rotation.x = (elapsedTime * 0.025) + (targetY * 1.8);
+        
+        // Smoothly fade to bright
+        material.opacity += (0.8 - material.opacity) * 0.05;
+      } else {
+        // Static slow drift for other pages without mouse tracking
+        particles.rotation.y = elapsedTime * 0.01;
+        particles.rotation.x = elapsedTime * 0.005;
+        
+        // Smoothly fade to light/dim
+        material.opacity += (0.25 - material.opacity) * 0.05;
+      }
 
       renderer.render(scene, camera);
     };
@@ -125,11 +151,29 @@ export const ThreeParticleBg = () => {
     };
   }, []);
 
+  // Update material when theme or interaction mode changes
+  useEffect(() => {
+    if (materialRef.current) {
+      if (theme === 'light') {
+        materialRef.current.color.setHex(0x6366f1); // Vibrant Indigo (Theme friendly, clearly NOT black)
+        materialRef.current.blending = THREE.NormalBlending;
+        materialRef.current.opacity = 0.5;
+        materialRef.current.size = 0.012;
+      } else {
+        materialRef.current.color.setHex(0x00f3ff); // Cyan
+        materialRef.current.blending = THREE.AdditiveBlending;
+        materialRef.current.opacity = isInteractive ? 0.8 : 0.3;
+        materialRef.current.size = 0.006;
+      }
+      materialRef.current.needsUpdate = true;
+    }
+  }, [theme, isInteractive]);
+
   return (
     <div 
       ref={containerRef} 
       className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
-      style={{ mixBlendMode: 'screen' }}
+      style={{ mixBlendMode: theme === 'light' ? 'normal' : 'screen', opacity: theme === 'light' ? 0.9 : 0.8 }}
     />
   );
 };

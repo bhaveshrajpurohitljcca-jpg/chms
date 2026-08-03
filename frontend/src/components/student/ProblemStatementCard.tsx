@@ -29,6 +29,43 @@ export const ProblemStatementCard: React.FC<ProblemStatementCardProps> = ({
 }) => {
   const difficultyVariant = difficultyVariants[problem.difficulty] || 'warning';
 
+  // If it's explore mode (no select button), render a horizontal row layout
+  if (!showSelectButton) {
+    return (
+      <div 
+        onClick={() => onSelect && onSelect(problem)}
+        className="group flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl glass-surface border border-white/5 hover:border-accent-primary/40 hover:bg-white/[0.05] transition-all duration-300 cursor-pointer"
+      >
+        <div className="flex items-center gap-4 flex-1">
+          <div className="w-12 h-12 rounded-xl bg-accent-primary/5 border border-accent-primary/20 flex flex-col items-center justify-center shrink-0">
+            <span className="text-[10px] font-mono text-accent-primary font-bold">
+              {problem.id.slice(0, 4).toUpperCase()}
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <h4 className="font-archivo text-base uppercase font-bold text-white truncate max-w-full">
+                {problem.title}
+              </h4>
+              <Badge variant={difficultyVariant} className="scale-75 origin-left">
+                {problem.difficulty}
+              </Badge>
+            </div>
+            <p className="text-xs text-white/50 truncate max-w-full">
+              {problem.description.substring(0, 100)}...
+            </p>
+          </div>
+        </div>
+        <div className="flex shrink-0">
+          <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-accent-primary group-hover:text-black transition-colors">
+            <ArrowRight size={14} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Original vertical card layout for Team portal selection
   return (
     <Card
       hoverable

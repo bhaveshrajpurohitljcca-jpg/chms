@@ -104,6 +104,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         } catch (error) {
           console.log("Backend offline or token expired, utilizing standard demo user state.");
+          removeStoredToken();
+          setToken(null);
+          setUser(null);
         } finally {
           setIsLoading(false);
         }

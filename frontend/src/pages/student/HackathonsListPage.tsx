@@ -182,7 +182,7 @@ export const HackathonsListPage: React.FC = () => {
               key={hackathon.id}
               hackathon={hackathon}
               isRegistered={isRegisteredFor(hackathon.id)}
-              onInspect={(h) => navigate(`/student/hackathons/${h.id}`)}
+              onInspect={(h) => navigate(`/hackathons/${h.id}`)}
               onRegister={(h) => navigate(`/student/registration?hackathonId=${h.id}`)}
             />
           ))}

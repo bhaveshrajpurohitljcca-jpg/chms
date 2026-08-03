@@ -3,6 +3,7 @@ import Modal from '@/components/ui/modal';
 import Button from '@/components/ui/button';
 import { UserPlus, CheckCircle2, AlertCircle, Search, User, Loader2 } from 'lucide-react';
 import { apiService, type UserProfile } from '@/services/api';
+import { StudentProfileModal } from '@/components/student/StudentProfileModal';
 
 interface InviteMemberModalProps {
   isOpen: boolean;
@@ -31,6 +32,10 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
   const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  
+  // Profile modal state
+  const [profileModalUserId, setProfileModalUserId] = useState<string | null>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   
   // Eligible users state
   const [eligibleUsers, setEligibleUsers] = useState<UserProfile[]>([]);
@@ -233,6 +238,17 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                           Auto-Join
                         </span>
                       )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setProfileModalUserId(user.id);
+                          setIsProfileModalOpen(true);
+                        }}
+                        className="ml-2 text-[10px] font-bold text-accent-primary hover:underline"
+                      >
+                        View Profile
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -300,13 +316,25 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                     ) : (
                       <span />
                     )}
-                    <button
-                      onClick={() => handleDirectInvite(user.email)}
-                      disabled={isLoading}
-                      className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-accent-primary hover:text-black text-[10px] font-bold text-white transition-all disabled:opacity-50"
-                    >
-                      Invite
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProfileModalUserId(user.id);
+                          setIsProfileModalOpen(true);
+                        }}
+                        className="text-[10px] font-bold text-accent-primary hover:underline transition-all"
+                      >
+                        View Profile
+                      </button>
+                      <button
+                        onClick={() => handleDirectInvite(user.email)}
+                        disabled={isLoading}
+                        className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-accent-primary hover:text-black text-[10px] font-bold text-white transition-all disabled:opacity-50"
+                      >
+                        Invite
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))
@@ -315,6 +343,12 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
         </div>
 
       </div>
+
+      <StudentProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        userId={profileModalUserId}
+      />
     </Modal>
   );
 };

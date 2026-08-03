@@ -6,6 +6,7 @@ export interface UserProfile {
   name: string;
   role: UserRole;
   avatar_url?: string;
+  auto_accept_invites?: boolean;
   created_at: string;
 }
 

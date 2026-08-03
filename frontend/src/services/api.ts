@@ -335,6 +335,10 @@ export const apiService = {
     return request<UserProfile[]>(`/users/search?q=${encodeURIComponent(query)}`);
   },
 
+  async getUser(userId: string) {
+    return request<UserProfile>(`/users/${userId}`);
+  },
+
   async updateUserStatus(userId: string, isActive: boolean) {
     return request<any>(`/users/${userId}/status`, {
       method: 'PUT',
@@ -636,6 +640,9 @@ export const apiService = {
 
   /** Get all registrations for teams the current user belongs to */
   async getMyRegistrations() {
+    if (!getStoredToken()) {
+      return Promise.resolve({ success: true, message: "No token", data: [] });
+    }
     return request<BackendRegistration[]>('/registrations/my');
   },
 

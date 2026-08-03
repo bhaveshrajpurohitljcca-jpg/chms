@@ -11,6 +11,7 @@ import Card from '../components/ui/card';
 const profileSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email address'),
+  autoAcceptInvites: z.boolean().optional(),
 });
 
 const passwordSchema = z.object({
@@ -47,6 +48,7 @@ export default function ProfileSettings() {
     defaultValues: {
       fullName: user?.full_name || '',
       email: user?.email || '',
+      autoAcceptInvites: user?.auto_accept_invites || false,
     },
   });
 
@@ -69,7 +71,10 @@ export default function ProfileSettings() {
     setProfileSuccess(null);
     setProfileError(null);
     try {
-      await updateProfile({ full_name: data.fullName });
+      await updateProfile({ 
+        full_name: data.fullName,
+        auto_accept_invites: data.autoAcceptInvites
+      });
       setProfileSuccess('Profile metadata updated successfully.');
     } catch (err: any) {
       setProfileError(err.response?.data?.detail || 'Failed to update profile.');
@@ -145,6 +150,21 @@ export default function ProfileSettings() {
               error={profileErrors.email?.message}
               {...registerProfile('email')}
             />
+
+            <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.03] border border-white/5 mt-2">
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-white">Auto-Join Teams</span>
+                <span className="text-[10px] text-white/50 mt-0.5">Automatically accept team invitations when invited.</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer"
+                  {...registerProfile('autoAcceptInvites')}
+                />
+                <div className="w-9 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent-primary"></div>
+              </label>
+            </div>
 
             <div>
               <span className="text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-semibold">

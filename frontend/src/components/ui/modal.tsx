@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 export interface ModalProps {
@@ -31,14 +32,14 @@ export const Modal = ({
   if (!isOpen) return null;
 
   const sizes = {
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl'
+    sm: 'max-w-md w-full',
+    md: 'w-[50vw] max-w-3xl',
+    lg: 'w-[75vw] max-w-[1400px]',
+    xl: 'w-[90vw] max-w-[1600px]'
   };
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] overflow-y-auto flex items-center justify-center p-4">
       {/* Backdrop overlay */}
       <div 
         className="fixed inset-0 bg-black/80 backdrop-blur-[6px] transition-opacity duration-500" 
@@ -46,7 +47,7 @@ export const Modal = ({
       />
       
       {/* Modal Dialog */}
-      <div className={`relative w-full ${sizes[size]} rounded-dialog glass-card bg-[#050505]/95 border border-[rgba(255,255,255,0.12)] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-10 my-auto transform scale-100 transition-transform duration-500 ease-out flex flex-col gap-4 max-h-[90vh] overflow-hidden`}>
+      <div className={`relative w-full ${sizes[size]} rounded-dialog glass-card bg-[#050505]/95 border border-[rgba(255,255,255,0.12)] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-10 my-auto transform scale-100 transition-transform duration-500 ease-out flex flex-col gap-4 max-h-[95vh] overflow-hidden`}>
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] pb-4 flex-shrink-0">
@@ -68,7 +69,8 @@ export const Modal = ({
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

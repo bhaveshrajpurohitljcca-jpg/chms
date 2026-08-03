@@ -388,7 +388,7 @@ def unpublish_results(
 def get_hackathon_leaderboard(
     hackathon_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """
     Calculate and return the leaderboard for a given hackathon.
