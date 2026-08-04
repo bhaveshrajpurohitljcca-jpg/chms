@@ -125,14 +125,14 @@ export default function Signup() {
                 <img
                   src={selectedAvatar}
                   alt="avatar"
-                  className="w-24 h-24 rounded-2xl object-cover border-2 border-accent-primary/40 shadow-[0_0_20px_rgba(0,243,255,0.2)] bg-[#0f0f1a] transition-all group-hover:border-accent-primary group-hover:scale-105"
+                  className="w-36 h-36 rounded-3xl object-cover border-2 border-accent-primary/40 shadow-[0_0_25px_rgba(0,243,255,0.25)] bg-[#0f0f1a] transition-all group-hover:border-accent-primary group-hover:scale-105"
                 />
                 <button
                   type="button"
                   onClick={() => setIsAvatarModalOpen(true)}
-                  className="absolute -bottom-2 -right-2 w-9 h-9 rounded-xl bg-black border border-accent-primary flex items-center justify-center text-accent-primary hover:bg-accent-primary hover:text-black transition-all shadow-[0_0_15px_rgba(0,243,255,0.3)] z-10"
+                  className="absolute -bottom-2 -right-2 w-11 h-11 rounded-2xl bg-black border border-accent-primary flex items-center justify-center text-accent-primary hover:bg-accent-primary hover:text-black transition-all shadow-[0_0_20px_rgba(0,243,255,0.4)] z-10"
                 >
-                  <Edit2 size={16} />
+                  <Edit2 size={18} />
                 </button>
               </div>
             </div>

@@ -91,3 +91,25 @@
 - ✅ UI bahot clean ho gaya hai Signup aur Profile pages me.
 - ✅ Users ke paas ab 27 avatars ka naya aur better collection hai.
 - ✅ Ek central modal component banne se code duplicacy kam ho gayi.
+
+---
+
+## 🔄 Change #4 — Larger Avatar Box & Student Social Links (GitHub & LinkedIn)
+**Date:** 2026-08-05  
+**Branch:** `main`
+
+### Kya kiya:
+- **Enlarged Avatar Box:** Signup page mein avatar box ka size `w-24 h-24` (96px) se bada karke `w-36 h-36` (144px) kiya. AuthModal mein `w-20 h-20` (80px) se bada karke `w-32 h-32` (128px) kiya. Edit button icons bhi proportionate scale up kiye.
+- **Backend Schema & DB Model Update:** `User` model (`backend/app/models/user.py`) aur Pydantic schemas (`backend/app/schemas/user.py`) mein `github_url` aur `linkedin_url` columns/fields add kiye. Service layer me profile update logic update ki. `seed_local.py` me seed users ke sample links add kiye.
+- **Frontend Student Profile Updates:**
+  - `ProfilePage.tsx`: Edit profile section me GitHub URL aur LinkedIn URL ke input fields add kiye. Profile header banner aur account metadata list me live clickable GitHub / LinkedIn badges render kiye.
+  - `StudentProfileModal.tsx`: Jab koi aur student/judge profile view karega toh profile modal me bhi GitHub aur LinkedIn links display honge.
+
+### Kyu kiya:
+- Avatar image choti lag rahi thi registration form pe — size badhane se selected avatar HD look ke saath clearly highlighted rehta hai.
+- Student profile completeness ke liye GitHub aur LinkedIn handles mandatory hote hain hackathons me for portfolio review.
+
+### Kya impact aaya:
+- ✅ Form pe avatar preview clearly visible aur prominent ho gaya hai.
+- ✅ Students ab apna GitHub aur LinkedIn portfolio link save aur display kar sakte hain.
+- ✅ Build tests (`npm run build`) 100% pass!

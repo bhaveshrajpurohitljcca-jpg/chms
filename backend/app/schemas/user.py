@@ -13,6 +13,8 @@ class UserRegister(BaseModel):
     bio: Optional[str] = None
     phone: Optional[str] = None
     semester: Optional[str] = None
+    github_url: Optional[str] = None
+    linkedin_url: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -26,6 +28,8 @@ class UserProfileUpdate(BaseModel):
     bio: Optional[str] = None
     phone: Optional[str] = None
     auto_accept_invites: Optional[bool] = None
+    github_url: Optional[str] = None
+    linkedin_url: Optional[str] = None
 
 class UserRoleUpdate(BaseModel):
     role: UserRole
@@ -48,6 +52,8 @@ class UserResponse(BaseModel):
     is_active: bool
     is_deleted: bool
     auto_accept_invites: bool
+    github_url: Optional[str] = None
+    linkedin_url: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -73,6 +79,8 @@ class UserUpdateAdmin(BaseModel):
     semester: Optional[str] = None
     is_active: Optional[bool] = None
     auto_accept_invites: Optional[bool] = None
+    github_url: Optional[str] = None
+    linkedin_url: Optional[str] = None
 
 class UserStatusUpdate(BaseModel):
     is_active: bool

@@ -4,7 +4,7 @@ import Badge from '@/components/ui/badge';
 import { apiService } from '@/services/api';
 import type { UserProfile } from '@/services/api';
 import { LoadingState, ErrorState } from '@/components/student/StateContainer';
-import { Mail, Building, CreditCard, Sparkles } from 'lucide-react';
+import { Mail, Building, CreditCard, Sparkles, Code, Globe } from 'lucide-react';
 
 interface StudentProfileModalProps {
   isOpen: boolean;
@@ -114,6 +114,26 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                       <span className="flex items-center gap-1.5">
                         <CreditCard size={14} className="text-accent-primary" /> {profile.college_id}
                       </span>
+                    )}
+                    {profile.github_url && (
+                      <a
+                        href={profile.github_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-accent-primary hover:underline"
+                      >
+                        <Code size={14} /> GitHub
+                      </a>
+                    )}
+                    {profile.linkedin_url && (
+                      <a
+                        href={profile.linkedin_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-accent-primary hover:underline"
+                      >
+                        <Globe size={14} /> LinkedIn
+                      </a>
                     )}
                   </div>
                 </div>

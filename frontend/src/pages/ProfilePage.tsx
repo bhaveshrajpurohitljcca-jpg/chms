@@ -14,7 +14,9 @@ import {
   Edit3, 
   Save, 
   Sparkles,
-  Edit2
+  Edit2,
+  Code,
+  Globe
 } from 'lucide-react';
 import AvatarPickerModal from '@/components/ui/AvatarPickerModal';
 
@@ -27,6 +29,8 @@ export const ProfilePage: React.FC = () => {
   const [collegeId, setCollegeId] = useState(user?.college_id || '');
   const [bio, setBio] = useState(user?.bio || '');
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || '');
+  const [githubUrl, setGithubUrl] = useState((user as any)?.github_url || '');
+  const [linkedinUrl, setLinkedinUrl] = useState((user as any)?.linkedin_url || '');
   const [autoAccept, setAutoAccept] = useState(user?.auto_accept_invites || false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
 
@@ -56,6 +60,8 @@ export const ProfilePage: React.FC = () => {
       college_id: collegeId,
       bio,
       avatar_url: avatarUrl,
+      github_url: githubUrl,
+      linkedin_url: linkedinUrl,
     });
     setIsEditing(false);
     setSaveSuccess(true);
@@ -131,6 +137,26 @@ export const ProfilePage: React.FC = () => {
                 <span className="flex items-center gap-1.5">
                   <CreditCard size={14} className="text-accent-primary" /> {user.college_id}
                 </span>
+              )}
+              {(user as any)?.github_url && (
+                <a
+                  href={(user as any).github_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 hover:text-white transition-colors"
+                >
+                  <Code size={14} className="text-accent-primary" /> GitHub
+                </a>
+              )}
+              {(user as any)?.linkedin_url && (
+                <a
+                  href={(user as any).linkedin_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 hover:text-white transition-colors"
+                >
+                  <Globe size={14} className="text-accent-primary" /> LinkedIn
+                </a>
               )}
             </div>
           </div>
@@ -218,6 +244,16 @@ export const ProfilePage: React.FC = () => {
                   <Input value={collegeId} onChange={(e) => setCollegeId(e.target.value)} leftIcon={<CreditCard size={16} />} />
                 </div>
               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-mono text-zinc-400 mb-1.5 uppercase">GitHub Profile URL</label>
+                  <Input value={githubUrl} onChange={(e) => setGithubUrl(e.target.value)} placeholder="https://github.com/username" leftIcon={<Code size={16} />} />
+                </div>
+                <div>
+                  <label className="block text-xs font-mono text-zinc-400 mb-1.5 uppercase">LinkedIn Profile URL</label>
+                  <Input value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} placeholder="https://linkedin.com/in/username" leftIcon={<Globe size={16} />} />
+                </div>
+              </div>
               <div>
                 <label className="block text-xs font-mono text-zinc-400 mb-1.5 uppercase">Bio</label>
                 <textarea
@@ -245,6 +281,26 @@ export const ProfilePage: React.FC = () => {
               <div>
                 <span className="text-xs text-zinc-500 uppercase block mb-1">College Roll No.</span>
                 <span className="text-zinc-300">{user.college_id || 'Not specified'}</span>
+              </div>
+              <div>
+                <span className="text-xs text-zinc-500 uppercase block mb-1">GitHub Profile</span>
+                {(user as any)?.github_url ? (
+                  <a href={(user as any).github_url} target="_blank" rel="noopener noreferrer" className="text-accent-primary hover:underline flex items-center gap-1.5">
+                    <Code size={14} /> {(user as any).github_url}
+                  </a>
+                ) : (
+                  <span className="text-zinc-500">Not provided</span>
+                )}
+              </div>
+              <div>
+                <span className="text-xs text-zinc-500 uppercase block mb-1">LinkedIn Profile</span>
+                {(user as any)?.linkedin_url ? (
+                  <a href={(user as any).linkedin_url} target="_blank" rel="noopener noreferrer" className="text-accent-primary hover:underline flex items-center gap-1.5">
+                    <Globe size={14} /> {(user as any).linkedin_url}
+                  </a>
+                ) : (
+                  <span className="text-zinc-500">Not provided</span>
+                )}
               </div>
             </div>
           )}

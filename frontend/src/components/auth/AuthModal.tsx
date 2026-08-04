@@ -156,14 +156,14 @@ export const AuthModal: React.FC = () => {
                   <img
                     src={selectedAvatar}
                     alt="avatar"
-                    className="w-20 h-20 rounded-2xl object-cover border-2 border-accent-primary/40 shadow-[0_0_20px_rgba(0,243,255,0.2)] bg-[#1a1a2e] transition-all group-hover:border-accent-primary group-hover:scale-105"
+                    className="w-32 h-32 rounded-3xl object-cover border-2 border-accent-primary/40 shadow-[0_0_25px_rgba(0,243,255,0.25)] bg-[#1a1a2e] transition-all group-hover:border-accent-primary group-hover:scale-105"
                   />
                   <button
                     type="button"
                     onClick={() => setIsAvatarModalOpen(true)}
-                    className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl bg-black border border-accent-primary flex items-center justify-center text-accent-primary hover:bg-accent-primary hover:text-black transition-all shadow-[0_0_15px_rgba(0,243,255,0.3)] z-10"
+                    className="absolute -bottom-2 -right-2 w-10 h-10 rounded-2xl bg-black border border-accent-primary flex items-center justify-center text-accent-primary hover:bg-accent-primary hover:text-black transition-all shadow-[0_0_18px_rgba(0,243,255,0.35)] z-10"
                   >
-                    <Edit2 size={14} />
+                    <Edit2 size={16} />
                   </button>
                 </div>
               </div>

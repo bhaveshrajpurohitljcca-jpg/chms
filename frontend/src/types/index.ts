@@ -7,6 +7,8 @@ export interface UserProfile {
   role: UserRole;
   avatar_url?: string;
   auto_accept_invites?: boolean;
+  github_url?: string;
+  linkedin_url?: string;
   created_at: string;
 }
 

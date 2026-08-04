@@ -36,7 +36,9 @@ def register_user(db: Session, user_in: UserRegister) -> User:
         college_id=user_in.college_id,
         bio=user_in.bio,
         phone=user_in.phone,
-        semester=user_in.semester
+        semester=user_in.semester,
+        github_url=user_in.github_url,
+        linkedin_url=user_in.linkedin_url
     )
     db.add(db_user)
     db.commit()
@@ -100,6 +102,10 @@ def update_profile(db: Session, db_user: User, update_in: UserProfileUpdate) -> 
         db_user.phone = update_in.phone
     if update_in.auto_accept_invites is not None:
         db_user.auto_accept_invites = update_in.auto_accept_invites
+    if update_in.github_url is not None:
+        db_user.github_url = update_in.github_url
+    if update_in.linkedin_url is not None:
+        db_user.linkedin_url = update_in.linkedin_url
 
     db.commit()
     db.refresh(db_user)
@@ -132,6 +138,10 @@ def update_user_admin(db: Session, db_user: User, update_in: UserUpdateAdmin) ->
         db_user.is_active = update_in.is_active
     if update_in.auto_accept_invites is not None:
         db_user.auto_accept_invites = update_in.auto_accept_invites
+    if update_in.github_url is not None:
+        db_user.github_url = update_in.github_url
+    if update_in.linkedin_url is not None:
+        db_user.linkedin_url = update_in.linkedin_url
 
     db.commit()
     db.refresh(db_user)

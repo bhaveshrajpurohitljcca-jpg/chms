@@ -18,6 +18,8 @@ export interface UserProfile {
   bio?: string;
   is_active: boolean;
   auto_accept_invites?: boolean;
+  github_url?: string;
+  linkedin_url?: string;
   created_at?: string;
   updated_at?: string;
 }
