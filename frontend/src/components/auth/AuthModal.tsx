@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Zap, X, KeyRound, Mail, User, Hash, Phone, Eye, EyeOff, Check, Edit2 } from 'lucide-react';
+import { Zap, X, KeyRound, Mail, User, Hash, Phone, Eye, EyeOff, Edit2 } from 'lucide-react';
 import Modal from '@/components/ui/modal';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/input';
