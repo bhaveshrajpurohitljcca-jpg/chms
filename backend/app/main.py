@@ -26,7 +26,10 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing database schemas and checking seed data...")
     db = SessionLocal()
     try:
-        seed_database(db, engine)
+        if settings.ENVIRONMENT in ["local", "development"]:
+            seed_database(db, engine)
+        else:
+            logger.info(f"Skipping seed data generation in {settings.ENVIRONMENT} environment.")
     except Exception as e:
         logger.error(f"Error seeding database: {e}")
     finally:
