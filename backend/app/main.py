@@ -8,7 +8,6 @@ from app.config import settings
 from app.api.v1.router import api_router
 from app.middleware.exception_handler import setup_exception_handlers
 from app.database import engine, SessionLocal
-from app.core.seed import seed_database
 
 logging.basicConfig(
     level=logging.INFO,
@@ -22,16 +21,13 @@ async def lifespan(app: FastAPI):
     # Ensure uploads directory exists
     os.makedirs("uploads", exist_ok=True)
     logger.info("Uploads directory verified.")
-    # Initialize DB & Seed Data
-    logger.info("Initializing database schemas and checking seed data...")
+    # Initialize DB schemas
+    logger.info("Initializing database schemas...")
     db = SessionLocal()
     try:
-        if settings.ENVIRONMENT in ["local", "development"]:
-            seed_database(db, engine)
-        else:
-            logger.info(f"Skipping seed data generation in {settings.ENVIRONMENT} environment.")
+        pass
     except Exception as e:
-        logger.error(f"Error seeding database: {e}")
+        logger.error(f"Error connecting to database: {e}")
     finally:
         db.close()
     yield
