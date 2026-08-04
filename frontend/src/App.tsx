@@ -35,7 +35,9 @@ import {
   Trash2,
   Edit2,
   User,
-  Sparkles
+  Sparkles,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { apiService, STATIC_BASE } from '@/services/api';
 import type { UserProfile } from '@/services/api';
@@ -60,6 +62,7 @@ import JudgeAssignmentPage from '@/pages/admin/JudgeAssignmentPage';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { ProfilePage } from '@/pages/ProfilePage';
+import { useTheme } from '@/context/ThemeContext';
 
 // Auth Imports
 import ProfileSettings from './pages/ProfileSettings';
@@ -72,6 +75,7 @@ import Badge from '@/components/ui/badge';
 const GlobalLayout = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, openAuthModal, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const navigationLinks = [
     { label: 'Explore Hackathons', path: '/hackathons' },
@@ -166,6 +170,16 @@ const GlobalLayout = () => {
               Sign In
             </button>
           )}
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            className="w-9 h-9 rounded-xl border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.05)] flex items-center justify-center text-accent-primary hover:border-accent-primary transition-all duration-300"
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+
           {/* Mobile hamburger — opens full-screen drawer */}
           <button
             onClick={() => setIsMenuOpen(true)}

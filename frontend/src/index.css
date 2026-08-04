@@ -114,6 +114,78 @@ body {
   }
 }
 
-.animate-fade-in-up {
-  animation: fade-in-up 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+/* Light Theme Variables */
+html.light, [data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-surface: rgba(0, 0, 0, 0.04);
+  --bg-card: #ffffff;
+  
+  --accent-primary: #0099a8;
+  --accent-secondary: #d900a5;
+  --accent-third: #7c00cc;
+  
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  
+  --border-color: rgba(0, 0, 0, 0.12);
+}
+
+/* Light Mode Global Overrides */
+html.light body,
+html.light .bg-\[\#050505\],
+html.light .bg-black {
+  background-color: #f8fafc !important;
+  color: #0f172a;
+}
+
+html.light header,
+html.light aside {
+  background-color: rgba(248, 250, 252, 0.9) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+html.light .glass-card,
+html.light .glass-surface {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+html.light .text-white {
+  color: #0f172a !important;
+}
+
+html.light .text-white\/80,
+html.light .text-white\/70,
+html.light .text-white\/60,
+html.light .text-\[rgba\(255\,255\,255\,0\.65\)\],
+html.light .text-\[rgba\(255\,255\,255\,0\.6\)\] {
+  color: #334155 !important;
+}
+
+html.light .text-white\/50,
+html.light .text-white\/40,
+html.light .text-white\/30,
+html.light .text-\[rgba\(255\,255\,255\,0\.45\)\] {
+  color: #64748b !important;
+}
+
+html.light .border-white\/10,
+html.light .border-white\/5,
+html.light .border-white\/20,
+html.light .border-\[rgba\(255\,255\,255\,0\.08\)\] {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+html.light .bg-white\/5,
+html.light .bg-white\/10,
+html.light .bg-white\/\[0\.02\],
+html.light .bg-white\/\[0\.03\],
+html.light .bg-white\/\[0\.05\] {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+html.light select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
 }

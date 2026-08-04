@@ -16,8 +16,11 @@ import {
   Shield,
   Loader2,
   Menu,
-  X
+  X,
+  Sun,
+  Moon
 } from 'lucide-react';
+import { useTheme } from '@/context/ThemeContext';
 import StatusPulseBadge from '../components/ui/StatusPulseBadge';
 
 interface SidebarItem {
@@ -28,6 +31,7 @@ interface SidebarItem {
 
 export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] }) {
   const { user, isLoading, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -186,6 +190,15 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
               <span className="text-[9px] font-mono text-[rgba(255,255,255,0.45)]">{user.email}</span>
             </div>
             
+            <button 
+              onClick={toggleTheme}
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              className="w-9 h-9 rounded-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-accent-primary hover:border-accent-primary transition-all duration-300"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+            </button>
+
             <button 
               onClick={logout}
               title="Logout"

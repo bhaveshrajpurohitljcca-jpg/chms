@@ -270,6 +270,7 @@ export const apiService = {
     role?: string;
     department?: string;
     college_id?: string;
+    avatar_url?: string;
     bio?: string;
     phone?: string;
     semester?: string;

@@ -14,8 +14,11 @@ import {
   Shield,
   ClipboardCheck,
   Sliders,
-  Settings
+  Settings,
+  Sun,
+  Moon
 } from 'lucide-react';
+import { useTheme } from '@/context/ThemeContext';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 export interface AppLayoutProps {
@@ -24,6 +27,7 @@ export interface AppLayoutProps {
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -255,6 +259,15 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               <div className="w-2.5 h-2.5 rounded-full bg-success animate-pulse" />
               <span className="text-[10px] font-semibold uppercase tracking-wider text-[rgba(255,255,255,0.45)] select-none">System Stable</span>
             </div>
+
+            <button 
+              onClick={toggleTheme}
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              className="w-9 h-9 rounded-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-accent-primary hover:border-accent-primary transition-all duration-300"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+            </button>
           </div>
         </header>
 

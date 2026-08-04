@@ -24,6 +24,7 @@ interface AuthContextType {
     role?: 'student' | 'coordinator' | 'judge' | 'admin';
     department?: string;
     college_id?: string;
+    avatar_url?: string;
     phone?: string;
     semester?: string;
   }) => Promise<UserProfile>;
@@ -164,6 +165,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     role?: 'student' | 'coordinator' | 'judge' | 'admin';
     department?: string;
     college_id?: string;
+    avatar_url?: string;
     phone?: string;
     semester?: string;
   }): Promise<UserProfile> => {
@@ -188,7 +190,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role: payload.role || 'student',
         department: payload.department || 'Computer Science',
         college_id: payload.college_id || 'STUDENT-2026',
-        avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=250&q=80',
+        avatar_url: payload.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=250&q=80',
         is_active: true
       };
       setUser(newUser);
