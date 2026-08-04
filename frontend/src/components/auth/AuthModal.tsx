@@ -1,29 +1,17 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Zap, X, KeyRound, Mail, User, Hash, Phone, Eye, EyeOff, Check } from 'lucide-react';
+import { Zap, X, KeyRound, Mail, User, Hash, Phone, Eye, EyeOff, Check, Edit2 } from 'lucide-react';
 import Modal from '@/components/ui/modal';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import { useAuth } from '@/context/AuthContext';
+import AvatarPickerModal from '@/components/ui/AvatarPickerModal';
+import { DEFAULT_AVATAR } from '@/config/avatars';
 
 const selectClass =
   'w-full bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.10)] focus:border-accent-primary rounded-xl h-11 px-3 text-xs text-white focus:outline-none transition-all duration-300';
 
-// 10 preset avatars — 5 male, 5 female (local images in /public/avatars/)
-const AVATAR_PRESETS = [
-  // Male
-  { url: '/avatars/avatar_m1.png', label: 'M1' },
-  { url: '/avatars/avatar_m2.png', label: 'M2' },
-  { url: '/avatars/avatar_m3.png', label: 'M3' },
-  { url: '/avatars/avatar_m4.png', label: 'M4' },
-  { url: '/avatars/avatar_m5.png', label: 'M5' },
-  // Female
-  { url: '/avatars/avatar_f1.png', label: 'F1' },
-  { url: '/avatars/avatar_f2.png', label: 'F2' },
-  { url: '/avatars/avatar_f3.png', label: 'F3' },
-  { url: '/avatars/avatar_f4.png', label: 'F4' },
-  { url: '/avatars/avatar_f5.png', label: 'F5' },
-];
+// Avatar config imported above
 
 export const AuthModal: React.FC = () => {
   const { isAuthModalOpen, closeAuthModal, login, register, isLoading, authModalTab } = useAuth();
@@ -56,7 +44,8 @@ export const AuthModal: React.FC = () => {
   const [rollNumber, setRollNumber] = useState('');
   const [phone, setPhone] = useState('');
   const [stream, setStream] = useState('');
-  const [selectedAvatar, setSelectedAvatar] = useState(AVATAR_PRESETS[0].url);
+  const [selectedAvatar, setSelectedAvatar] = useState(DEFAULT_AVATAR);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
 
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -98,6 +87,7 @@ export const AuthModal: React.FC = () => {
   };
 
   return (
+    <>
     <Modal
       isOpen={isAuthModalOpen}
       onClose={handleCloseModal}
@@ -158,69 +148,23 @@ export const AuthModal: React.FC = () => {
           {activeTab === 'register' && (
             <>
               {/* Avatar Picker */}
-              <div>
-                <label className="block text-xs font-mono text-zinc-400 mb-2 uppercase tracking-wider">
-                  Choose Avatar
+              <div className="flex flex-col items-center mb-2">
+                <label className="block text-xs font-mono text-zinc-400 mb-3 uppercase tracking-wider">
+                  Your Avatar
                 </label>
-                <div className="flex flex-col gap-2">
-                  {/* Male row */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[9px] uppercase tracking-widest text-zinc-500 w-5 flex-shrink-0">M</span>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {AVATAR_PRESETS.slice(0, 5).map((av) => (
-                        <button
-                          key={av.url}
-                          type="button"
-                          onClick={() => setSelectedAvatar(av.url)}
-                          className={`relative w-10 h-10 rounded-xl border-2 overflow-hidden transition-all duration-200 flex-shrink-0 ${
-                            selectedAvatar === av.url
-                              ? 'border-accent-primary shadow-[0_0_12px_rgba(0,243,255,0.5)] scale-110'
-                              : 'border-white/10 hover:border-white/30 hover:scale-105'
-                          }`}
-                        >
-                          <img
-                            src={av.url}
-                            alt={av.label}
-                            className="w-full h-full object-cover bg-[#1a1a2e]"
-                          />
-                          {selectedAvatar === av.url && (
-                            <div className="absolute inset-0 bg-accent-primary/20 flex items-center justify-center">
-                              <Check size={14} className="text-accent-primary drop-shadow" />
-                            </div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  {/* Female row */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[9px] uppercase tracking-widest text-zinc-500 w-5 flex-shrink-0">F</span>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {AVATAR_PRESETS.slice(5).map((av) => (
-                        <button
-                          key={av.url}
-                          type="button"
-                          onClick={() => setSelectedAvatar(av.url)}
-                          className={`relative w-10 h-10 rounded-xl border-2 overflow-hidden transition-all duration-200 flex-shrink-0 ${
-                            selectedAvatar === av.url
-                              ? 'border-accent-primary shadow-[0_0_12px_rgba(0,243,255,0.5)] scale-110'
-                              : 'border-white/10 hover:border-white/30 hover:scale-105'
-                          }`}
-                        >
-                          <img
-                            src={av.url}
-                            alt={av.label}
-                            className="w-full h-full object-cover bg-[#1a1a2e]"
-                          />
-                          {selectedAvatar === av.url && (
-                            <div className="absolute inset-0 bg-accent-primary/20 flex items-center justify-center">
-                              <Check size={14} className="text-accent-primary drop-shadow" />
-                            </div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                <div className="relative group">
+                  <img
+                    src={selectedAvatar}
+                    alt="avatar"
+                    className="w-20 h-20 rounded-2xl object-cover border-2 border-accent-primary/40 shadow-[0_0_20px_rgba(0,243,255,0.2)] bg-[#1a1a2e] transition-all group-hover:border-accent-primary group-hover:scale-105"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsAvatarModalOpen(true)}
+                    className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl bg-black border border-accent-primary flex items-center justify-center text-accent-primary hover:bg-accent-primary hover:text-black transition-all shadow-[0_0_15px_rgba(0,243,255,0.3)] z-10"
+                  >
+                    <Edit2 size={14} />
+                  </button>
                 </div>
               </div>
 
@@ -318,5 +262,14 @@ export const AuthModal: React.FC = () => {
         </form>
       </div>
     </Modal>
+    
+    {/* Avatar Selection Modal */}
+    <AvatarPickerModal
+      isOpen={isAvatarModalOpen}
+      onClose={() => setIsAvatarModalOpen(false)}
+      currentAvatar={selectedAvatar}
+      onSelect={setSelectedAvatar}
+    />
+    </>
   );
 };

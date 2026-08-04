@@ -13,8 +13,10 @@ import {
   CheckCircle, 
   Edit3, 
   Save, 
-  Sparkles
+  Sparkles,
+  Edit2
 } from 'lucide-react';
+import AvatarPickerModal from '@/components/ui/AvatarPickerModal';
 
 export const ProfilePage: React.FC = () => {
   const { user, updateProfile, openAuthModal } = useAuth();
@@ -26,6 +28,7 @@ export const ProfilePage: React.FC = () => {
   const [bio, setBio] = useState(user?.bio || '');
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || '');
   const [autoAccept, setAutoAccept] = useState(user?.auto_accept_invites || false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
 
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -59,6 +62,13 @@ export const ProfilePage: React.FC = () => {
     setTimeout(() => setSaveSuccess(false), 3000);
   };
 
+  const handleAvatarSelect = async (newUrl: string) => {
+    setAvatarUrl(newUrl);
+    await updateProfile({ avatar_url: newUrl });
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 3000);
+  };
+
   const handleToggleAutoAccept = async () => {
     const newValue = !autoAccept;
     setAutoAccept(newValue);
@@ -81,13 +91,17 @@ export const ProfilePage: React.FC = () => {
         <div className="relative flex flex-col md:flex-row items-center md:items-start gap-6">
           <div className="relative group">
             <img
-              src={user.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80'}
+              src={avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80'}
               alt={user.full_name}
-              className="w-28 h-28 rounded-2xl object-cover border-2 border-accent-primary/40 shadow-[0_0_20px_rgba(0,243,255,0.2)]"
+              className="w-28 h-28 rounded-2xl object-cover border-2 border-accent-primary/40 shadow-[0_0_20px_rgba(0,243,255,0.2)] bg-[#1a1a2e]"
             />
-            <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl bg-black border border-accent-primary flex items-center justify-center">
-              <Sparkles size={16} className="text-accent-primary" />
-            </div>
+            <button
+              onClick={() => setIsAvatarModalOpen(true)}
+              className="absolute -bottom-2 -right-2 w-9 h-9 rounded-xl bg-black border border-accent-primary flex items-center justify-center text-accent-primary hover:bg-accent-primary hover:text-black transition-all shadow-[0_0_15px_rgba(0,243,255,0.3)] z-10"
+              title="Change Avatar"
+            >
+              <Edit2 size={16} />
+            </button>
           </div>
 
           <div className="flex-1 text-center md:text-left space-y-2">
@@ -205,10 +219,6 @@ export const ProfilePage: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-mono text-zinc-400 mb-1.5 uppercase">Avatar URL</label>
-                <Input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} />
-              </div>
-              <div>
                 <label className="block text-xs font-mono text-zinc-400 mb-1.5 uppercase">Bio</label>
                 <textarea
                   rows={3}
@@ -240,6 +250,13 @@ export const ProfilePage: React.FC = () => {
           )}
         </Card>
       </div>
+
+      <AvatarPickerModal
+        isOpen={isAvatarModalOpen}
+        onClose={() => setIsAvatarModalOpen(false)}
+        currentAvatar={avatarUrl}
+        onSelect={handleAvatarSelect}
+      />
     </div>
   );
 };
