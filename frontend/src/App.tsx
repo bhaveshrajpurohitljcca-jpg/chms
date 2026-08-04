@@ -4,6 +4,7 @@ import {
   Routes, 
   Route, 
   Link, 
+  NavLink,
   Navigate,
   Outlet,
   useSearchParams
@@ -17,6 +18,7 @@ import {
   Layers,
   Award,
   X,
+  Menu,
   Layers2,
   Clock,
   CheckCircle,
@@ -84,60 +86,74 @@ const GlobalLayout = () => {
       <ThreeParticleBg />
 
       {/* FIXED TOPBAR NAVIGATION */}
-      <header className="fixed top-0 left-0 right-0 h-24 z-40 px-8 py-6 flex items-center justify-between bg-[#050505]/40 backdrop-blur-md border-b border-[rgba(255,255,255,0.05)] pointer-events-auto">
-        {/* Left Brand Logo */}
-        <Link to="/" className="flex items-center gap-3 select-none">
-          <div className="w-10 h-10 rounded-[12px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.1)] flex items-center justify-center shadow-[0_0_15px_rgba(0,243,255,0.15)] hover:border-accent-primary transition-all duration-300">
-            <Zap size={18} className="text-accent-primary animate-pulse" />
-          </div>
-          <span className="font-archivo text-lg tracking-wider font-black text-glow-cyan text-white">
+      <header className="fixed top-0 left-0 right-0 h-16 md:h-24 z-40 px-4 md:px-8 py-4 md:py-6 flex items-center justify-between bg-[#050505]/40 backdrop-blur-md border-b border-[rgba(255,255,255,0.05)] pointer-events-auto">
+        {/* Left Brand Logo — only icon redirects */}
+        <div className="flex items-center gap-2 md:gap-3 select-none">
+          <Link to="/" className="w-9 h-9 md:w-10 md:h-10 rounded-[12px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.1)] flex items-center justify-center shadow-[0_0_15px_rgba(0,243,255,0.15)] hover:border-accent-primary transition-all duration-300">
+            <Zap size={16} className="text-accent-primary animate-pulse" />
+          </Link>
+          <span className="font-archivo text-base md:text-lg tracking-wider font-black text-glow-cyan text-white cursor-default">
             CHMS
           </span>
-        </Link>
+        </div>
 
-        {/* Center links with Cyan Underline hover effects */}
+        {/* Center links with Cyan Underline hover + active effects */}
         <nav className="hidden md:flex items-center gap-8">
           {navigationLinks.map((link) => (
-            <Link 
+            <NavLink 
               key={link.path}
               to={link.path}
-              className="relative py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[rgba(255,255,255,0.65)] hover:text-white transition-all duration-300 group"
+              className={({ isActive }) =>
+                `relative py-2 text-xs font-semibold uppercase tracking-[0.2em] transition-all duration-300 group ${
+                  isActive
+                    ? 'text-white'
+                    : 'text-[rgba(255,255,255,0.65)] hover:text-white'
+                }`
+              }
             >
-              {link.label}
-              <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-accent-primary transition-all duration-500 group-hover:w-full" />
-            </Link>
+              {({ isActive }) => (
+                <>
+                  {link.label}
+                  <span
+                    className={`absolute bottom-0 left-0 h-[2px] bg-accent-primary transition-all duration-500 ${
+                      isActive ? 'w-full' : 'w-0 group-hover:w-full'
+                    }`}
+                  />
+                </>
+              )}
+            </NavLink>
           ))}
         </nav>
 
         {/* Right Auth & Menu triggers */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           {user ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
               <Link 
                 to={`/${user.role.toLowerCase()}`}
-                className="hidden sm:inline-flex items-center h-10 px-6 rounded-full bg-accent-primary text-black font-semibold text-xs uppercase tracking-wider transition-all duration-300 hover:shadow-[0_0_15px_rgba(0,243,255,0.35)]"
+                className="hidden sm:inline-flex items-center h-9 md:h-10 px-4 md:px-6 rounded-full bg-accent-primary text-black font-semibold text-xs uppercase tracking-wider transition-all duration-300 hover:shadow-[0_0_15px_rgba(0,243,255,0.35)]"
               >
                 Console
               </Link>
               <Link
                 to="/profile"
-                className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:border-accent-primary transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+                className="flex items-center gap-2 px-2 md:px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:border-accent-primary transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)]"
               >
                 <img
                   src={user.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80'}
                   alt={user.full_name}
                   className="w-7 h-7 rounded-full object-cover border border-accent-primary/50"
                 />
-                <span className="text-xs font-semibold text-white max-w-[100px] truncate hidden sm:inline">
+                <span className="text-xs font-semibold text-white max-w-[80px] truncate hidden sm:inline">
                   {user.full_name}
                 </span>
-                <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-md bg-accent-primary/10 text-accent-primary border border-accent-primary/30">
+                <span className="text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded-md bg-accent-primary/10 text-accent-primary border border-accent-primary/30">
                   {user.role}
                 </span>
               </Link>
               <button
                 onClick={logout}
-                className="h-10 px-5 rounded-full bg-danger/10 border border-danger/40 text-danger hover:bg-danger hover:text-white text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-[0_0_15px_rgba(255,77,109,0.15)] flex items-center justify-center"
+                className="hidden sm:flex h-9 md:h-10 px-3 md:px-5 rounded-full bg-danger/10 border border-danger/40 text-danger hover:bg-danger hover:text-white text-xs font-bold uppercase tracking-wider transition-all duration-300 items-center justify-center"
               >
                 Logout
               </button>
@@ -145,11 +161,19 @@ const GlobalLayout = () => {
           ) : (
             <button
               onClick={() => openAuthModal('login')}
-              className="h-10 px-5 rounded-full bg-accent-primary/10 border border-accent-primary/40 text-accent-primary hover:bg-accent-primary hover:text-black text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-[0_0_15px_rgba(0,243,255,0.2)]"
+              className="h-9 md:h-10 px-4 md:px-5 rounded-full bg-accent-primary/10 border border-accent-primary/40 text-accent-primary hover:bg-accent-primary hover:text-black text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-[0_0_15px_rgba(0,243,255,0.2)]"
             >
               Sign In
             </button>
           )}
+          {/* Mobile hamburger — opens full-screen drawer */}
+          <button
+            onClick={() => setIsMenuOpen(true)}
+            className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.05)] text-white hover:border-accent-primary/50 hover:text-accent-primary transition-all duration-300"
+            aria-label="Open menu"
+          >
+            <Menu size={18} />
+          </button>
         </div>
       </header>
 
@@ -249,8 +273,8 @@ const GlobalLayout = () => {
         </div>
       )}
 
-      {/* Central content outlet - 24px (pt-24) to clear top header height */}
-      <main className="relative z-10 flex-grow pt-24">
+      {/* Central content outlet - responsive padding to clear top header height */}
+      <main className="relative z-10 flex-grow pt-16 md:pt-24">
         <Outlet />
       </main>
 
@@ -304,19 +328,19 @@ const PublicLanding = () => {
   return (
     <div className="flex flex-col w-full pointer-events-auto">
 
-      {/* Hero Section: Core background #050505, Archivo Black 10vw, white gradient */}
-      <section className="min-h-screen flex flex-col justify-center items-center px-8 pt-20 pb-16 text-center max-w-7xl mx-auto w-full relative">
-        <StatusPulseBadge text="CHMS Core Module Active" className="mb-8" />
+      {/* Hero Section */}
+      <section className="min-h-screen flex flex-col justify-center items-center px-4 sm:px-8 pt-24 pb-16 text-center max-w-7xl mx-auto w-full relative">
+        <StatusPulseBadge text="CHMS Core Module Active" className="mb-6 md:mb-8" />
 
-        <h2 className="font-archivo text-[8vw] font-black tracking-tighter leading-[0.9] select-none mb-10 bg-gradient-to-b from-white via-white/80 to-white/10 bg-clip-text text-transparent uppercase">
+        <h2 className="font-archivo text-[clamp(2.5rem,10vw,8rem)] font-black tracking-tighter leading-[0.9] select-none mb-6 md:mb-10 bg-gradient-to-b from-white via-white/80 to-white/10 bg-clip-text text-transparent uppercase">
           College Hackathon<br />Management System
         </h2>
 
-        <p className="max-w-xl text-sm md:text-base text-text-secondary font-light leading-relaxed mb-12 select-none">
+        <p className="max-w-xl text-xs sm:text-sm md:text-base text-text-secondary font-light leading-relaxed mb-8 md:mb-12 select-none px-2">
           A centralized dark-themed platform coordinating college hackathons. Manage registration states, invite codes, code submissions, and real-time ledger evaluations.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-center w-full max-w-md">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center justify-center w-full max-w-sm sm:max-w-md">
           {user ? (
             <Link to={`/${user.role.toLowerCase()}`} className="w-full sm:w-auto">
               <Button variant="primary" className="w-full px-10">
@@ -335,28 +359,28 @@ const PublicLanding = () => {
           )}
         </div>
 
-        <div className="absolute bottom-10 animate-bounce text-glow-cyan text-accent-primary">
+        <div className="absolute bottom-8 md:bottom-10 animate-bounce text-glow-cyan text-accent-primary">
           <ChevronRight size={24} className="rotate-90" />
         </div>
       </section>
 
       {/* Infinite Horizontal Marquee */}
-      <section className="py-12 border-y border-[rgba(255,255,255,0.08)] bg-[#050505]/60 backdrop-blur-md overflow-hidden select-none">
+      <section className="py-8 md:py-12 border-y border-[rgba(255,255,255,0.08)] bg-[#050505]/60 backdrop-blur-md overflow-hidden select-none">
         <div className="flex whitespace-nowrap animate-marquee">
-          <span className="font-archivo text-5xl font-black uppercase text-white/10 tracking-[0.1em] mr-8">
+          <span className="font-archivo text-2xl sm:text-4xl md:text-5xl font-black uppercase text-white/10 tracking-[0.1em] mr-8">
             LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION •
           </span>
-          <span className="font-archivo text-5xl font-black uppercase text-white/10 tracking-[0.1em] mr-8">
+          <span className="font-archivo text-2xl sm:text-4xl md:text-5xl font-black uppercase text-white/10 tracking-[0.1em] mr-8">
             LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION •
           </span>
         </div>
       </section>
 
       {/* Catalogue Grid */}
-      <section id="protocol" className="py-32 px-8 max-w-7xl mx-auto w-full flex flex-col gap-16">
-        <div className="flex flex-col gap-4">
+      <section id="protocol" className="py-16 md:py-32 px-4 sm:px-8 max-w-7xl mx-auto w-full flex flex-col gap-8 md:gap-16">
+        <div className="flex flex-col gap-3">
           <span className="text-xs uppercase tracking-[0.3em] text-accent-primary font-semibold">Ongoing & Completed</span>
-          <h3 className="font-archivo text-4xl md:text-5xl font-black uppercase text-white">
+          <h3 className="font-archivo text-3xl sm:text-4xl md:text-5xl font-black uppercase text-white">
             HACKATHONS PORTAL
           </h3>
         </div>
@@ -386,12 +410,12 @@ const PublicLanding = () => {
       </section>
 
       {/* Lab metrics / Spinning concentric circles */}
-      <section id="lab" className="py-20 px-8 max-w-7xl mx-auto w-full">
-        <div className="w-full rounded-[60px] glass-card p-10 md:p-16 flex flex-col lg:flex-row items-center gap-12 bg-white/[0.01]">
+      <section id="lab" className="py-12 md:py-20 px-4 sm:px-8 max-w-7xl mx-auto w-full">
+        <div className="w-full rounded-[32px] md:rounded-[60px] glass-card p-6 sm:p-10 md:p-16 flex flex-col lg:flex-row items-center gap-8 md:gap-12 bg-white/[0.01]">
           
-          <div className="flex-1 flex flex-col gap-6">
+          <div className="flex-1 flex flex-col gap-4 md:gap-6">
             <span className="text-xs uppercase tracking-[0.3em] text-accent-secondary font-semibold">Advance Innovation Research & Analysis Lab</span>
-            <h2 className="font-archivo text-6xl md:text-7xl font-black uppercase text-white tracking-tighter leading-none select-none">
+            <h2 className="font-archivo text-4xl sm:text-5xl md:text-7xl font-black uppercase text-white tracking-tighter leading-none select-none">
               AiRA LAB
             </h2>
             <p className="text-xs md:text-sm text-text-secondary leading-relaxed font-light">
@@ -619,7 +643,7 @@ const LeaderboardView = () => {
         <>
           {/* Top 3 Podium Cards */}
           {podiumWinners.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end px-4 py-8">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-8 items-end px-2 md:px-4 py-4 md:py-8">
               {reorderedPodium.map((winner) => {
                 const isFirst = winner.rank === 1;
                 const isSecond = winner.rank === 2;
@@ -646,7 +670,7 @@ const LeaderboardView = () => {
                 return (
                   <div 
                     key={winner.team} 
-                    className={`glass-card rounded-[40px] border p-8 flex flex-col justify-between items-center text-center relative ${cardHeight} ${accentBorder} ${glowShadow}`}
+                    className={`glass-card rounded-[24px] md:rounded-[40px] border p-5 md:p-8 flex flex-col justify-between items-center text-center relative ${accentBorder} ${glowShadow} min-h-[200px] md:${cardHeight}`}
                   >
                     {/* Ranking Medals Badge */}
                     <div className={`w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-archivo text-lg font-black ${medalColor} mb-2`}>
@@ -682,8 +706,8 @@ const LeaderboardView = () => {
           )}
 
           {/* Ledger Rankings List */}
-          <Card className="p-8">
-            <h3 className="font-archivo text-lg font-black uppercase text-white tracking-wider mb-6">
+          <Card className="p-4 md:p-8">
+            <h3 className="font-archivo text-base md:text-lg font-black uppercase text-white tracking-wider mb-4 md:mb-6">
               Ranking Ledger
             </h3>
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Zap, X, KeyRound, Mail, User, Hash, Phone, Eye, EyeOff } from 'lucide-react';
+import { Zap, X, KeyRound, Mail, User, Hash, Phone, Eye, EyeOff, Check } from 'lucide-react';
 import Modal from '@/components/ui/modal';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/input';
@@ -8,6 +8,22 @@ import { useAuth } from '@/context/AuthContext';
 
 const selectClass =
   'w-full bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.10)] focus:border-accent-primary rounded-xl h-11 px-3 text-xs text-white focus:outline-none transition-all duration-300';
+
+// 10 preset avatars — 5 male, 5 female (local images in /public/avatars/)
+const AVATAR_PRESETS = [
+  // Male
+  { url: '/avatars/avatar_m1.png', label: 'M1' },
+  { url: '/avatars/avatar_m2.png', label: 'M2' },
+  { url: '/avatars/avatar_m3.png', label: 'M3' },
+  { url: '/avatars/avatar_m4.png', label: 'M4' },
+  { url: '/avatars/avatar_m5.png', label: 'M5' },
+  // Female
+  { url: '/avatars/avatar_f1.png', label: 'F1' },
+  { url: '/avatars/avatar_f2.png', label: 'F2' },
+  { url: '/avatars/avatar_f3.png', label: 'F3' },
+  { url: '/avatars/avatar_f4.png', label: 'F4' },
+  { url: '/avatars/avatar_f5.png', label: 'F5' },
+];
 
 export const AuthModal: React.FC = () => {
   const { isAuthModalOpen, closeAuthModal, login, register, isLoading, authModalTab } = useAuth();
@@ -40,6 +56,7 @@ export const AuthModal: React.FC = () => {
   const [rollNumber, setRollNumber] = useState('');
   const [phone, setPhone] = useState('');
   const [stream, setStream] = useState('');
+  const [selectedAvatar, setSelectedAvatar] = useState(AVATAR_PRESETS[0].url);
 
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -59,6 +76,10 @@ export const AuthModal: React.FC = () => {
           setErrorMsg('Please complete all required fields (*).');
           return;
         }
+        if (phone && !/^\d{10}$/.test(phone)) {
+          setErrorMsg('Phone number must be exactly 10 digits.');
+          return;
+        }
         await register({
           email,
           password,
@@ -68,6 +89,7 @@ export const AuthModal: React.FC = () => {
           department: stream,
           phone,
           semester,
+          avatar_url: selectedAvatar,
         });
       }
     } catch (err: any) {
@@ -135,6 +157,73 @@ export const AuthModal: React.FC = () => {
           {/* REGISTER FIELDS */}
           {activeTab === 'register' && (
             <>
+              {/* Avatar Picker */}
+              <div>
+                <label className="block text-xs font-mono text-zinc-400 mb-2 uppercase tracking-wider">
+                  Choose Avatar
+                </label>
+                <div className="flex flex-col gap-2">
+                  {/* Male row */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] uppercase tracking-widest text-zinc-500 w-5 flex-shrink-0">M</span>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {AVATAR_PRESETS.slice(0, 5).map((av) => (
+                        <button
+                          key={av.url}
+                          type="button"
+                          onClick={() => setSelectedAvatar(av.url)}
+                          className={`relative w-10 h-10 rounded-xl border-2 overflow-hidden transition-all duration-200 flex-shrink-0 ${
+                            selectedAvatar === av.url
+                              ? 'border-accent-primary shadow-[0_0_12px_rgba(0,243,255,0.5)] scale-110'
+                              : 'border-white/10 hover:border-white/30 hover:scale-105'
+                          }`}
+                        >
+                          <img
+                            src={av.url}
+                            alt={av.label}
+                            className="w-full h-full object-cover bg-[#1a1a2e]"
+                          />
+                          {selectedAvatar === av.url && (
+                            <div className="absolute inset-0 bg-accent-primary/20 flex items-center justify-center">
+                              <Check size={14} className="text-accent-primary drop-shadow" />
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Female row */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] uppercase tracking-widest text-zinc-500 w-5 flex-shrink-0">F</span>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {AVATAR_PRESETS.slice(5).map((av) => (
+                        <button
+                          key={av.url}
+                          type="button"
+                          onClick={() => setSelectedAvatar(av.url)}
+                          className={`relative w-10 h-10 rounded-xl border-2 overflow-hidden transition-all duration-200 flex-shrink-0 ${
+                            selectedAvatar === av.url
+                              ? 'border-accent-primary shadow-[0_0_12px_rgba(0,243,255,0.5)] scale-110'
+                              : 'border-white/10 hover:border-white/30 hover:scale-105'
+                          }`}
+                        >
+                          <img
+                            src={av.url}
+                            alt={av.label}
+                            className="w-full h-full object-cover bg-[#1a1a2e]"
+                          />
+                          {selectedAvatar === av.url && (
+                            <div className="absolute inset-0 bg-accent-primary/20 flex items-center justify-center">
+                              <Check size={14} className="text-accent-primary drop-shadow" />
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Full Name */}
               <div>
                 <label className="block text-xs font-mono text-zinc-400 mb-1.5 uppercase tracking-wider">Full Name *</label>
@@ -162,7 +251,17 @@ export const AuthModal: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-mono text-zinc-400 mb-1.5 uppercase tracking-wider">Phone</label>
-                  <Input type="tel" placeholder="9876543210" value={phone} onChange={(e) => setPhone(e.target.value)} leftIcon={<Phone size={16} />} />
+                  <Input
+                    type="tel"
+                    placeholder="9876543210"
+                    value={phone}
+                    maxLength={10}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setPhone(digits);
+                    }}
+                    leftIcon={<Phone size={16} />}
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-mono text-zinc-400 mb-1.5 uppercase tracking-wider">Stream *</label>

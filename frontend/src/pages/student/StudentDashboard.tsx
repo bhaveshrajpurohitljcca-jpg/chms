@@ -168,7 +168,7 @@ export const StudentDashboard: React.FC = () => {
     <div className="flex flex-col gap-8 max-w-7xl mx-auto w-full font-manrope">
       
       {/* 1. Welcome Banner */}
-      <div className="relative overflow-hidden glass-card rounded-[40px] p-8 md:p-10 border-accent-primary/20 bg-gradient-to-r from-accent-primary/10 via-transparent to-accent-secondary/10">
+      <div className="relative overflow-hidden glass-card rounded-[28px] md:rounded-[40px] p-6 md:p-10 border-accent-primary/20 bg-gradient-to-r from-accent-primary/10 via-transparent to-accent-secondary/10">
         <div className="absolute top-0 right-0 w-80 h-80 bg-accent-primary/10 rounded-full filter blur-[60px] pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -185,12 +185,12 @@ export const StudentDashboard: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             {pendingInvitations.length > 0 && (
               <Button
                 variant="secondary"
                 onClick={() => navigate('/student/team')}
-                className="h-11 px-5 text-xs relative flex items-center gap-2"
+                className="h-10 px-4 text-xs relative flex items-center gap-2"
               >
                 <Mail size={16} />
                 <span>Invitations</span>
@@ -202,14 +202,14 @@ export const StudentDashboard: React.FC = () => {
             <Button 
               variant="secondary" 
               onClick={() => navigate('/student/hackathons')}
-              className="h-11 px-5 text-xs"
+              className="h-10 px-4 text-xs"
             >
               Explore Events
             </Button>
             <Button 
               variant="primary" 
               onClick={() => navigate('/student/team')}
-              className="h-11 px-5 text-xs flex items-center gap-2"
+              className="h-10 px-4 text-xs flex items-center gap-2"
             >
               <Users size={16} />
               <span>Team Portal</span>
@@ -440,7 +440,7 @@ export const StudentDashboard: React.FC = () => {
               Form or join a team inside the Team Portal first, then head to the hackathon directory to lock in registrations.
             </p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button variant="secondary" onClick={() => navigate('/student/hackathons')} className="h-10 text-xs px-6">
               Browse Hackathons
             </Button>
@@ -453,12 +453,12 @@ export const StudentDashboard: React.FC = () => {
 
       {/* 5. General Hackathons Section */}
       <div className="flex flex-col gap-6 mt-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h3 className="font-archivo text-xl uppercase font-black text-white">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <h3 className="font-archivo text-lg md:text-xl uppercase font-black text-white">
               Explore Hackathon Directory
             </h3>
-            <div className="flex rounded-full bg-white/5 border border-white/10 p-1">
+            <div className="flex rounded-full bg-white/5 border border-white/10 p-1 self-start">
               <button
                 onClick={() => setActiveTab('active')}
                 className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${

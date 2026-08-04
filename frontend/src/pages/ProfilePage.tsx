@@ -70,7 +70,7 @@ export const ProfilePage: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto py-12 px-6 space-y-8">
       {/* Header Banner */}
-      <div className="relative rounded-3xl p-8 bg-gradient-to-r from-accent-primary/10 via-accent-purple/10 to-transparent border border-white/10 overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+      <div className="relative rounded-3xl p-5 sm:p-8 bg-gradient-to-r from-accent-primary/10 via-accent-purple/10 to-transparent border border-white/10 overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.5)]">
         <div className="absolute top-0 right-0 w-96 h-96 bg-accent-primary/5 rounded-full blur-3xl pointer-events-none" />
         
         <div className="relative flex flex-col md:flex-row items-center md:items-start gap-6">
@@ -116,7 +116,7 @@ export const ProfilePage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 mt-2">
             {!isEditing ? (
               <Button
                 variant="secondary"
@@ -158,7 +158,7 @@ export const ProfilePage: React.FC = () => {
                 <label className="block text-xs font-mono text-zinc-400 mb-1.5 uppercase">Full Name</label>
                 <Input value={fullName} onChange={(e) => setFullName(e.target.value)} leftIcon={<User size={16} />} />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-mono text-zinc-400 mb-1.5 uppercase">Department</label>
                   <Input value={department} onChange={(e) => setDepartment(e.target.value)} leftIcon={<Building size={16} />} />
@@ -196,7 +196,7 @@ export const ProfilePage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-6 font-mono text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 font-mono text-sm">
               <div>
                 <span className="text-xs text-zinc-500 uppercase block mb-1">User Identifier</span>
                 <span className="text-zinc-300">{user.id}</span>

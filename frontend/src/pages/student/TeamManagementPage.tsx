@@ -326,7 +326,7 @@ export const TeamManagementPage: React.FC = () => {
         <div className="flex flex-col gap-6">
           
           {/* Top Banner: Team Identity */}
-          <div className="relative overflow-hidden rounded-3xl border border-accent-primary/30 bg-gradient-to-br from-black/80 to-accent-primary/10 p-8 shadow-[0_0_40px_rgba(0,243,255,0.05)] backdrop-blur-xl">
+          <div className="relative overflow-hidden rounded-3xl border border-accent-primary/30 bg-gradient-to-br from-black/80 to-accent-primary/10 p-5 sm:p-8 shadow-[0_0_40px_rgba(0,243,255,0.05)] backdrop-blur-xl">
             {/* Decorative background blur */}
             <div className="absolute -top-24 -right-24 w-64 h-64 bg-accent-primary/20 rounded-full blur-[80px] pointer-events-none" />
             
@@ -340,7 +340,7 @@ export const TeamManagementPage: React.FC = () => {
                     Team {activeTeam.status}
                   </Badge>
                 </div>
-                <h3 className="font-archivo text-4xl md:text-5xl font-black text-white uppercase tracking-tight mt-2 drop-shadow-lg">
+                <h3 className="font-archivo text-2xl sm:text-4xl md:text-5xl font-black text-white uppercase tracking-tight mt-2 drop-shadow-lg">
                   {activeTeam.name}
                 </h3>
               </div>

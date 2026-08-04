@@ -14,11 +14,27 @@ const selectClass =
 const labelClass =
   'text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.45)] font-semibold';
 
+// 10 preset avatars — 5 male, 5 female (local images in /public/avatars/)
+const AVATAR_PRESETS = [
+  // Male
+  { url: '/avatars/avatar_m1.png', label: 'M1' },
+  { url: '/avatars/avatar_m2.png', label: 'M2' },
+  { url: '/avatars/avatar_m3.png', label: 'M3' },
+  { url: '/avatars/avatar_m4.png', label: 'M4' },
+  { url: '/avatars/avatar_m5.png', label: 'M5' },
+  // Female
+  { url: '/avatars/avatar_f1.png', label: 'F1' },
+  { url: '/avatars/avatar_f2.png', label: 'F2' },
+  { url: '/avatars/avatar_f3.png', label: 'F3' },
+  { url: '/avatars/avatar_f4.png', label: 'F4' },
+  { url: '/avatars/avatar_f5.png', label: 'F5' },
+];
+
 const signupSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
   semester: z.string().min(1, 'Please select a semester'),
   rollNumber: z.string().min(1, 'Roll number is required'),
-  phone: z.string().min(10, 'Enter a valid 10-digit phone number'),
+  phone: z.string().length(10, 'Phone number must be exactly 10 digits').regex(/^\d{10}$/, 'Only digits are allowed'),
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   stream: z.string().min(1, 'Please select a stream'),
@@ -33,6 +49,7 @@ export default function Signup() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState(AVATAR_PRESETS[0].url);
 
   const {
     register,
@@ -65,6 +82,7 @@ export default function Signup() {
         department: data.stream,
         phone: data.phone,
         semester: data.semester,
+        avatar_url: selectedAvatar,
       });
       setSuccessMsg('Account registered successfully! Redirecting to login...');
       setTimeout(() => {
@@ -110,6 +128,73 @@ export default function Signup() {
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+
+            {/* Avatar Picker */}
+            <div>
+              <label className={`${labelClass} block mb-2`}>Choose Your Avatar</label>
+              <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/10 flex flex-col gap-3">
+                {/* Male row */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] uppercase tracking-widest text-zinc-500 w-4 flex-shrink-0 font-bold">M</span>
+                  <div className="flex gap-2 flex-wrap">
+                    {AVATAR_PRESETS.slice(0, 5).map((av) => (
+                      <button
+                        key={av.url}
+                        type="button"
+                        onClick={() => setSelectedAvatar(av.url)}
+                        className={`relative w-12 h-12 rounded-xl border-2 overflow-hidden transition-all duration-200 flex-shrink-0 ${
+                          selectedAvatar === av.url
+                            ? 'border-accent-primary shadow-[0_0_14px_rgba(0,243,255,0.55)] scale-110'
+                            : 'border-white/10 hover:border-white/30 hover:scale-105'
+                        }`}
+                      >
+                        <img
+                          src={av.url}
+                          alt={av.label}
+                          className="w-full h-full object-cover bg-[#0f0f1a]"
+                        />
+                        {selectedAvatar === av.url && (
+                          <div className="absolute inset-0 bg-accent-primary/20 flex items-center justify-center">
+                            <Check size={14} className="text-accent-primary drop-shadow" />
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Female row */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] uppercase tracking-widest text-zinc-500 w-4 flex-shrink-0 font-bold">F</span>
+                  <div className="flex gap-2 flex-wrap">
+                    {AVATAR_PRESETS.slice(5).map((av) => (
+                      <button
+                        key={av.url}
+                        type="button"
+                        onClick={() => setSelectedAvatar(av.url)}
+                        className={`relative w-12 h-12 rounded-xl border-2 overflow-hidden transition-all duration-200 flex-shrink-0 ${
+                          selectedAvatar === av.url
+                            ? 'border-accent-primary shadow-[0_0_14px_rgba(0,243,255,0.55)] scale-110'
+                            : 'border-white/10 hover:border-white/30 hover:scale-105'
+                        }`}
+                      >
+                        <img
+                          src={av.url}
+                          alt={av.label}
+                          className="w-full h-full object-cover bg-[#0f0f1a]"
+                        />
+                        {selectedAvatar === av.url && (
+                          <div className="absolute inset-0 bg-accent-primary/20 flex items-center justify-center">
+                            <Check size={14} className="text-accent-primary drop-shadow" />
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Full Name */}
             <Input
               label="Full Name"
@@ -150,8 +235,13 @@ export default function Signup() {
                 label="Phone Number"
                 placeholder="9876543210"
                 type="tel"
+                maxLength={10}
                 error={errors.phone?.message}
-                {...register('phone')}
+                {...register('phone', {
+                  onChange: (e) => {
+                    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  }
+                })}
               />
               <div className="flex flex-col gap-1.5">
                 <label className={labelClass}>Stream</label>

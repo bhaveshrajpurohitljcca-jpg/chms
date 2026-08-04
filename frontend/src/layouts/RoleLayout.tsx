@@ -151,7 +151,7 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
         
         {/* Left: Hamburger (mobile) + Logo */}
         <div className="flex items-center gap-3">
-          {/* Mobile Hamburger Button */}
+          {/* Hamburger + Logo — only icon redirects */}
           <button
             onClick={() => setIsMobileMenuOpen(true)}
             className="md:hidden flex items-center justify-center w-10 h-10 rounded-xl border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.05)] text-white hover:border-accent-primary/50 hover:text-accent-primary hover:bg-[rgba(0,243,255,0.06)] transition-all duration-300"
@@ -160,14 +160,14 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
             <Menu size={20} />
           </button>
 
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.1)] flex items-center justify-center text-accent-primary">
+          <div className="flex items-center gap-2">
+            <Link to="/" className="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.1)] flex items-center justify-center text-accent-primary">
               <Zap size={15} />
-            </div>
-            <span className="font-archivo text-sm md:text-md tracking-wider font-black text-glow-cyan text-white">
+            </Link>
+            <span className="font-archivo text-sm md:text-md tracking-wider font-black text-glow-cyan text-white cursor-default">
               CHMS
             </span>
-          </Link>
+          </div>
           <span className="hidden sm:block w-1.5 h-1.5 rounded-full bg-white/20" />
           <span className="hidden sm:block text-[10px] font-mono tracking-widest text-[rgba(255,255,255,0.45)] uppercase">
             {user.role} workspace
@@ -206,7 +206,7 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
         </aside>
 
         {/* MAIN ROUTE CONTENT */}
-        <main className="flex-grow md:pl-[280px] min-h-screen p-4 md:p-10 flex flex-col w-full">
+        <main className="flex-grow md:pl-[280px] min-h-screen p-3 sm:p-4 md:p-10 flex flex-col w-full">
           <Outlet />
         </main>
       </div>
@@ -227,9 +227,9 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
             {/* Drawer Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(255,255,255,0.07)]">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-accent-primary/10 border border-accent-primary/30 flex items-center justify-center text-accent-primary">
+                <Link to="/" className="w-8 h-8 rounded-lg bg-accent-primary/10 border border-accent-primary/30 flex items-center justify-center text-accent-primary">
                   <Zap size={14} />
-                </div>
+                </Link>
                 <div>
                   <p className="font-archivo text-sm font-black tracking-wider text-white">CHMS</p>
                   <p className="text-[9px] font-mono uppercase tracking-widest text-[rgba(255,255,255,0.4)]">

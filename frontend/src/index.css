@@ -28,12 +28,14 @@
 /* Global Reset & Base Styles */
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-manrope);
+  overflow-x: hidden;
 }
 
 /* Custom Scrollbar for Tech-Noir Aesthetics */

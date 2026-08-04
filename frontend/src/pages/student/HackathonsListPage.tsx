@@ -52,17 +52,24 @@ export const HackathonsListPage: React.FC = () => {
       r => r.hackathon_id === hackathonId && r.status === 'registered'
     );
 
-  // Filter hackathons
-  const filteredHackathons = hackathons.filter(hack => {
-    const matchesSearch =
-      hack.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (hack.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (hack.tagline || '').toLowerCase().includes(searchQuery.toLowerCase());
+  // Status sort order: active → upcoming → ended → others
+  const STATUS_ORDER: Record<string, number> = { active: 0, upcoming: 1, ended: 2 };
+  const getStatusOrder = (status: string) =>
+    STATUS_ORDER[status] !== undefined ? STATUS_ORDER[status] : 99;
 
-    const matchesStatus = selectedStatus === 'all' || hack.status === selectedStatus;
+  // Filter hackathons then sort by status priority
+  const filteredHackathons = hackathons
+    .filter(hack => {
+      const matchesSearch =
+        hack.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (hack.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (hack.tagline || '').toLowerCase().includes(searchQuery.toLowerCase());
 
-    return matchesSearch && matchesStatus;
-  });
+      const matchesStatus = selectedStatus === 'all' || hack.status === selectedStatus;
+
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => getStatusOrder(a.status) - getStatusOrder(b.status));
 
   if (isLoading) {
     return (
