@@ -91,6 +91,19 @@ export function CoordinatorHackathonsPage() {
 
   useEffect(() => { loadHackathons(); }, [loadHackathons]);
 
+  // Real-time auto-polling every 6 seconds
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await apiService.listHackathons();
+        if (res.data) setHackathons(res.data);
+      } catch {
+        // silent sync
+      }
+    }, 6000);
+    return () => clearInterval(interval);
+  }, []);
+
   const openCreate = () => {
     setEditingId(null);
     setForm({ ...EMPTY_FORM });

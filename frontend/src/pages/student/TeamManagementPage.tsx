@@ -117,6 +117,15 @@ export const TeamManagementPage: React.FC = () => {
     loadData();
   }, [user?.id]);
 
+  // Real-time auto-polling every 6 seconds for team/invitations update
+  useEffect(() => {
+    if (!user?.id) return;
+    const interval = setInterval(() => {
+      loadData();
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [user?.id, loadData]);
+
   const handleCopyCode = () => {
     if (!activeTeam) return;
     navigator.clipboard.writeText(activeTeam.join_code);
@@ -684,8 +693,7 @@ export const TeamManagementPage: React.FC = () => {
           onClose={() => setIsInviteModalOpen(false)}
           teamId={activeTeam.id}
           onInviteSent={() => {
-            setIsInviteModalOpen(false);
-            loadData(); // Refresh sent invitations
+            loadData(); // Refresh sent invitations without closing modal
           }}
           currentMemberCount={memberCount}
           maxTeamSize={maxTeamSize}

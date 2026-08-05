@@ -4,6 +4,7 @@ import {
   FileText, X
 } from 'lucide-react';
 import { apiService, type BackendHackathon, type BackendProblemStatement } from '@/services/api';
+import { useSearchParams } from 'react-router-dom';
 
 const CATEGORIES = [
   'Web Development', 'AI / Machine Learning',
@@ -44,6 +45,7 @@ function ConfirmDialog({ title, message, onConfirm, onCancel }: {
 const EMPTY_PS = { title: '', description: '', category: 'Open Innovation', difficulty: 'Medium', max_teams: 10 };
 
 export function CoordinatorProblemStatementsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [hackathons, setHackathons] = useState<BackendHackathon[]>([]);
   const [selectedHackathon, setSelectedHackathon] = useState<BackendHackathon | null>(null);
   const [problemStatements, setProblemStatements] = useState<BackendProblemStatement[]>([]);
@@ -59,20 +61,6 @@ export function CoordinatorProblemStatementsPage() {
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => setToast({ message, type });
 
-  useEffect(() => {
-    (async () => {
-      setLoadingHackathons(true);
-      try {
-        const res = await apiService.listHackathons();
-        setHackathons(res.data || []);
-      } catch {
-        showToast('Failed to load hackathons', 'error');
-      } finally {
-        setLoadingHackathons(false);
-      }
-    })();
-  }, []);
-
   const loadPS = useCallback(async (hackathon: BackendHackathon) => {
     setLoadingPS(true);
     try {
@@ -85,8 +73,45 @@ export function CoordinatorProblemStatementsPage() {
     }
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      setLoadingHackathons(true);
+      try {
+        const res = await apiService.listHackathons();
+        const list = res.data || [];
+        setHackathons(list);
+
+        const paramId = searchParams.get('hackathonId');
+        if (list.length > 0) {
+          const match = list.find(h => h.id === paramId) || list[0];
+          setSelectedHackathon(match);
+          loadPS(match);
+        }
+      } catch {
+        showToast('Failed to load hackathons', 'error');
+      } finally {
+        setLoadingHackathons(false);
+      }
+    })();
+  }, []);
+
+  // Real-time auto-polling every 6 seconds
+  useEffect(() => {
+    if (!selectedHackathon) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await apiService.getProblemStatements(selectedHackathon.id);
+        if (res.data) setProblemStatements(res.data);
+      } catch (err) {
+        // silent sync
+      }
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [selectedHackathon]);
+
   const selectHackathon = (h: BackendHackathon) => {
     setSelectedHackathon(h);
+    setSearchParams({ hackathonId: h.id }, { replace: true });
     setShowForm(false);
     loadPS(h);
   };

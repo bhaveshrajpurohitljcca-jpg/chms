@@ -127,14 +127,17 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
     setIsLoading(true);
     try {
       const res = await apiService.sendInvitation(teamId, inviteeEmail);
-      setSuccessMessage(res.message || `Invitation sent to ${inviteeEmail}`);
+      setSuccessMessage(res.message || `Invitation sent to ${inviteeEmail}! You can invite another member.`);
+      setEmail('');
+      setSearchQuery('');
+      setSearchResults([]);
+      setShowDropdown(false);
       
       // Update eligible list
       setEligibleUsers(prev => prev.filter(u => u.email !== inviteeEmail));
       
-      setTimeout(() => {
-        onInviteSent();
-      }, 1500);
+      // Notify parent to refresh team data in background
+      onInviteSent();
     } catch (err: any) {
       setError(err.message || 'Failed to send invitation. Please try again.');
     } finally {

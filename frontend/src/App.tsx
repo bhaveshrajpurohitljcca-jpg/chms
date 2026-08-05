@@ -6014,11 +6014,13 @@ const AdminView = () => {
 
 
 function App() {
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(() => !sessionStorage.getItem('chms_splash_shown'));
   const [isFadingOut, setIsFadingOut] = useState(false);
 
   useEffect(() => {
+    if (!showSplash) return;
     const dismissSplash = () => {
+      sessionStorage.setItem('chms_splash_shown', 'true');
       setIsFadingOut(true);
       setTimeout(() => {
         setShowSplash(false);

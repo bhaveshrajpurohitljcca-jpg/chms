@@ -88,7 +88,7 @@ const MOCK_DEMO_USERS: Record<string, UserProfile> = {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [token, setToken] = useState<string | null>(getStoredToken());
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(() => !!getStoredToken());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [authModalTab, setAuthModalTab] = useState<'login' | 'register'>('login');
 
@@ -97,10 +97,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const storedToken = getStoredToken();
       if (storedToken) {
         try {
-          setIsLoading(true);
           const response = await apiService.getMe();
           if (response.success && response.data) {
             setUser(response.data);
+          } else {
+            removeStoredToken();
+            setToken(null);
+            setUser(null);
           }
         } catch (error) {
           console.log("Backend offline or token expired, utilizing standard demo user state.");
@@ -110,6 +113,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } finally {
           setIsLoading(false);
         }
+      } else {
+        setIsLoading(false);
       }
     }
     initAuth();

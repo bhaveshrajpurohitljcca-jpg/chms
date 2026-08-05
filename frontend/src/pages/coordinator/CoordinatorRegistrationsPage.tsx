@@ -31,6 +31,19 @@ export function CoordinatorRegistrationsPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Real-time auto-polling every 6 seconds
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const regRes = await apiService.listAllRegistrations(selectedHackathon || undefined, statusFilter || undefined);
+        if (regRes.data) setRegistrations(regRes.data);
+      } catch (err) {
+        // silent sync
+      }
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [selectedHackathon, statusFilter]);
+
   const filtered = registrations.filter(r => {
     if (!search) return true;
     const teamName = r.team?.name?.toLowerCase() || '';

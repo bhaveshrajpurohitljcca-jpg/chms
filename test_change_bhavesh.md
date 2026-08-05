@@ -159,3 +159,34 @@
 - ✅ Duplicate email account creation permanently blocked.
 - ✅ Admin/Coordinator ab exact/strict member count enforce kar sakte hain.
 - ✅ Frontend build tests 100% pass.
+
+---
+
+## 🔄 Change #7 — Page Refresh Session Persistence, Modal Continuity & Live Auto-Polling Updates
+**Date:** 2026-08-05  
+**Branch:** `main`
+
+### Kya kiya:
+1. **Refresh Redirect & Sign-In Popup Fix (Bug Fix):**
+   - `App.tsx`: Starting quote splash screen ko `sessionStorage.getItem('chms_splash_shown')` se bind kiya. Initial visit/session start hone par splash ek baar show hoga, par har F5 page refresh karne par quote screen repeat nahi hogi.
+   - `AuthContext.tsx`: `isLoading` ko initial state me `() => !!getStoredToken()` kar diya. Pehle page refresh par initial frame me `user = null` aur `isLoading = false` ki wajah se `RoleLayout` browser ko `/` (Home page) aur `/login` (`?auth=login`) redirect kar deta tha. Ab credential check finish hone tak loading state active rehti hai aur user exact apne page (`/coordinator`, `/student`, `/admin`, etc.) par hi bana rehta hai.
+2. **Problem Statement Selection Persistence (UX Fix):**
+   - `CoordinatorProblemStatementsPage.tsx`: Hackathon selection ko `useSearchParams` (`?hackathonId=...`) se sync kiya. Problem statement create ya edit karne ke baad ya page re-render hone par selected hackathon change nahi hoga aur user problem statements management view par hi rahega.
+3. **Invite Teammates Modal Continuity (UX Fix):**
+   - `InviteMemberModal.tsx` & `TeamManagementPage.tsx`: Teammate invite bhejne ke baad modal automatically close hone waala flow hataya. Success toast ke saath email/search field clear ho jata hai so team leader ek hi baar me multiple members ko invite kar sake.
+4. **Real-time Live Auto-Polling (New Feature):**
+   - `HackathonsListPage.tsx`, `CoordinatorHackathonsPage.tsx`, `CoordinatorProblemStatementsPage.tsx`, `CoordinatorRegistrationsPage.tsx`, aur `TeamManagementPage.tsx` me 6-second silent background auto-refresh loop (polling) integrate kiya.
+   - Naya hackathon create hone par, team register hone par, ya invitation accept hone par users/coordinators ko manual F5 refresh karne ki zaroorat nahi padegi — data automatically live update ho jayega!
+
+### Kyu kiya:
+- User ne report kiya ki har page refresh par starting quote screen heavy redirect and login modal popup create kar raha tha.
+- Problem statement add karne ke baad dashboard context switch ho raha tha.
+- Team leader ek invite ke baad bar-bar modal open karne se frustrate ho raha tha.
+- Real-time updates fast experience ke liye zaroori the.
+
+### Kya impact aaya:
+- ✅ Page refresh (F5) karne par user browser me exact wahi page aur dashboard view pe hi bana rehta hai.
+- ✅ Starting quote screen har refresh par repeated show nahi hoti.
+- ✅ Invite Teammate modal ek ke baad ek multiple invites ke liye open rehta hai.
+- ✅ New Hackathons, Team Registrations, aur Problem Statements bina F5 press kiye live update hote hain.
+- ✅ Frontend build tests 100% pass.
