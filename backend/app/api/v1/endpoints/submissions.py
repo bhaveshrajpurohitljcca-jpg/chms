@@ -217,17 +217,22 @@ def create_submission(
             detail="Your team has already submitted for this hackathon. Use the update endpoint to modify it."
         )
 
+    ps_id = payload.problem_statement_id if payload.problem_statement_id and payload.problem_statement_id.strip() else None
+    demo_url = payload.demo_url if payload.demo_url and payload.demo_url.strip() else None
+    video_url = payload.video_url if payload.video_url and payload.video_url.strip() else None
+    notes = payload.additional_notes if payload.additional_notes and payload.additional_notes.strip() else None
+
     # 6. Create submission
     submission = Submission(
         team_id=payload.team_id,
         hackathon_id=payload.hackathon_id,
-        problem_statement_id=payload.problem_statement_id,
-        title=payload.title,
-        description=payload.description,
-        repo_url=payload.repo_url,
-        demo_url=payload.demo_url,
-        video_url=payload.video_url,
-        additional_notes=payload.additional_notes,
+        problem_statement_id=ps_id,
+        title=payload.title.strip(),
+        description=payload.description.strip() if payload.description else None,
+        repo_url=payload.repo_url.strip(),
+        demo_url=demo_url,
+        video_url=video_url,
+        additional_notes=notes,
         status=SubmissionStatus.SUBMITTED
     )
     db.add(submission)
@@ -443,7 +448,7 @@ def evaluate_submission(
 
     if existing_eval:
         existing_eval.score_innovation = payload.score_innovation
-        existing_eval.score_execution = payload.score_execution
+        existing_eval.score_technical = payload.score_execution
         existing_eval.score_presentation = payload.score_presentation
         existing_eval.total_score = round(total, 2)
         existing_eval.feedback = payload.feedback
@@ -453,7 +458,7 @@ def evaluate_submission(
             submission_id=payload.submission_id,
             judge_id=current_user.id,
             score_innovation=payload.score_innovation,
-            score_execution=payload.score_execution,
+            score_technical=payload.score_execution,
             score_presentation=payload.score_presentation,
             total_score=round(total, 2),
             feedback=payload.feedback

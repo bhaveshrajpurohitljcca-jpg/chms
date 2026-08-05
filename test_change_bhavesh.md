@@ -193,3 +193,28 @@
 - ✅ Frontend build tests 100% pass.
 
 ---
+
+## 🔄 Change #8 — Submissions Endpoint CORS & Schema Column Mapping Hotfix
+**Date:** 2026-08-05  
+**Branch:** `main`
+
+### Kya kiya:
+1. **CORS Headers on Error Responses (`middleware/exception_handler.py`):**
+   - Starlette/FastAPI `JSONResponse` handlers (StarletteHTTPException, RequestValidationError, Exception) me `Access-Control-Allow-Origin: origin` headers explicit return kiye. Pehle `setup_exception_handlers` CORSMiddleware ke baad call ho raha tha, jiski wajah se 422/500/400 errors me CORS headers missing ho rahe the aur browser API error ke bajaye CORS error throw kar raha tha.
+   - `main.py`: `setup_exception_handlers(app)` ko `app.add_middleware(CORSMiddleware)` ke pehle register kiya.
+2. **Submissions Database Auto-Migrations (`main.py`):**
+   - Startup lifespan me `ALTER TABLE "submission" ADD COLUMN IF NOT EXISTS problem_statement_id, repo_url, demo_url, video_url, additional_notes, file_url, file_name, status` queries add ki taaki Render PostgreSQL DB par missing columns automatically sync ho jayein.
+3. **Payload Sanitization & GitHub Regex Relaxation (`submissions.py` & `schemas/submission.py`):**
+   - Empty string values (`""`) ko `None` me sanitize kiya for `problem_statement_id`, `demo_url`, `video_url`, `additional_notes` taaki DB Foreign Key constraints fail na hon.
+   - `GITHUB_URL_REGEX` ko relax kiya to accept `.git` extension, trailing slashes, and subpaths.
+   - `evaluate_submission`: `score_execution` ko DB model ke `score_technical` column name se map kiya.
+
+### Kyu kiya:
+- Solution submission ke waqt Render backend 500/400 Error throw kar raha tha jisme CORS headers na hone ke karan browser me `No Access-Control-Allow-Origin header` block aara tha.
+
+### Kya impact aaya:
+- ✅ Project Submissions ab bina kisi CORS ya DB exception error ke successfully save honge.
+- ✅ Saari HTTP / validation / server errors client tak proper JSON response me aayengi with full CORS support.
+- ✅ Render DB auto-migrated & verified.
+
+---

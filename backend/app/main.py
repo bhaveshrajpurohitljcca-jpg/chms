@@ -39,6 +39,14 @@ async def lifespan(app: FastAPI):
             db.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS semester VARCHAR(10);'))
             db.execute(text('ALTER TABLE "hackathon" ADD COLUMN IF NOT EXISTS is_strict_team_size BOOLEAN DEFAULT FALSE;'))
             db.execute(text('ALTER TABLE "hackathon" ADD COLUMN IF NOT EXISTS strict_team_size INTEGER;'))
+            db.execute(text('ALTER TABLE "submission" ADD COLUMN IF NOT EXISTS problem_statement_id VARCHAR(36);'))
+            db.execute(text('ALTER TABLE "submission" ADD COLUMN IF NOT EXISTS repo_url VARCHAR(500);'))
+            db.execute(text('ALTER TABLE "submission" ADD COLUMN IF NOT EXISTS demo_url VARCHAR(500);'))
+            db.execute(text('ALTER TABLE "submission" ADD COLUMN IF NOT EXISTS video_url VARCHAR(500);'))
+            db.execute(text('ALTER TABLE "submission" ADD COLUMN IF NOT EXISTS additional_notes TEXT;'))
+            db.execute(text('ALTER TABLE "submission" ADD COLUMN IF NOT EXISTS file_url VARCHAR(500);'))
+            db.execute(text('ALTER TABLE "submission" ADD COLUMN IF NOT EXISTS file_name VARCHAR(255);'))
+            db.execute(text('ALTER TABLE "submission" ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT \'submitted\';'))
             db.commit()
             logger.info("Database schema migrations verified and executed successfully.")
         except Exception as e:
@@ -73,6 +81,8 @@ for org in essential_origins:
     if org not in origins:
         origins.append(org)
 
+setup_exception_handlers(app)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -81,8 +91,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-setup_exception_handlers(app)
 
 app.include_router(api_router, prefix="/api/v1")
 

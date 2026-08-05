@@ -3,7 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, field_validator, model_validator
 import re
 
-GITHUB_URL_REGEX = re.compile(r'^https://github\.com/[\w\-\.]+/[\w\-\.]+/?$')
+GITHUB_URL_REGEX = re.compile(r'^https://(?:www\.)?github\.com/[\w\-\.]+/[\w\-\.]+(?:/.*|\.git)?$')
 
 # ─────────────────────────────────────────────────────────────────
 # Submission Schemas
