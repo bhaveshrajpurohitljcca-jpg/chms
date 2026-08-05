@@ -6,6 +6,7 @@ import Button from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import { useAuth } from '@/context/AuthContext';
 import AvatarPickerModal from '@/components/ui/AvatarPickerModal';
+import { PasswordStrengthMeter } from '@/components/ui/PasswordStrengthMeter';
 import { DEFAULT_AVATAR } from '@/config/avatars';
 
 const selectClass =
@@ -247,6 +248,7 @@ export const AuthModal: React.FC = () => {
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
+            {activeTab === 'register' && <PasswordStrengthMeter password={password} />}
           </div>
 
           <div className="pt-2">

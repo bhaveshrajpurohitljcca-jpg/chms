@@ -5,6 +5,8 @@ import Button from '@/components/ui/button';
 import { Calendar, Users, ArrowRight, CheckCircle2, Clock } from 'lucide-react';
 import type { BackendHackathon } from '@/services/api';
 
+import { formatISTDate } from '@/utils/formatDate';
+
 interface HackathonCardProps {
   hackathon: BackendHackathon;
   onInspect: (hackathon: BackendHackathon) => void;
@@ -25,10 +27,7 @@ export const HackathonCard: React.FC<HackathonCardProps> = ({
   onRegister,
   isRegistered = false,
 }) => {
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return 'TBD';
-    return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-  };
+  const formatDate = (dateStr?: string) => formatISTDate(dateStr);
 
   return (
     <Card hoverable className="flex flex-col justify-between h-full group relative overflow-hidden">

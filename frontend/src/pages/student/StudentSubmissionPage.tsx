@@ -284,10 +284,19 @@ export default function StudentSubmissionPage() {
   const [fileName, setFileName] = useState<string | null>(null);
 
   const isLeader = activeTeam ? activeTeam.leader_id === user?.id : false;
+  const currentMemberCount = activeTeam?.members?.length || 0;
+  const hackathonContext = activeTeam?.hackathon;
+  const isStrictSize = hackathonContext?.is_strict_team_size || (hackathonContext?.min_team_size && hackathonContext?.min_team_size === hackathonContext?.max_team_size);
+  const minRequired = hackathonContext?.min_team_size || 1;
+  const strictRequired = hackathonContext?.strict_team_size || hackathonContext?.max_team_size || 1;
 
-  const isLocked = submission
+  const isTeamSizeUnfulfilled = isStrictSize
+    ? currentMemberCount !== strictRequired
+    : currentMemberCount < minRequired;
+
+  const isLocked = (submission
     ? ['graded', 'accepted'].includes(submission.status) || !isLeader
-    : !isLeader;
+    : !isLeader) || isTeamSizeUnfulfilled;
 
   const {
     register,
@@ -655,8 +664,18 @@ export default function StudentSubmissionPage() {
         </div>
       )}
 
+      {/* ── Alert: Team Size Criteria Unfulfilled ──────────── */}
+      {isLeader && isTeamSizeUnfulfilled && (
+        <div className="flex items-start gap-3 p-4 rounded-xl border border-red-500/30 bg-red-500/10">
+          <AlertCircle size={18} className="text-red-400 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-red-300 font-light">
+            <strong>Submission Locked — Team Size Criteria Not Met:</strong> This hackathon requires {isStrictSize ? `STRICTLY ${strictRequired}` : `at least ${minRequired}`} team member(s) to submit a project. Your team currently has <strong>{currentMemberCount}</strong> member(s). Please invite more teammates in the <a href="/student/team" className="underline font-bold hover:text-white">Team Portal</a> before submitting.
+          </p>
+        </div>
+      )}
+
       {/* ── Alert: locked submission ───────────────────────── */}
-      {isLeader && isLocked && (
+      {isLeader && !isTeamSizeUnfulfilled && isLocked && (
         <div className="flex items-start gap-3 p-4 rounded-xl border border-yellow-500/20 bg-yellow-500/5">
           <AlertCircle size={16} className="text-yellow-400 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-yellow-300/80 font-light">

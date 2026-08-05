@@ -9,6 +9,7 @@ import Button from '../components/ui/button';
 import Input from '../components/ui/input';
 import Card from '../components/ui/card';
 import AvatarPickerModal from '../components/ui/AvatarPickerModal';
+import { PasswordStrengthMeter } from '../components/ui/PasswordStrengthMeter';
 import { DEFAULT_AVATAR } from '../config/avatars';
 
 const selectClass =
@@ -43,6 +44,7 @@ export default function Signup() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -229,6 +231,7 @@ export default function Signup() {
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
+            <PasswordStrengthMeter password={watch('password')} />
 
             <Button
               type="submit"

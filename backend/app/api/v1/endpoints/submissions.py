@@ -198,6 +198,20 @@ def create_submission(
             detail="Your team is not registered for this hackathon."
         )
 
+    # 3.1 Validate team member count criteria
+    member_count = db.query(TeamMember).filter(TeamMember.team_id == payload.team_id).count()
+    if hackathon.is_strict_team_size and hackathon.strict_team_size:
+        if member_count != hackathon.strict_team_size:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Team size criteria unfulfilled: Your team must have STRICTLY {hackathon.strict_team_size} members to submit. Current members: {member_count}."
+            )
+    elif hackathon.min_team_size and member_count < hackathon.min_team_size:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Team size criteria unfulfilled: Your team must have at least {hackathon.min_team_size} members to submit. Current members: {member_count}."
+        )
+
     # 4. Deadline check
     if hackathon.end_date and datetime.utcnow() > hackathon.end_date:
         raise HTTPException(

@@ -218,3 +218,38 @@
 - ✅ Render DB auto-migrated & verified.
 
 ---
+
+## 🔄 Change #9 — IST Time Display, Password Strength Check, Marquee Loop, Scroll Locking, Submission Size Lockdown & Profile Consolidation
+**Date:** 2026-08-05  
+**Branch:** `main`
+
+### Kya kiya:
+1. **Indian Standard Time (IST) Everywhere (`utils/formatDate.ts` & components):**
+   - Centralized `formatISTDate()` helper create kiya (`Asia/Kolkata` timezone). System me saare date/time displays (hackathon start/end dates, registration deadlines, submission timestamps) ko IST standard format (`DD MMM YYYY, HH:MM AM/PM IST`) me format kiya.
+2. **Password Strength Meter (`components/ui/PasswordStrengthMeter.tsx`):**
+   - Dynamic password strength meter component create kiya jo password length (>=8), uppercase letters, numbers, and special characters check karke live progress bar (Weak/Fair/Good/Strong) and checklist items render karta hai.
+   - `Signup.tsx`, `AuthModal.tsx` (Register tab), aur `ProfilePage.tsx` (Change Password section) me integrate kiya.
+3. **Infinite Marquee Fix (`App.tsx`):**
+   - Home page marquee container HTML ko `w-max min-w-full` aur 2 identical `shrink-0 min-w-full` flex blocks se restructure kiya. Moving `translateX(-50%)` ab exact 1 full block width translate karega with 0 jumping or visual cutoffs.
+4. **Modal Background Scroll Locking (`components/ui/modal.tsx`, `AvatarPickerModal.tsx`):**
+   - Kisi bhi modal / tab opening par `document.body.style.overflow = 'hidden'` hook lock kar diya hai taaki background page scroll completely freeze ho jaye.
+5. **Team Size Submission Enforcement (`StudentSubmissionPage.tsx` & `submissions.py`):**
+   - Student team member count ko hackathon `min_team_size` aur `strict_team_size` criteria ke against validate kiya.
+   - Frontend: If member count criteria is unfulfilled, submit form lock ho jayega and clear alert red box show hoga.
+   - Backend: `POST /submissions` endpoint me HTTP 400 validation error throw hoga if team size requirement is not met.
+6. **Single Unified Profile Page (`ProfilePage.tsx` & `App.tsx`):**
+   - Profile settings (`ProfileSettings.tsx`) and index profile (`ProfilePage.tsx`) ko consolidate kiya. All profile routes (`/profile`, `/student/profile`, `/coordinator/profile`, `/judge/profile`, `/admin/profile`) ab single unified `ProfilePage.tsx` render karte hain jisme Avatar Picker, Social URLs, Auto-Join toggle, aur Password Change with Strength check built-in hai.
+
+### Kyu kiya:
+- User feedback on UI inconsistency, time zone clarity, password security, background scrolling bugs, and submission integrity.
+
+### Kya impact aaya:
+- ✅ Time everywhere is clear Indian Standard Time (IST).
+- ✅ Password setting fields show live strength feedback.
+- ✅ Marquee text scrolls smoothly infinitely.
+- ✅ Background scrolling is completely locked when popups are open.
+- ✅ Teams cannot submit solutions until team member count requirement is satisfied.
+- ✅ Single unified Profile Page across all user dashboards.
+- ✅ Frontend build tests 100% pass.
+
+---

@@ -70,7 +70,6 @@ import { ProfilePage } from '@/pages/ProfilePage';
 import { useTheme } from '@/context/ThemeContext';
 
 // Auth Imports
-import ProfileSettings from './pages/ProfileSettings';
 import RoleLayout from './layouts/RoleLayout';
 import Badge from '@/components/ui/badge';
 
@@ -386,13 +385,17 @@ const PublicLanding = () => {
 
       {/* Infinite Horizontal Marquee */}
       <section className="py-8 md:py-12 border-y border-[rgba(255,255,255,0.08)] bg-[#050505]/60 backdrop-blur-md overflow-hidden select-none">
-        <div className="flex whitespace-nowrap animate-marquee">
-          <span className="font-archivo text-2xl sm:text-4xl md:text-5xl font-black uppercase text-white/10 tracking-[0.1em] mr-8">
-            LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION •
-          </span>
-          <span className="font-archivo text-2xl sm:text-4xl md:text-5xl font-black uppercase text-white/10 tracking-[0.1em] mr-8">
-            LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION •
-          </span>
+        <div className="flex w-max min-w-full whitespace-nowrap animate-marquee">
+          <div className="flex shrink-0 items-center justify-around min-w-full pr-8">
+            <span className="font-archivo text-2xl sm:text-4xl md:text-5xl font-black uppercase text-white/10 tracking-[0.1em]">
+              LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION •
+            </span>
+          </div>
+          <div className="flex shrink-0 items-center justify-around min-w-full pr-8">
+            <span className="font-archivo text-2xl sm:text-4xl md:text-5xl font-black uppercase text-white/10 tracking-[0.1em]">
+              LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION •
+            </span>
+          </div>
         </div>
       </section>
 
@@ -6111,14 +6114,14 @@ function App() {
             <Route path="registration/:id" element={<RegistrationPage />} />
             <Route path="submissions" element={<StudentSubmissionPage />} />
             <Route path="certificates" element={<CertificatesView />} />
-            <Route path="profile" element={<ProfileSettings />} />
+            <Route path="profile" element={<ProfilePage />} />
           </Route>
 
           {/* Judge Protected Portal */}
           <Route path="/judge" element={<RoleLayout allowedRoles={['judge']} />}>
             <Route index element={<JudgeDashboardPage />} />
             <Route path="history" element={<LeaderboardView />} />
-            <Route path="profile" element={<ProfileSettings />} />
+            <Route path="profile" element={<ProfilePage />} />
           </Route>
 
           {/* Coordinator Protected Portal */}
@@ -6127,7 +6130,7 @@ function App() {
             <Route path="submissions" element={<SubmissionsView />} />
             <Route path="assignments" element={<JudgeAssignmentPage />} />
             <Route path="announcements" element={<AnnouncementsView />} />
-            <Route path="profile" element={<ProfileSettings />} />
+            <Route path="profile" element={<ProfilePage />} />
           </Route>
 
           {/* Admin Protected Portal */}
@@ -6136,7 +6139,7 @@ function App() {
             <Route path="assignments" element={<JudgeAssignmentPage />} />
             <Route path="users" element={<LeaderboardView />} />
             <Route path="settings" element={<AnnouncementsView />} />
-            <Route path="profile" element={<ProfileSettings />} />
+            <Route path="profile" element={<ProfilePage />} />
           </Route>
           
           {/* Catch-all redirect */}

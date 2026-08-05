@@ -16,12 +16,18 @@ import {
   Sparkles,
   Edit2,
   Code,
-  Globe
+  Globe,
+  Lock,
+  Eye,
+  EyeOff,
+  ShieldAlert,
+  Check
 } from 'lucide-react';
 import AvatarPickerModal from '@/components/ui/AvatarPickerModal';
+import { PasswordStrengthMeter } from '@/components/ui/PasswordStrengthMeter';
 
 export const ProfilePage: React.FC = () => {
-  const { user, updateProfile, openAuthModal } = useAuth();
+  const { user, updateProfile, changePassword, openAuthModal } = useAuth();
 
   const [isEditing, setIsEditing] = useState(false);
   const [fullName, setFullName] = useState(user?.full_name || '');
@@ -35,6 +41,17 @@ export const ProfilePage: React.FC = () => {
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
 
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Change Password state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPwd, setShowCurrentPwd] = useState(false);
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+  const [pwdLoading, setPwdLoading] = useState(false);
+  const [pwdSuccess, setPwdSuccess] = useState<string | null>(null);
+  const [pwdError, setPwdError] = useState<string | null>(null);
 
   if (!user) {
     return (
@@ -79,6 +96,38 @@ export const ProfilePage: React.FC = () => {
     const newValue = !autoAccept;
     setAutoAccept(newValue);
     await updateProfile({ auto_accept_invites: newValue });
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwdError(null);
+    setPwdSuccess(null);
+
+    if (!currentPassword) {
+      setPwdError('Please enter your current password.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPwdError('New password must be at least 6 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwdError("New password and confirm password don't match.");
+      return;
+    }
+
+    setPwdLoading(true);
+    try {
+      await changePassword(currentPassword, newPassword);
+      setPwdSuccess('Password updated successfully!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      setPwdError(err.response?.data?.detail || err.message || 'Failed to update password.');
+    } finally {
+      setPwdLoading(false);
+    }
   };
 
   const roleColor: Record<string, 'primary' | 'secondary' | 'success' | 'warning'> = {
@@ -304,6 +353,102 @@ export const ProfilePage: React.FC = () => {
               </div>
             </div>
           )}
+        </Card>
+      </div>
+
+      {/* Change Password Security Card */}
+      <div className="max-w-4xl mx-auto">
+        <Card className="p-8 space-y-6 border border-white/10 bg-black/40 backdrop-blur-xl">
+          <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+            <Lock size={20} className="text-accent-secondary" />
+            <h3 className="font-archivo text-xl font-bold text-white tracking-wide">
+              Security Tokens & Password
+            </h3>
+          </div>
+
+          {pwdError && (
+            <div className="p-4 rounded-xl bg-danger/10 border border-danger/20 text-danger text-xs flex items-center gap-2">
+              <ShieldAlert size={16} />
+              <span>{pwdError}</span>
+            </div>
+          )}
+
+          {pwdSuccess && (
+            <div className="p-4 rounded-xl bg-success/10 border border-success/20 text-success text-xs flex items-center gap-2">
+              <Check size={16} />
+              <span>{pwdSuccess}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            <div className="relative">
+              <Input
+                label="Current Password *"
+                placeholder="••••••••••••"
+                type={showCurrentPwd ? 'text' : 'password'}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                leftIcon={<Lock size={16} />}
+                className="pr-12"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrentPwd(!showCurrentPwd)}
+                className="absolute right-3.5 top-[38px] text-zinc-400 hover:text-white transition-colors z-10"
+              >
+                {showCurrentPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+
+            <div className="relative">
+              <Input
+                label="New Password *"
+                placeholder="••••••••••••"
+                type={showNewPwd ? 'text' : 'password'}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                leftIcon={<Lock size={16} />}
+                className="pr-12"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPwd(!showNewPwd)}
+                className="absolute right-3.5 top-[38px] text-zinc-400 hover:text-white transition-colors z-10"
+              >
+                {showNewPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+
+            <PasswordStrengthMeter password={newPassword} />
+
+            <div className="relative">
+              <Input
+                label="Confirm New Password *"
+                placeholder="••••••••••••"
+                type={showConfirmPwd ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                leftIcon={<Lock size={16} />}
+                className="pr-12"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPwd(!showConfirmPwd)}
+                className="absolute right-3.5 top-[38px] text-zinc-400 hover:text-white transition-colors z-10"
+              >
+                {showConfirmPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+
+            <Button
+              type="submit"
+              variant="primary"
+              isLoading={pwdLoading}
+              className="mt-2 text-xs font-bold uppercase tracking-wider"
+            >
+              Update Password
+            </Button>
+          </form>
         </Card>
       </div>
 
