@@ -37,6 +37,8 @@ async def lifespan(app: FastAPI):
             db.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS auto_accept_invites BOOLEAN DEFAULT FALSE;'))
             db.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS phone VARCHAR(20);'))
             db.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS semester VARCHAR(10);'))
+            db.execute(text('ALTER TABLE "hackathon" ADD COLUMN IF NOT EXISTS is_strict_team_size BOOLEAN DEFAULT FALSE;'))
+            db.execute(text('ALTER TABLE "hackathon" ADD COLUMN IF NOT EXISTS strict_team_size INTEGER;'))
             db.commit()
             logger.info("Database schema migrations verified and executed successfully.")
         except Exception as e:

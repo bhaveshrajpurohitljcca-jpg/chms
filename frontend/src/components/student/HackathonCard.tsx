@@ -74,7 +74,11 @@ export const HackathonCard: React.FC<HackathonCardProps> = ({
           </div>
           <div className="flex items-center gap-2 text-[rgba(255,255,255,0.7)]">
             <Users size={14} className="text-accent-secondary flex-shrink-0" />
-            <span>{hackathon.min_team_size}–{hackathon.max_team_size} Members</span>
+            <span>
+              {hackathon.is_strict_team_size || hackathon.min_team_size === hackathon.max_team_size
+                ? `Strictly ${hackathon.max_team_size} Members`
+                : `${hackathon.min_team_size}–${hackathon.max_team_size} Members`}
+            </span>
           </div>
           <div className="flex items-center gap-2 text-[rgba(255,255,255,0.7)]">
             <span className="text-[10px] text-white/40 font-semibold uppercase">PS</span>

@@ -53,7 +53,8 @@ function ConfirmDialog({ title, message, onConfirm, onCancel, confirmLabel = 'Co
 
 const EMPTY_FORM = {
   title: '', slug: '', tagline: '', description: '', status: 'upcoming' as HackathonStatus,
-  start_date: '', end_date: '', registration_deadline: '', max_team_size: 4, min_team_size: 1, banner_url: ''
+  start_date: '', end_date: '', registration_deadline: '', max_team_size: 4, min_team_size: 1,
+  is_strict_team_size: false, strict_team_size: 3, banner_url: ''
 };
 
 function slugify(text: string) {
@@ -110,6 +111,8 @@ export function CoordinatorHackathonsPage() {
       registration_deadline: h.registration_deadline ? h.registration_deadline.slice(0, 16) : '',
       max_team_size: h.max_team_size,
       min_team_size: h.min_team_size,
+      is_strict_team_size: h.is_strict_team_size || false,
+      strict_team_size: h.strict_team_size || 3,
       banner_url: h.banner_url || '',
     });
     setFormError('');
@@ -140,8 +143,10 @@ export function CoordinatorHackathonsPage() {
         start_date: form.start_date ? new Date(form.start_date).toISOString() : undefined,
         end_date: form.end_date ? new Date(form.end_date).toISOString() : undefined,
         registration_deadline: form.registration_deadline ? new Date(form.registration_deadline).toISOString() : undefined,
-        max_team_size: Number(form.max_team_size),
-        min_team_size: Number(form.min_team_size),
+        max_team_size: form.is_strict_team_size ? (form.strict_team_size || 3) : form.max_team_size,
+        min_team_size: form.is_strict_team_size ? (form.strict_team_size || 3) : form.min_team_size,
+        is_strict_team_size: form.is_strict_team_size,
+        strict_team_size: form.is_strict_team_size ? (form.strict_team_size || 3) : undefined,
         banner_url: form.banner_url || undefined,
       };
       if (editingId) {
@@ -378,24 +383,55 @@ export function CoordinatorHackathonsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                <div>
-                  <label className={labelCls}>Min Team Size</label>
-                  <input type="number" min={1} max={10} value={form.min_team_size} onChange={e => handleFormChange('min_team_size', Number(e.target.value))} className={inputCls} />
+              <div className="flex flex-col gap-3 p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-white">Team Size Configuration</span>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.is_strict_team_size}
+                      onChange={e => handleFormChange('is_strict_team_size', e.target.checked)}
+                      className="rounded border-white/20 bg-black text-accent-primary focus:ring-accent-primary"
+                    />
+                    <span className="text-xs text-accent-primary font-semibold">Enforce Strict Team Size</span>
+                  </label>
                 </div>
-                <div>
-                  <label className={labelCls}>Max Team Size</label>
-                  <input type="number" min={1} max={20} value={form.max_team_size} onChange={e => handleFormChange('max_team_size', Number(e.target.value))} className={inputCls} />
-                </div>
-                <div>
-                  <label className={labelCls}>Status</label>
-                  <select value={form.status} onChange={e => handleFormChange('status', e.target.value as HackathonStatus)} className={`${inputCls} cursor-pointer`}>
-                    <option value="draft">Draft</option>
-                    <option value="upcoming">Upcoming</option>
-                    <option value="active">Active</option>
-                    <option value="ended">Ended</option>
-                  </select>
-                </div>
+
+                {form.is_strict_team_size ? (
+                  <div>
+                    <label className={labelCls}>Strict Team Size (Exact Members Required) *</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={form.strict_team_size}
+                      onChange={e => handleFormChange('strict_team_size', Number(e.target.value))}
+                      className={inputCls}
+                      placeholder="e.g. 3"
+                    />
+                    <p className="text-[10px] text-zinc-400 mt-1">Every registered team must have EXACTLY this number of members.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                    <div>
+                      <label className={labelCls}>Min Team Size</label>
+                      <input type="number" min={1} max={10} value={form.min_team_size} onChange={e => handleFormChange('min_team_size', Number(e.target.value))} className={inputCls} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Max Team Size</label>
+                      <input type="number" min={1} max={20} value={form.max_team_size} onChange={e => handleFormChange('max_team_size', Number(e.target.value))} className={inputCls} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Status</label>
+                      <select value={form.status} onChange={e => handleFormChange('status', e.target.value as HackathonStatus)} className={`${inputCls} cursor-pointer`}>
+                        <option value="draft">Draft</option>
+                        <option value="upcoming">Upcoming</option>
+                        <option value="active">Active</option>
+                        <option value="ended">Ended</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>

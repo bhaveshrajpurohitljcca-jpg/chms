@@ -344,13 +344,25 @@ def send_invitation(
     # Check for existing pending invitation
     existing_invite = db.query(TeamInvitation).filter(
         TeamInvitation.team_id == team.id,
-        TeamInvitation.invitee_email == payload.invitee_email.lower(),
+        TeamInvitation.invitee_email == payload.invitee_email.lower().strip(),
         TeamInvitation.status == InvitationStatus.PENDING
     ).first()
     if existing_invite:
         raise HTTPException(
             status_code=409,
             detail="A pending invitation has already been sent to this email address."
+        )
+
+    # Check if invitee is ALREADY part of another team for this hackathon
+    invitee_memberships = db.query(TeamMember.team_id).filter(TeamMember.user_id == invitee.id).subquery()
+    invitee_existing_team = db.query(Team).filter(
+        Team.id.in_(invitee_memberships),
+        Team.hackathon_id == team.hackathon_id
+    ).first()
+    if invitee_existing_team:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{invitee.full_name} is already participating in team '{invitee_existing_team.name}' for this hackathon."
         )
 
     # Check for auto-accept feature

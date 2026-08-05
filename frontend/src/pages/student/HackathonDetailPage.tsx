@@ -167,7 +167,11 @@ export const HackathonDetailPage: React.FC = () => {
             <span className="text-[10px] uppercase tracking-wider text-white/40 block font-semibold">Team Constraints</span>
             <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-white mt-1">
               <Users size={14} className="text-accent-secondary" />
-              <span>{hackathon.min_team_size} to {hackathon.max_team_size} Members</span>
+              <span>
+                {hackathon.is_strict_team_size || hackathon.min_team_size === hackathon.max_team_size
+                  ? `Strictly ${hackathon.max_team_size} Members`
+                  : `${hackathon.min_team_size} to ${hackathon.max_team_size} Members`}
+              </span>
             </div>
           </div>
         </div>

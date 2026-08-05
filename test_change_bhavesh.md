@@ -132,3 +132,30 @@
 - ✅ Database columns auto-create ho jayenge Render startup pe.
 - ✅ HTTP 500 error resolve ho jayega aur login successful kaam karega.
 - ✅ Vercel domains ke liye CORS issues permanently resolved.
+
+---
+
+## 🔄 Change #6 — Single-Team Constraint, Email Normalization & Strict Team Size Features
+**Date:** 2026-08-05  
+**Branch:** `main`
+
+### Kya kiya:
+- **Email Normalization & Duplicate Registration Fix:** `backend/app/api/v1/endpoints/auth.py` aur `user_service.py` me saare email inputs ko `.lower().strip()` se normalize kiya aur `func.lower(User.email)` se case-insensitive check lagaya.
+- **Strict Single-Team Participation Enforcement:**
+  - `teams.py`: `send_invitation` me Auto-Accept run hone se pehle explicit check add kiya ki invitee kisi aur team ka part hai ya nahi.
+  - `registrations.py`: Hackathon registration endpoint pe cross-team member validation add ki. Agar team ka koi bhi student member already kisi aur registered team me hai, toh registration reject hoga with clear error message.
+- **Strict Team Size Support:**
+  - `Hackathon` model (`backend/app/models/hackathon.py`) aur schemas me `is_strict_team_size` (boolean) aur `strict_team_size` (integer) fields add kiye. `main.py` lifespan me DB auto-migration queries include ki.
+  - `CoordinatorHackathonsPage.tsx`: Form me "Enforce Strict Team Size" checkbox aur input field add kiya.
+  - `HackathonCard.tsx` & `HackathonDetailPage.tsx`: Team constraints card me "Strictly X Members" dynamic label render kiya.
+
+### Kyu kiya:
+- Ek student multiple teams join/register karke system me duplicate participations kar pa raha tha.
+- Case sensitivity ya spaces ki wajah se duplicate email accounts ban rahe the.
+- Admin/Coordinator ko exact team size (jaise "Strictly 3 members") enforce karne ka feature chahiye tha.
+
+### Kya impact aaya:
+- ✅ Student ek hackathon me sirf 1 hi team ka part reh sakta hai.
+- ✅ Duplicate email account creation permanently blocked.
+- ✅ Admin/Coordinator ab exact/strict member count enforce kar sakte hain.
+- ✅ Frontend build tests 100% pass.

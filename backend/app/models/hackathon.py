@@ -28,6 +28,8 @@ class Hackathon(BaseTable):
     registration_deadline = Column(DateTime, nullable=True)
     max_team_size = Column(Integer, default=4, nullable=False)
     min_team_size = Column(Integer, default=1, nullable=False)
+    is_strict_team_size = Column(Boolean, default=False, nullable=False)
+    strict_team_size = Column(Integer, nullable=True)
     status = Column(SQLEnum(HackathonStatus), default=HackathonStatus.UPCOMING, nullable=False)
     banner_url = Column(String(500), nullable=True)
     results_published = Column(Boolean, default=False, nullable=False)

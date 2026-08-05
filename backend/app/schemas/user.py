@@ -13,6 +13,7 @@ class UserRegister(BaseModel):
     bio: Optional[str] = None
     phone: Optional[str] = None
     semester: Optional[str] = None
+    avatar_url: Optional[str] = None
     github_url: Optional[str] = None
     linkedin_url: Optional[str] = None
 

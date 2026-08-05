@@ -41,6 +41,8 @@ class HackathonCreate(BaseModel):
     registration_deadline: Optional[datetime] = None
     max_team_size: Optional[int] = 4
     min_team_size: Optional[int] = 1
+    is_strict_team_size: Optional[bool] = False
+    strict_team_size: Optional[int] = None
     status: Optional[HackathonStatus] = HackathonStatus.UPCOMING
     banner_url: Optional[str] = None
     announce_ps_advance: Optional[bool] = True
@@ -55,6 +57,8 @@ class HackathonUpdate(BaseModel):
     registration_deadline: Optional[datetime] = None
     max_team_size: Optional[int] = None
     min_team_size: Optional[int] = None
+    is_strict_team_size: Optional[bool] = None
+    strict_team_size: Optional[int] = None
     status: Optional[HackathonStatus] = None
     banner_url: Optional[str] = None
 
@@ -69,6 +73,8 @@ class HackathonResponse(BaseModel):
     registration_deadline: Optional[datetime] = None
     max_team_size: int
     min_team_size: int
+    is_strict_team_size: bool = False
+    strict_team_size: Optional[int] = None
     status: HackathonStatus
     banner_url: Optional[str] = None
     results_published: bool = False

@@ -59,6 +59,8 @@ export interface BackendHackathon {
   registration_deadline?: string;
   max_team_size: number;
   min_team_size: number;
+  is_strict_team_size?: boolean;
+  strict_team_size?: number;
   status: 'draft' | 'upcoming' | 'active' | 'ended';
   banner_url?: string;
   problem_statements: BackendProblemStatement[];

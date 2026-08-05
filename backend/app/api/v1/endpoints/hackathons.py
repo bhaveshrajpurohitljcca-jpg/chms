@@ -137,6 +137,12 @@ def create_hackathon(
     if payload.end_date and payload.start_date and payload.end_date < payload.start_date:
         raise HTTPException(status_code=400, detail="End date cannot be before start date.")
 
+    is_strict = payload.is_strict_team_size or False
+    strict_size = payload.strict_team_size if is_strict else None
+
+    min_size = strict_size if is_strict and strict_size else (payload.min_team_size or 1)
+    max_size = strict_size if is_strict and strict_size else (payload.max_team_size or 4)
+
     hackathon = Hackathon(
         title=payload.title,
         slug=payload.slug,
@@ -145,8 +151,10 @@ def create_hackathon(
         start_date=payload.start_date,
         end_date=payload.end_date,
         registration_deadline=payload.registration_deadline,
-        max_team_size=payload.max_team_size or 4,
-        min_team_size=payload.min_team_size or 1,
+        max_team_size=max_size,
+        min_team_size=min_size,
+        is_strict_team_size=is_strict,
+        strict_team_size=strict_size,
         status=payload.status or HackathonStatus.UPCOMING,
         banner_url=payload.banner_url,
         announce_ps_advance=payload.announce_ps_advance if payload.announce_ps_advance is not None else True
@@ -198,8 +206,19 @@ def update_hackathon(
     hackathon.start_date = payload.start_date
     hackathon.end_date = payload.end_date
     hackathon.registration_deadline = payload.registration_deadline
-    hackathon.max_team_size = payload.max_team_size or 4
-    hackathon.min_team_size = payload.min_team_size or 1
+    if payload.is_strict_team_size is not None:
+        hackathon.is_strict_team_size = payload.is_strict_team_size
+    if payload.strict_team_size is not None:
+        hackathon.strict_team_size = payload.strict_team_size
+
+    if hackathon.is_strict_team_size and hackathon.strict_team_size:
+        hackathon.min_team_size = hackathon.strict_team_size
+        hackathon.max_team_size = hackathon.strict_team_size
+    else:
+        if payload.min_team_size is not None:
+            hackathon.min_team_size = payload.min_team_size
+        if payload.max_team_size is not None:
+            hackathon.max_team_size = payload.max_team_size or 1
     # Calculate accurate status based on dates
     if hackathon.start_date and hackathon.start_date > now:
         hackathon.status = HackathonStatus.UPCOMING

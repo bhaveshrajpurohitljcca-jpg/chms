@@ -115,6 +115,50 @@ def create_registration(
             detail="Your team is already registered for this hackathon."
         )
 
+    # Validate team member count against hackathon rules
+    team_members = db.query(TeamMember).filter(TeamMember.team_id == team.id).all()
+    member_count = len(team_members)
+
+    is_strict = getattr(hackathon, 'is_strict_team_size', False)
+    strict_size = getattr(hackathon, 'strict_team_size', None)
+
+    if is_strict and strict_size:
+        if member_count != strict_size:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Registration failed: This hackathon requires exactly {strict_size} team members. Your team currently has {member_count} member(s)."
+            )
+    else:
+        if member_count < hackathon.min_team_size:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Registration failed: Team must have at least {hackathon.min_team_size} member(s). Your team currently has {member_count} member(s)."
+            )
+        if member_count > hackathon.max_team_size:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Registration failed: Team cannot exceed {hackathon.max_team_size} members. Your team currently has {member_count} member(s)."
+            )
+
+    # Check for conflict: ensure NO member of this team is in another registered team for this hackathon
+    member_user_ids = [m.user_id for m in team_members]
+    other_registrations = db.query(Registration.team_id).filter(
+        Registration.hackathon_id == hackathon.id,
+        Registration.team_id != team.id
+    ).subquery()
+
+    conflict = db.query(TeamMember, User).join(User, TeamMember.user_id == User.id).filter(
+        TeamMember.team_id.in_(other_registrations),
+        TeamMember.user_id.in_(member_user_ids)
+    ).first()
+
+    if conflict:
+        tm_obj, user_obj = conflict
+        raise HTTPException(
+            status_code=400,
+            detail=f"Registration failed: Student '{user_obj.full_name}' is already registered with another team in this hackathon."
+        )
+
     registration = Registration(
         team_id=payload.team_id,
         hackathon_id=payload.hackathon_id,

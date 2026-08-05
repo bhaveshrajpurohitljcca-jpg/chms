@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User, UserRole
@@ -12,7 +13,8 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/register", response_model=StandardResponse[TokenResponse])
 def register_user(payload: UserRegister, db: Session = Depends(get_db)):
-    existing_user = db.query(User).filter(User.email == payload.email).first()
+    clean_email = payload.email.lower().strip()
+    existing_user = db.query(User).filter(func.lower(User.email) == clean_email, User.is_deleted == False).first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -20,13 +22,18 @@ def register_user(payload: UserRegister, db: Session = Depends(get_db)):
         )
     
     new_user = User(
-        email=payload.email,
+        email=clean_email,
         hashed_password=hash_password(payload.password),
         full_name=payload.full_name,
         role=payload.role or UserRole.STUDENT,
         department=payload.department,
         college_id=payload.college_id,
         bio=payload.bio,
+        phone=getattr(payload, 'phone', None),
+        semester=getattr(payload, 'semester', None),
+        avatar_url=getattr(payload, 'avatar_url', None),
+        github_url=getattr(payload, 'github_url', None),
+        linkedin_url=getattr(payload, 'linkedin_url', None),
     )
     db.add(new_user)
     db.commit()
@@ -53,7 +60,8 @@ def signup_user(payload: UserRegister, db: Session = Depends(get_db)):
 
 @router.post("/login")
 def login_user(payload: UserLogin, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == payload.email, User.is_deleted == False).first()
+    clean_email = payload.email.lower().strip()
+    user = db.query(User).filter(func.lower(User.email) == clean_email, User.is_deleted == False).first()
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
