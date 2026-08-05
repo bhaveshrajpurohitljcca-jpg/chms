@@ -64,6 +64,7 @@ async def lifespan(app: FastAPI):
             db.execute(text('ALTER TABLE "judge_assignment" ADD COLUMN IF NOT EXISTS submission_id VARCHAR(36);'))
             db.execute(text('ALTER TABLE "judge_assignment" ADD COLUMN IF NOT EXISTS judge_id VARCHAR(36);'))
             db.execute(text('ALTER TABLE "judge_assignment" ADD COLUMN IF NOT EXISTS assigned_by_id VARCHAR(36);'))
+            db.execute(text('ALTER TABLE "judge_assignment" ADD COLUMN IF NOT EXISTS assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;'))
             db.commit()
             logger.info("Database schema migrations verified and executed successfully.")
         except Exception as e:
