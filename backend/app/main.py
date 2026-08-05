@@ -47,6 +47,23 @@ async def lifespan(app: FastAPI):
             db.execute(text('ALTER TABLE "submission" ADD COLUMN IF NOT EXISTS file_url VARCHAR(500);'))
             db.execute(text('ALTER TABLE "submission" ADD COLUMN IF NOT EXISTS file_name VARCHAR(255);'))
             db.execute(text('ALTER TABLE "submission" ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT \'submitted\';'))
+
+            # Migration for evaluation table columns
+            db.execute(text('ALTER TABLE "evaluation" ADD COLUMN IF NOT EXISTS score_technical FLOAT DEFAULT 0.0;'))
+            db.execute(text('ALTER TABLE "evaluation" ADD COLUMN IF NOT EXISTS score_uiux FLOAT DEFAULT 0.0;'))
+            db.execute(text('ALTER TABLE "evaluation" ADD COLUMN IF NOT EXISTS score_impact FLOAT DEFAULT 0.0;'))
+            db.execute(text('ALTER TABLE "evaluation" ADD COLUMN IF NOT EXISTS strengths TEXT;'))
+            db.execute(text('ALTER TABLE "evaluation" ADD COLUMN IF NOT EXISTS weaknesses TEXT;'))
+            db.execute(text('ALTER TABLE "evaluation" ADD COLUMN IF NOT EXISTS suggestions TEXT;'))
+            db.execute(text('ALTER TABLE "evaluation" ADD COLUMN IF NOT EXISTS recommendation VARCHAR(50) DEFAULT \'pending\';'))
+            db.execute(text('ALTER TABLE "evaluation" ADD COLUMN IF NOT EXISTS is_draft BOOLEAN DEFAULT TRUE;'))
+            db.execute(text('ALTER TABLE "evaluation" ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMP;'))
+
+            # Migration for judge_assignment table columns
+            db.execute(text('ALTER TABLE "judge_assignment" ADD COLUMN IF NOT EXISTS hackathon_id VARCHAR(36);'))
+            db.execute(text('ALTER TABLE "judge_assignment" ADD COLUMN IF NOT EXISTS submission_id VARCHAR(36);'))
+            db.execute(text('ALTER TABLE "judge_assignment" ADD COLUMN IF NOT EXISTS judge_id VARCHAR(36);'))
+            db.execute(text('ALTER TABLE "judge_assignment" ADD COLUMN IF NOT EXISTS assigned_by_id VARCHAR(36);'))
             db.commit()
             logger.info("Database schema migrations verified and executed successfully.")
         except Exception as e:

@@ -253,3 +253,21 @@
 - ✅ Frontend build tests 100% pass.
 
 ---
+
+## 🔄 Change #10 — Evaluation Table Database Schema Auto-Migration Hotfix
+**Date:** 2026-08-05  
+**Branch:** `main`
+
+### Kya kiya:
+1. **Evaluation Table Column Migrations (`main.py`):**
+   - Startup lifespan me `ALTER TABLE "evaluation" ADD COLUMN IF NOT EXISTS score_technical, score_uiux, score_impact, strengths, weaknesses, suggestions, recommendation, is_draft, submitted_at` auto-migration statements include kiye.
+   - Render PostgreSQL par pehle se bani `evaluation` table me `score_technical` missing thi, jis vajah se team delete karne par submission cascade delete loading query `UndefinedColumn: column evaluation.score_technical does not exist` throw kar rahi thi.
+
+### Kyu kiya:
+- User ne team delete karte time backend database column missing error report kiya tha.
+
+### Kya impact aaya:
+- ✅ Existing team and submission deletion ab smooth aur error-free chalega.
+- ✅ PostgreSQL database tables schema automatically synchronized.
+
+---
