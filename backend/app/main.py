@@ -20,16 +20,32 @@ logger = logging.getLogger("chms.main")
 async def lifespan(app: FastAPI):
     # Ensure uploads directory exists
     os.makedirs("uploads", exist_ok=True)
-    logger.info("Uploads directory verified.")
-    # Initialize DB schemas
+    os.makedirs("static", exist_ok=True)
+    logger.info("Uploads and static directories verified.")
+    # Initialize DB schemas & run safe migrations
     logger.info("Initializing database schemas...")
-    db = SessionLocal()
     try:
-        pass
+        from app.models.base import Base
+        import app.models  # Ensure all models are imported so create_all works
+        Base.metadata.create_all(bind=engine)
+        
+        db = SessionLocal()
+        try:
+            from sqlalchemy import text
+            db.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS github_url VARCHAR(255);'))
+            db.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS linkedin_url VARCHAR(255);'))
+            db.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS auto_accept_invites BOOLEAN DEFAULT FALSE;'))
+            db.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS phone VARCHAR(20);'))
+            db.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS semester VARCHAR(10);'))
+            db.commit()
+            logger.info("Database schema migrations verified and executed successfully.")
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Migration error (non-fatal): {e}")
+        finally:
+            db.close()
     except Exception as e:
-        logger.error(f"Error connecting to database: {e}")
-    finally:
-        db.close()
+        logger.error(f"Error during database startup initialization: {e}")
     yield
 
 app = FastAPI(
@@ -58,6 +74,7 @@ for org in essential_origins:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

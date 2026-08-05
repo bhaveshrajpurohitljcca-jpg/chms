@@ -113,3 +113,22 @@
 - ✅ Form pe avatar preview clearly visible aur prominent ho gaya hai.
 - ✅ Students ab apna GitHub aur LinkedIn portfolio link save aur display kar sakte hain.
 - ✅ Build tests (`npm run build`) 100% pass!
+
+---
+
+## 🔄 Change #5 — Render DB Auto-Migration & Dynamic CORS Regex Fix
+**Date:** 2026-08-05  
+**Branch:** `main`
+
+### Kya kiya:
+- **Root Cause Identify kiya:** Production (Render PostgreSQL) pe database in 500 Internal Server Error de raha tha login endpoint (`POST /api/v1/auth/login`) call hone par. Kyunki humne pehle `github_url` aur `linkedin_url` naye columns model me add kiye the jo PostgreSQL database table (`user`) me physically exist nahi karte the. Server Exception throw kar raha tha aur 500 error ke response pe browser "CORS Policy Blocked" ka error surface kar raha tha.
+- **Auto-Migration Script in Lifespan:** `backend/app/main.py` me `lifespan` startup hook me `ALTER TABLE "user" ADD COLUMN IF NOT EXISTS ...` SQL queries add kiye jo `github_url`, `linkedin_url`, `auto_accept_invites`, `phone`, `semester` columns ko PostgreSQL pe automatically create kar dega render restart hone par.
+- **Dynamic CORS Regex:** `CORSMiddleware` me `allow_origin_regex=r"https://.*\.vercel\.app"` add kiya taaki Vercel ka koi bhi preview deployment ya domain CORS block na ho.
+
+### Kyu kiya:
+- Live Vercel app (`https://chms-lj.vercel.app`) se Render backend (`https://chms-l2ya.onrender.com`) me login karte time HTTP 500 DB Exception + CORS error ho raha tha.
+
+### Kya impact aaya:
+- ✅ Database columns auto-create ho jayenge Render startup pe.
+- ✅ HTTP 500 error resolve ho jayega aur login successful kaam karega.
+- ✅ Vercel domains ke liye CORS issues permanently resolved.
