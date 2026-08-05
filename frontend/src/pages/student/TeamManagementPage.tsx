@@ -62,9 +62,9 @@ export const TeamManagementPage: React.FC = () => {
   const memberCount = activeTeam?.members.length || 0;
   const maxTeamSize = activeTeam?.hackathon?.max_team_size || 4;
 
-  const loadData = useCallback(async (selectTeamIdAfterLoad?: string) => {
+  const loadData = useCallback(async (selectTeamIdAfterLoad?: string, isSilent = false) => {
     try {
-      setIsLoading(true);
+      if (!isSilent) setIsLoading(true);
       setError('');
 
       // Load user's teams
@@ -107,9 +107,9 @@ export const TeamManagementPage: React.FC = () => {
       const invRes = await apiService.getReceivedInvitations();
       setInvitations(invRes.data || []);
     } catch (err: any) {
-      setError(err.message || 'Failed to load team data.');
+      if (!isSilent) setError(err.message || 'Failed to load team data.');
     } finally {
-      setIsLoading(false);
+      if (!isSilent) setIsLoading(false);
     }
   }, [user?.id, selectedTeamId]);
 
@@ -117,12 +117,12 @@ export const TeamManagementPage: React.FC = () => {
     loadData();
   }, [user?.id]);
 
-  // Real-time auto-polling every 6 seconds for team/invitations update
+  // Real-time auto-polling every 10 seconds for team/invitations update (silent sync)
   useEffect(() => {
     if (!user?.id) return;
     const interval = setInterval(() => {
-      loadData();
-    }, 6000);
+      loadData(undefined, true);
+    }, 10000);
     return () => clearInterval(interval);
   }, [user?.id, loadData]);
 

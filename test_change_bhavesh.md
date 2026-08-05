@@ -189,4 +189,7 @@
 - ✅ Starting quote screen har refresh par repeated show nahi hoti.
 - ✅ Invite Teammate modal ek ke baad ek multiple invites ke liye open rehta hai.
 - ✅ New Hackathons, Team Registrations, aur Problem Statements bina F5 press kiye live update hote hain.
+- ✅ **Hotfix:** Team Portal background auto-polling को completely **silent** (`isSilent = true`) kar diya gaya hai. Ab background sync ke vajah se poora page baar-baar reload ya flicker nahi hoga.
 - ✅ Frontend build tests 100% pass.
+
+---
