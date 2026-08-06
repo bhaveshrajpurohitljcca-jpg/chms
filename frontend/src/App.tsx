@@ -253,27 +253,21 @@ const GlobalLayout = () => {
                 {!!user && (
                   <div className="flex flex-col gap-3">
                     <h5 className="text-[10px] uppercase tracking-[0.2em] font-semibold text-accent-primary">
-                      Authorized Workspaces
+                      Your Workspace
                     </h5>
                     <ul className="flex flex-col gap-2.5">
                       <li>
-                        <Link to="/student" onClick={() => setIsMenuOpen(false)} className="text-sm font-light text-white/70 hover:text-accent-primary transition-colors flex items-center gap-1.5">
-                          <span>Student Portal</span>
-                        </Link>
-                      </li>
-                      <li>
-                        <Link to="/judge" onClick={() => setIsMenuOpen(false)} className="text-sm font-light text-white/70 hover:text-accent-primary transition-colors flex items-center gap-1.5">
-                          <span>Judge Matrix</span>
-                        </Link>
-                      </li>
-                      <li>
-                        <Link to="/coordinator" onClick={() => setIsMenuOpen(false)} className="text-sm font-light text-white/70 hover:text-accent-primary transition-colors flex items-center gap-1.5">
-                          <span>Coordinator Console</span>
-                        </Link>
-                      </li>
-                      <li>
-                        <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="text-sm font-light text-white/70 hover:text-accent-primary transition-colors flex items-center gap-1.5">
-                          <span>Admin Command Console</span>
+                        <Link 
+                          to={`/${user.role.toLowerCase()}`} 
+                          onClick={() => setIsMenuOpen(false)} 
+                          className="text-sm font-medium text-white/90 hover:text-accent-primary transition-colors flex items-center gap-1.5"
+                        >
+                          <span>
+                            {user.role.toLowerCase() === 'admin' && 'Admin Command Console'}
+                            {user.role.toLowerCase() === 'coordinator' && 'Coordinator Console'}
+                            {user.role.toLowerCase() === 'judge' && 'Judge Matrix'}
+                            {user.role.toLowerCase() === 'student' && 'Student Portal'}
+                          </span>
                         </Link>
                       </li>
                     </ul>
@@ -438,7 +432,7 @@ const PublicLanding = () => {
           
           <div className="flex-1 flex flex-col gap-4 md:gap-6">
             <span className="text-xs uppercase tracking-[0.3em] text-accent-secondary font-semibold">Advance Innovation Research & Analysis Lab</span>
-            <h2 className="font-archivo text-4xl sm:text-5xl md:text-7xl font-black uppercase text-white tracking-tighter leading-none select-none">
+            <h2 className="font-archivo text-3xl sm:text-5xl md:text-7xl font-black uppercase text-white tracking-tighter leading-none select-none">
               AiRA LAB
             </h2>
             <p className="text-xs md:text-sm text-text-secondary leading-relaxed font-light">
@@ -1731,7 +1725,7 @@ export const JudgeView = () => {
       </div>
 
       {/* Grid: Stats row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         <Card hoverable className="flex flex-col justify-between p-6">
           <div>
             <p className="text-xs uppercase tracking-wider font-bold text-white/40">Assigned Projects</p>
@@ -2351,9 +2345,9 @@ const CoordinatorView = () => {
   // ─── HACKATHON CARDS (no hackathon selected) ───
   if (!selectedHackathon) {
     return (
-      <div className="flex flex-col gap-8 w-full max-w-6xl">
+      <div className="flex flex-col gap-4 sm:gap-8 w-full">
         <div>
-          <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-glow-cyan text-white">
+          <h2 className="font-archivo text-xl sm:text-2xl md:text-3xl uppercase tracking-wider font-black text-glow-cyan text-white">
             Operations Console
           </h2>
           <p className="text-xs text-text-secondary mt-1 font-light">
@@ -3131,7 +3125,7 @@ const CoordinatorView = () => {
                 className="w-full h-28 p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-primary transition-all resize-none"
               />
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-white/70">Category</label>
                 <select value={editPSData.category} onChange={e => setEditPSData({ ...editPSData, category: e.target.value })} className="p-2.5 rounded-xl bg-black border border-white/10 text-white text-[11px]">
@@ -4001,7 +3995,7 @@ const AdminView = () => {
           <span className="text-xs uppercase tracking-[0.25em] text-accent-primary font-bold font-archivo">
             CONTROL CENTER
           </span>
-          <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-glow-cyan text-white mt-1">
+          <h2 className="font-archivo text-2xl sm:text-3xl md:text-4xl uppercase tracking-wider font-black text-glow-cyan text-white mt-1">
             {activeTab === 'dashboard' && "Command Console"}
             {activeTab === 'hackathons' && "Manage Hackathons"}
             {activeTab === 'users' && "Manage Users"}
@@ -4014,7 +4008,7 @@ const AdminView = () => {
         </div>
 
         {/* System Diagnostics panel */}
-        <div className="flex items-center gap-5 bg-white/[0.01] border border-white/5 rounded-2xl px-5 py-3">
+        <div className="hidden sm:flex items-center gap-5 bg-white/[0.01] border border-white/5 rounded-2xl px-5 py-3">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
             <span className="text-[10px] font-mono text-white/50 uppercase">FastAPI: OK</span>
@@ -4037,7 +4031,7 @@ const AdminView = () => {
       {/* ========================================================================= */}
       {activeTab === 'dashboard' && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {kpiStats.map((kpi, idx) => {
               const Icon = kpi.icon;
               return (
@@ -5505,7 +5499,7 @@ const AdminView = () => {
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Input 
                 label="Launch Date" 
                 type="date"

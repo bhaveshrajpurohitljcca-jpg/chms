@@ -269,3 +269,98 @@ html.light select option {
   background-color: #ffffff !important;
   color: #1e293b !important;
 }
+
+/* ─── Mobile Responsive Utilities ─────────────────────────── */
+
+/* Slide-in animation for mobile drawer */
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); opacity: 0; }
+  to   { transform: translateX(0);      opacity: 1; }
+}
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes slideInUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.animate-slide-in-left  { animation: slideInLeft  0.25s cubic-bezier(0.16,1,0.3,1) forwards; }
+.animate-slide-in-right { animation: slideInRight 0.25s cubic-bezier(0.16,1,0.3,1) forwards; }
+.animate-slide-in-up    { animation: slideInUp    0.25s cubic-bezier(0.16,1,0.3,1) forwards; }
+
+/* Safe area inset for notch phones */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.pt-safe { padding-top:    env(safe-area-inset-top,    0px); }
+
+/* Minimum touch target size (WCAG 2.5.5) */
+.touch-target {
+  min-height: 44px;
+  min-width:  44px;
+}
+
+/* Horizontal scroll container for tables/tabs on mobile */
+.mobile-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.mobile-scroll::-webkit-scrollbar { display: none; }
+
+/* Prevent content overflow on small screens */
+* { box-sizing: border-box; }
+img, video, canvas, svg { max-width: 100%; }
+
+/* ─── Mobile Font Size Overrides (< 640px) ─────────────────── */
+@media (max-width: 639px) {
+  /* Shrink huge display headings */
+  .font-archivo.text-5xl,
+  .font-archivo.text-6xl,
+  .font-archivo.text-7xl,
+  .font-archivo.text-8xl {
+    font-size: 2rem !important;
+    line-height: 1.15 !important;
+  }
+
+  /* Shrink page-level h2 headings */
+  h2.font-archivo { font-size: 1.4rem !important; }
+
+  /* Prevent horizontal scroll from long mono text */
+  .font-mono { word-break: break-all; }
+
+  /* Tighter letter spacing on small screens */
+  .tracking-widest { letter-spacing: 0.1em !important; }
+}
+
+/* ─── Responsive Table: stack rows on mobile ────────────────── */
+@media (max-width: 639px) {
+  .responsive-table thead { display: none; }
+  .responsive-table tbody tr {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: rgba(255,255,255,0.02);
+  }
+  .responsive-table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border: none;
+    font-size: 0.75rem;
+  }
+  .responsive-table tbody td::before {
+    content: attr(data-label);
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.4);
+    flex-shrink: 0;
+    margin-right: 8px;
+  }
+}
+
