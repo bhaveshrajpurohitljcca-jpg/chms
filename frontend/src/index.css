@@ -114,21 +114,21 @@ body {
   }
 }
 
-/* Light Theme Variables - Educational University Style */
+/* Light Theme Variables - Royal Blue & Slate Theme */
 html.light, [data-theme="light"] {
-  --bg-primary: #f8faff; /* Ultra light pastel blue-white */
-  --bg-surface: #f3f0ff; /* Very light pastel purple for surfaces */
-  --bg-card: #ffffff;
+  --bg-primary: #e5e9f0; /* Light slate blue background */
+  --bg-surface: #d8e2ee; /* Translucent light blue-gray surface */
+  --bg-card: #ffffff;    /* Pure white cards for high contrast */
   
-  /* Deeper tones for readable text accents */
-  --accent-primary: #4338ca; /* Indigo/Blue */
-  --accent-secondary: #b45309; /* Golden Yellow */
-  --accent-third: #6d28d9; /* Purple */
+  /* Royal blue primary accent */
+  --accent-primary: #0252cd;   /* Vibrant royal blue */
+  --accent-secondary: #0284c7; /* Cyan blue */
+  --accent-third: #6d28d9;    /* Purple */
   
-  --text-primary: #1e293b; /* Slate 800 */
+  --text-primary: #0f172a;   /* Slate 900 */
   --text-secondary: #475569; /* Slate 600 */
   
-  --border-color: #94a3b8; /* Darker slate border for visibility */
+  --border-color: #cbd5e1;   /* Slate 300 border */
 }
 
 /* Light Mode Global Overrides */
@@ -154,27 +154,27 @@ html.light .bg-black {
 html.light header,
 html.light aside,
 html.light nav {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(10px);
+  background-color: rgba(229, 233, 240, 0.95) !important;
+  backdrop-filter: blur(12px);
   border-color: var(--border-color) !important;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-/* Academic Card Styling (Solid, clean, light-mode bordered) */
+/* Academic & Workspace Card Styling */
 html.light .glass-card,
 html.light .glass-surface,
 html.light [role="dialog"],
 html.light .rounded-dialog {
-  background: #ffffff !important;
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(148, 163, 184, 0.4) !important;
-  box-shadow: 0 8px 32px rgba(30, 41, 59, 0.08) !important;
-  color: #1e293b !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04) !important;
+  color: #0f172a !important;
 }
 
 html.light .text-white {
-  color: #1e293b !important;
+  color: #0f172a !important;
 }
 
 html.light .text-white\/80,
@@ -209,8 +209,8 @@ html.light input,
 html.light textarea,
 html.light select {
   background-color: #ffffff !important;
-  color: #1e293b !important;
-  border-color: rgba(148, 163, 184, 0.4) !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
 }
 
 html.light .border-white\/10,
@@ -223,7 +223,7 @@ html.light .border-\[rgba\(255\,255\,255\,0\.08\)\],
 html.light .border-\[rgba\(255\,255\,255\,0\.10\)\],
 html.light .border-\[rgba\(255\,255\,255\,0\.12\)\],
 html.light .border-\[rgba\(255\,255\,255\,0\.15\)\] {
-  border-color: rgba(148, 163, 184, 0.4) !important;
+  border-color: #cbd5e1 !important;
 }
 
 html.light .bg-white\/5,
@@ -234,7 +234,7 @@ html.light .bg-white\/\[0\.05\],
 html.light .bg-\[rgba\(255\,255\,255\,0\.03\)\],
 html.light .bg-\[rgba\(255\,255\,255\,0\.05\)\] {
   background-color: #ffffff !important;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 
 /* Background particles */
@@ -242,36 +242,38 @@ html.light .bg-white\/20 {
   background-color: rgba(30, 41, 59, 0.6) !important;
 }
 
-/* Fix for Hero text gradient (from-white via-white/80 to-white/10) */
-html.light .from-white {
-  --tw-gradient-from: #1e293b var(--tw-gradient-from-position) !important;
-  --tw-gradient-to: rgba(30, 41, 59, 0) var(--tw-gradient-to-position) !important;
-  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
-}
-html.light .via-white\/80 {
-  --tw-gradient-to: rgba(30, 41, 59, 0)  var(--tw-gradient-to-position) !important;
-  --tw-gradient-stops: var(--tw-gradient-from), rgba(30, 41, 59, 0.9) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
-}
-html.light .to-white\/10 {
-  --tw-gradient-to: rgba(30, 41, 59, 0.15) var(--tw-gradient-to-position) !important;
-}
-
-/* Fix for buttons and dynamic tailwind colors in light mode */
-html.light button.bg-white {
-  background-color: var(--accent-primary) !important;
+/* Primary Accents and Buttons in Light Mode */
+html.light .bg-accent-primary {
+  background-color: #0252cd !important;
   color: #ffffff !important;
 }
+
+html.light button.bg-accent-primary,
+html.light a.bg-accent-primary,
+html.light .bg-accent-primary.text-white {
+  background-color: #0252cd !important;
+  color: #ffffff !important;
+}
+
+html.light .text-accent-primary {
+  color: #0252cd !important;
+}
+
+html.light button.bg-white {
+  background-color: #0252cd !important;
+  color: #ffffff !important;
+}
+
 html.light button.text-\[\#050505\] {
   color: #ffffff !important;
 }
-html.light [class*="text-accent-primary"] {
-  color: var(--accent-primary) !important;
-}
+
 html.light [class*="text-accent-secondary"] {
-  color: var(--accent-secondary) !important;
+  color: #0284c7 !important;
 }
+
 html.light [class*="text-accent-third"] {
-  color: var(--accent-third) !important;
+  color: #6d28d9 !important;
 }
 
 /* Fix for background dots and grid */
@@ -286,13 +288,13 @@ html.light .bg-\[url\(\'\/grid\.svg\'\)\] {
 /* Special Text Effects Overrides for Light Mode */
 html.light .text-glow-cyan {
   text-shadow: none !important;
-  color: var(--accent-primary) !important;
+  color: #0252cd !important;
   font-weight: 800;
 }
 
 html.light .text-glow-magenta {
   text-shadow: none !important;
-  color: var(--accent-third) !important;
+  color: #6d28d9 !important;
   font-weight: 800;
 }
 
