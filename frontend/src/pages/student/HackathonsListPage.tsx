@@ -138,7 +138,7 @@ export const HackathonsListPage: React.FC = () => {
       </div>
 
       {/* Controls Bar: Search & Filters */}
-      <div className="glass-card rounded-[28px] p-6 flex flex-col md:flex-row items-center gap-4 border-white/10">
+      <div className="glass-card rounded-[28px] p-6 flex flex-col md:flex-row items-center gap-4 border-[#cbd5e1] dark:border-white/10 bg-white dark:bg-white/[0.02] shadow-sm">
         
         {/* Search Field */}
         <div className="relative flex-1 w-full">
@@ -146,24 +146,24 @@ export const HackathonsListPage: React.FC = () => {
             placeholder="Search hackathons by title, tag, or description..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-11"
+            className="pl-11 border-[#cbd5e1] dark:border-white/10 text-[#0f172a] dark:text-white font-medium"
           />
-          <Search size={18} className="absolute left-4 top-3.5 text-[rgba(255,255,255,0.4)] pointer-events-none" />
+          <Search size={18} className="absolute left-4 top-3.5 text-[#64748b] dark:text-[rgba(255,255,255,0.4)] pointer-events-none" />
         </div>
 
         {/* Status Filter */}
-        <div className="flex items-center gap-2 px-3 h-12 rounded-input bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.10)] text-xs text-white">
-          <Filter size={14} className="text-accent-primary" />
+        <div className="flex items-center gap-2 px-3 h-12 rounded-input bg-white dark:bg-[rgba(255,255,255,0.03)] border border-[#cbd5e1] dark:border-[rgba(255,255,255,0.10)] text-xs text-[#0f172a] dark:text-white font-bold">
+          <Filter size={14} className="text-[#0252cd] dark:text-accent-primary" />
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="bg-transparent text-white focus:outline-none cursor-pointer font-semibold"
+            className="bg-transparent text-[#0f172a] dark:text-white focus:outline-none cursor-pointer font-bold"
           >
-            <option value="all" className="bg-[#050505] text-white">All Statuses</option>
-            <option value="active" className="bg-[#050505] text-white">Active</option>
-            <option value="upcoming" className="bg-[#050505] text-white">Upcoming</option>
-            <option value="ended" className="bg-[#050505] text-white">Ended</option>
-            <option value="draft" className="bg-[#050505] text-white">Draft</option>
+            <option value="all" className="bg-white text-slate-900 dark:bg-[#050505] dark:text-white font-semibold">All Statuses</option>
+            <option value="active" className="bg-white text-slate-900 dark:bg-[#050505] dark:text-white font-semibold">Active</option>
+            <option value="upcoming" className="bg-white text-slate-900 dark:bg-[#050505] dark:text-white font-semibold">Upcoming</option>
+            <option value="ended" className="bg-white text-slate-900 dark:bg-[#050505] dark:text-white font-semibold">Ended</option>
+            <option value="draft" className="bg-white text-slate-900 dark:bg-[#050505] dark:text-white font-semibold">Draft</option>
           </select>
         </div>
       </div>

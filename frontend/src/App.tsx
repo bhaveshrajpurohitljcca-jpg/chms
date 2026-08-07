@@ -345,48 +345,48 @@ const PublicLanding = () => {
       <section className="min-h-screen flex flex-col justify-center items-center px-4 sm:px-8 pt-24 pb-16 text-center max-w-7xl mx-auto w-full relative">
         <StatusPulseBadge text="CHMS Core Module Active" className="mb-6 md:mb-8" />
 
-        <h2 className="font-archivo text-[clamp(2.5rem,10vw,8rem)] font-black tracking-tighter leading-[0.9] select-none mb-6 md:mb-10 bg-gradient-to-b from-white via-white/80 to-white/10 bg-clip-text text-transparent uppercase">
+        <h2 className="font-archivo text-[clamp(2.5rem,10vw,8rem)] font-black tracking-tighter leading-[0.9] select-none mb-6 md:mb-10 text-[#0f172a] dark:bg-gradient-to-b dark:from-white dark:via-white/80 dark:to-white/10 dark:bg-clip-text dark:text-transparent uppercase">
           College Hackathon<br />Management System
         </h2>
 
-        <p className="max-w-xl text-xs sm:text-sm md:text-base text-text-secondary font-light leading-relaxed mb-8 md:mb-12 select-none px-2">
-          A centralized dark-themed platform coordinating college hackathons. Manage registration states, invite codes, code submissions, and real-time ledger evaluations.
+        <p className="max-w-xl text-xs sm:text-sm md:text-base text-[#475569] dark:text-text-secondary font-normal leading-relaxed mb-8 md:mb-12 select-none px-2">
+          A centralized platform coordinating college hackathons. Manage registration states, invite codes, code submissions, and real-time evaluations.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center justify-center w-full max-w-sm sm:max-w-md">
           {user ? (
             <Link to={`/${user.role.toLowerCase()}`} className="w-full sm:w-auto">
-              <Button variant="primary" className="w-full px-10">
+              <Button variant="primary" className="w-full px-10 bg-[#0252cd] text-white">
                 Go to Workspace
               </Button>
             </Link>
           ) : (
             <>
-              <Button variant="primary" className="w-full sm:w-auto px-10" onClick={() => openAuthModal('login')}>
+              <Button variant="primary" className="w-full sm:w-auto px-10 bg-[#0252cd] text-white" onClick={() => openAuthModal('login')}>
                 Login Connection
               </Button>
-              <Button variant="secondary" className="w-full sm:w-auto px-10" onClick={() => openAuthModal('register')}>
+              <Button variant="secondary" className="w-full sm:w-auto px-10 border-[#cbd5e1] text-[#0f172a] dark:text-white" onClick={() => openAuthModal('register')}>
                 Register Node
               </Button>
             </>
           )}
         </div>
 
-        <div className="absolute bottom-8 md:bottom-10 animate-bounce text-glow-cyan text-accent-primary">
+        <div className="absolute bottom-8 md:bottom-10 animate-bounce text-[#0252cd] dark:text-accent-primary">
           <ChevronRight size={24} className="rotate-90" />
         </div>
       </section>
 
       {/* Infinite Horizontal Marquee */}
-      <section className="py-8 md:py-12 border-y border-[rgba(255,255,255,0.08)] bg-[#050505]/60 backdrop-blur-md overflow-hidden select-none">
+      <section className="py-8 md:py-12 border-y border-black/80 bg-[#050505] overflow-hidden select-none shadow-inner">
         <div className="flex w-max min-w-full whitespace-nowrap animate-marquee">
           <div className="flex shrink-0 items-center justify-around min-w-full pr-8">
-            <span className="font-archivo text-2xl sm:text-4xl md:text-5xl font-black uppercase text-white/10 tracking-[0.1em]">
+            <span className="font-archivo text-2xl sm:text-4xl md:text-5xl font-black uppercase text-white tracking-[0.12em]">
               LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION •
             </span>
           </div>
           <div className="flex shrink-0 items-center justify-around min-w-full pr-8">
-            <span className="font-archivo text-2xl sm:text-4xl md:text-5xl font-black uppercase text-white/10 tracking-[0.1em]">
+            <span className="font-archivo text-2xl sm:text-4xl md:text-5xl font-black uppercase text-white tracking-[0.12em]">
               LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION •
             </span>
           </div>
@@ -396,8 +396,8 @@ const PublicLanding = () => {
       {/* Catalogue Grid */}
       <section id="protocol" className="py-16 md:py-32 px-4 sm:px-8 max-w-7xl mx-auto w-full flex flex-col gap-8 md:gap-16">
         <div className="flex flex-col gap-3">
-          <span className="text-xs uppercase tracking-[0.3em] text-accent-primary font-semibold">Ongoing & Completed</span>
-          <h3 className="font-archivo text-3xl sm:text-4xl md:text-5xl font-black uppercase text-white">
+          <span className="text-xs uppercase tracking-[0.3em] text-[#0252cd] dark:text-accent-primary font-bold">Ongoing & Completed</span>
+          <h3 className="font-archivo text-3xl sm:text-4xl md:text-5xl font-black uppercase text-[#0f172a] dark:text-white">
             HACKATHONS PORTAL
           </h3>
         </div>
@@ -416,11 +416,11 @@ const PublicLanding = () => {
               </Link>
             ))
           ) : (
-            <div className="col-span-3 text-center p-16 rounded-[40px] bg-white/[0.02] border border-white/10 flex flex-col items-center justify-center gap-4">
-              <span className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40">
+            <div className="col-span-3 text-center p-16 rounded-[40px] bg-white border border-[#cbd5e1] dark:border-white/10 flex flex-col items-center justify-center gap-4">
+              <span className="w-12 h-12 rounded-full bg-[#f1f5f9] dark:bg-white/5 border border-[#cbd5e1] dark:border-white/10 flex items-center justify-center text-[#0f172a] dark:text-white/40">
                 <Cpu size={20} />
               </span>
-              <p className="text-white/50 text-xs tracking-wider uppercase font-semibold">No ongoing or completed hackathons found.</p>
+              <p className="text-[#475569] dark:text-white/50 text-xs tracking-wider uppercase font-semibold">No ongoing or completed hackathons found.</p>
             </div>
           )}
         </div>
@@ -428,14 +428,14 @@ const PublicLanding = () => {
 
       {/* Lab metrics / Spinning concentric circles */}
       <section id="lab" className="py-12 md:py-20 px-4 sm:px-8 max-w-7xl mx-auto w-full">
-        <div className="w-full rounded-[32px] md:rounded-[60px] glass-card p-6 sm:p-10 md:p-16 flex flex-col lg:flex-row items-center gap-8 md:gap-12 bg-white/[0.01]">
+        <div className="w-full rounded-[32px] md:rounded-[60px] glass-card p-6 sm:p-10 md:p-16 flex flex-col lg:flex-row items-center gap-8 md:gap-12 bg-white">
           
           <div className="flex-1 flex flex-col gap-4 md:gap-6">
-            <span className="text-xs uppercase tracking-[0.3em] text-accent-secondary font-semibold">Advance Innovation Research & Analysis Lab</span>
-            <h2 className="font-archivo text-3xl sm:text-5xl md:text-7xl font-black uppercase text-white tracking-tighter leading-none select-none">
+            <span className="text-xs uppercase tracking-[0.3em] text-[#0284c7] dark:text-accent-secondary font-bold">Advance Innovation Research & Analysis Lab</span>
+            <h2 className="font-archivo text-3xl sm:text-5xl md:text-7xl font-black uppercase text-[#0f172a] dark:text-white tracking-tighter leading-none select-none">
               AiRA LAB
             </h2>
-            <p className="text-xs md:text-sm text-text-secondary leading-relaxed font-light">
+            <p className="text-xs md:text-sm text-[#475569] dark:text-text-secondary leading-relaxed font-normal">
               <strong>AiRA Lab (Advance Innovation Research & Analysis Lab)</strong> was created to bridge the gap between classroom learning and real-world experience. The idea emerged after students participated in events and hackathons and realized that while there was no shortage of talent, there was a lack of a structured platform where students could collaborate, prepare, gain exposure, and grow together. This challenge was taken to <strong>Parth Sir</strong>, whose vision led to the creation of AiRA Lab as a <strong>virtual lab built for students, by students</strong>. Built around the four pillars <strong>“Learn, Build, Lead and Serve,”</strong> AiRA Lab provides opportunities for students to develop practical skills, leadership, teamwork, confidence, creativity, and industry exposure beyond the classroom. Its tagline, <strong>“For the Students, By the Students,”</strong> represents its core purpose: creating a student-driven environment where learners can turn ideas into action, gain real experience, and become future-ready.
             </p>
           </div>
@@ -443,20 +443,20 @@ const PublicLanding = () => {
           <div className="flex-1 flex flex-col items-center justify-center gap-6 w-full max-w-[400px]">
             <div className="relative w-full aspect-square flex items-center justify-center">
               {/* Sci-fi rotating rings */}
-              <div className="absolute inset-0 rounded-full border border-dashed border-accent-primary/20 animate-spin-slow animate-pulse" />
-              <div className="absolute inset-6 rounded-full border border-dashed border-accent-secondary/30 animate-spin-reverse-slow" />
-              <div className="absolute inset-12 rounded-full border border-dashed border-accent-third/40 animate-spin-fast" />
+              <div className="absolute inset-0 rounded-full border border-dashed border-[#0252cd]/30 dark:border-accent-primary/20 animate-spin-slow animate-pulse" />
+              <div className="absolute inset-6 rounded-full border border-dashed border-[#0284c7]/40 dark:border-accent-secondary/30 animate-spin-reverse-slow" />
+              <div className="absolute inset-12 rounded-full border border-dashed border-[#6d28d9]/50 dark:border-accent-third/40 animate-spin-fast" />
 
               {/* Logo frame */}
-              <div className="relative z-10 w-52 h-52 rounded-[32px] overflow-hidden bg-black border border-[rgba(255,255,255,0.08)] flex items-center justify-center shadow-[0_0_50px_rgba(0,243,255,0.12)] transition-transform duration-500 hover:scale-105">
+              <div className="relative z-10 w-52 h-52 rounded-[32px] overflow-hidden bg-white dark:bg-black border border-[#cbd5e1] dark:border-[rgba(255,255,255,0.08)] flex items-center justify-center shadow-lg transition-transform duration-500 hover:scale-105">
                 <img src="/aira_logo.png" alt="AiRA Lab Logo" className="w-full h-full object-contain p-2" />
               </div>
             </div>
             <div className="text-center flex flex-col gap-1">
-              <span className="font-archivo text-xs uppercase tracking-[0.25em] text-accent-primary font-bold">
+              <span className="font-archivo text-xs uppercase tracking-[0.25em] text-[#0252cd] dark:text-accent-primary font-bold">
                 AiRA Lab Portal
               </span>
-              <span className="text-[9px] font-mono text-white/40 tracking-wider">
+              <span className="text-[9px] font-mono text-[#475569] dark:text-white/40 tracking-wider font-semibold">
                 DRIVING NEXT-GEN INNOVATION & AI RESEARCH
               </span>
             </div>
@@ -466,20 +466,20 @@ const PublicLanding = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-[rgba(255,255,255,0.08)] bg-[#050505]/80 backdrop-blur-md pt-16 pb-10 px-8 w-full">
+      <footer className="border-t border-[#cbd5e1] dark:border-[rgba(255,255,255,0.08)] bg-[#e2e8f0] dark:bg-[#050505]/80 backdrop-blur-md pt-16 pb-10 px-8 w-full">
         <div className="max-w-7xl mx-auto w-full flex flex-col gap-12">
           
           {/* Centered WhatsApp Invite Block */}
           <div className="flex flex-col items-center justify-center text-center py-6 gap-5 w-full max-w-xl mx-auto">
-            <div className="w-14 h-14 rounded-full bg-accent-primary/10 border border-accent-primary/30 flex items-center justify-center text-accent-primary shadow-[0_0_20px_rgba(0,243,255,0.1)]">
+            <div className="w-14 h-14 rounded-full bg-[#0252cd] text-white flex items-center justify-center shadow-md">
               <MessageCircle size={28} />
             </div>
             
             <div className="flex flex-col gap-2">
-              <h4 className="font-archivo text-2xl md:text-3xl uppercase font-black tracking-tight text-white">
+              <h4 className="font-archivo text-2xl md:text-3xl uppercase font-black tracking-tight text-[#0f172a] dark:text-white">
                 Join the Community
               </h4>
-              <p className="text-xs text-white/50 leading-relaxed font-light">
+              <p className="text-xs text-[#475569] dark:text-white/50 leading-relaxed font-normal">
                 Connect with developers, innovators, and analysts inside the Advance Innovation Research & Analysis Lab.
               </p>
             </div>
@@ -488,26 +488,26 @@ const PublicLanding = () => {
               href="https://whatsapp.com/channel/0029VbClQzuDzgT2mJ7z1o2v" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="px-8 h-12 rounded-full bg-accent-primary hover:bg-[#00d4df] text-black font-archivo text-xs uppercase font-black tracking-wider flex items-center gap-3 transition-all duration-300 shadow-[0_0_25px_rgba(0,243,255,0.25)] hover:scale-105"
+              className="px-8 h-12 rounded-full bg-[#0252cd] hover:bg-[#1d4ed8] text-white font-archivo text-xs uppercase font-black tracking-wider flex items-center gap-3 transition-all duration-300 shadow-md hover:scale-105"
             >
               <span>Join AiRA Lab Community</span>
               <ExternalLink size={14} />
             </a>
           </div>
 
-          <div className="border-t border-[rgba(255,255,255,0.05)] pt-8 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="border-t border-[#cbd5e1] dark:border-[rgba(255,255,255,0.05)] pt-8 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex flex-col gap-1.5 text-center sm:text-left">
-              <span className="text-[9px] uppercase tracking-[0.3em] text-[rgba(255,255,255,0.35)] select-none">
+              <span className="text-[9px] uppercase tracking-[0.3em] text-[#475569] dark:text-[rgba(255,255,255,0.35)] font-semibold select-none">
                 © 2026 AiRA LAB. ALL RIGHTS RESERVED.
               </span>
-              <span className="text-[9px] uppercase tracking-[0.1em] text-accent-primary font-mono select-none">
+              <span className="text-[9px] uppercase tracking-[0.1em] text-[#0252cd] dark:text-accent-primary font-mono font-bold select-none">
                 Developed By Team Zero ( Yash Chaudary , Dhyey Trivedi , Bhavesh Rajpurohit )
               </span>
             </div>
             
-            <div className="flex gap-6 text-[9px] uppercase tracking-wider text-[rgba(255,255,255,0.35)]">
-              <a href="#" className="hover:text-accent-primary transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-accent-primary transition-colors">Terms of Use</a>
+            <div className="flex gap-6 text-[9px] uppercase tracking-wider text-[#475569] dark:text-[rgba(255,255,255,0.35)] font-bold">
+              <a href="#" className="hover:text-[#0252cd] dark:hover:text-accent-primary transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-[#0252cd] dark:hover:text-accent-primary transition-colors">Terms of Use</a>
             </div>
           </div>
 

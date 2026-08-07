@@ -444,3 +444,12 @@ img, video, canvas, svg { max-width: 100%; }
   }
 }
 
+html.light .responsive-table tbody tr {
+  border-color: #cbd5e1 !important;
+  background: #ffffff !important;
+}
+
+html.light .responsive-table tbody td::before {
+  color: #64748b !important;
+}
+
