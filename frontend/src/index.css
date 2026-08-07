@@ -173,7 +173,14 @@ html.light .rounded-dialog {
   color: #0f172a !important;
 }
 
-html.light .text-white {
+/* ── ALL-PANEL Light Mode text overrides ─────────────────── */
+/* Page headings: h1-h4 with text-white become dark slate */
+html.light h1.text-white,
+html.light h2.text-white,
+html.light h3.text-white,
+html.light h4.text-white,
+html.light .font-archivo.text-white,
+html.light .font-black.text-white {
   color: #0f172a !important;
 }
 
@@ -198,8 +205,20 @@ html.light .text-white\/40,
 html.light .text-white\/30,
 html.light .text-white\/20,
 html.light .text-white\/10,
-html.light .text-\[rgba\(255\,255\,255\,0\.4\)\] {
+html.light .text-\[rgba\(255\,255\,255\,0\.45\)\],
+html.light .text-\[rgba\(255\,255\,255\,0\.4\)\],
+html.light .text-\[rgba\(255\,255\,255\,0\.35\)\],
+html.light .text-\[rgba\(255\,255\,255\,0\.3\)\] {
   color: #64748b !important;
+}
+
+/* Card hover glow effects disabled in Light Mode */
+html.light .hover\:shadow-\[0_0_15px_rgba\(255\,255\,255\,0\.3\)\]:hover,
+html.light .shadow-\[0_0_15px_rgba\(0\,243\,255\,0\.15\)\],
+html.light .shadow-\[0_0_25px_rgba\(0\,243\,255\,0\.25\)\],
+html.light .shadow-\[0_0_20px_rgba\(0\,243\,255\,0\.1\)\],
+html.light .shadow-\[0_0_15px_rgba\(0\,243\,255\,0\.35\)\] {
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06) !important;
 }
 
 html.light ::placeholder,
@@ -442,14 +461,5 @@ img, video, canvas, svg { max-width: 100%; }
     flex-shrink: 0;
     margin-right: 8px;
   }
-}
-
-html.light .responsive-table tbody tr {
-  border-color: #cbd5e1 !important;
-  background: #ffffff !important;
-}
-
-html.light .responsive-table tbody td::before {
-  color: #64748b !important;
 }
 

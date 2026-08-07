@@ -42,8 +42,8 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
     return (
       <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center relative z-50">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 size={40} className="text-[#0252cd] dark:text-accent-primary animate-spin" />
-          <span className="font-archivo text-xs uppercase tracking-widest text-[#0f172a] dark:text-text-secondary font-bold">
+          <Loader2 size={40} className="text-accent-primary animate-spin" />
+          <span className="font-archivo text-xs uppercase tracking-widest text-text-secondary">
             Syncing Credentials...
           </span>
         </div>

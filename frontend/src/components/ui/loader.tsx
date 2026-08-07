@@ -12,7 +12,7 @@ export const Loader = ({ size = 'md', fullPage = false }: LoaderProps) => {
 
   const spinner = (
     <div className="relative flex items-center justify-center">
-      {/* Outer Ring */}
+      {/* Outer Glow Ring */}
       <div 
         className={`animate-spin rounded-full border-t-[#0252cd] dark:border-t-accent-primary border-r-transparent border-b-transparent border-l-transparent ${sizeClasses[size]}`}
       />
@@ -25,9 +25,9 @@ export const Loader = ({ size = 'md', fullPage = false }: LoaderProps) => {
 
   if (fullPage) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--bg-primary)] gap-4 select-none">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#e5e9f0] dark:bg-[#050505] gap-4 select-none">
         {spinner}
-        <span className="text-xs uppercase tracking-[0.2em] text-[#0f172a] dark:text-white/60 font-bold animate-pulse">
+        <span className="text-xs uppercase tracking-[0.2em] text-[#1e293b] dark:text-[rgba(255,255,255,0.4)] animate-pulse">
           Loading System
         </span>
       </div>
