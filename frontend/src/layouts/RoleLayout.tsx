@@ -169,15 +169,15 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
           </button>
 
           <div className="flex items-center gap-2 min-w-0">
-            <Link to="/" className="w-8 h-8 rounded-lg bg-accent-primary/10 border border-accent-primary/30 flex items-center justify-center text-accent-primary flex-shrink-0">
+            <Link to="/" className="w-8 h-8 rounded-lg bg-[#0252cd] dark:bg-accent-primary/10 border border-[#0252cd] dark:border-accent-primary/30 flex items-center justify-center text-white dark:text-accent-primary flex-shrink-0">
               <Zap size={14} />
             </Link>
-            <span className="font-archivo text-sm md:text-md tracking-wider font-black text-accent-primary cursor-default">
+            <span className="font-archivo text-sm md:text-md tracking-wider font-black text-[#0252cd] dark:text-accent-primary cursor-default">
               CHMS
             </span>
           </div>
-          <span className="hidden sm:block w-1.5 h-1.5 rounded-full bg-text-secondary/40 flex-shrink-0" />
-          <span className="hidden sm:block text-[10px] font-mono tracking-widest text-text-secondary uppercase truncate">
+          <span className="hidden sm:block w-1.5 h-1.5 rounded-full bg-[#64748b] dark:bg-text-secondary/40 flex-shrink-0" />
+          <span className="hidden sm:block text-[10px] font-mono tracking-widest text-[#475569] dark:text-text-secondary uppercase truncate font-semibold">
             {user.role} workspace
           </span>
         </div>
@@ -188,10 +188,10 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
             <StatusPulseBadge text="NODE SECURED" />
           </div>
 
-          <div className="flex items-center gap-2 md:gap-3 pl-2 md:pl-4 border-l border-[var(--border-color)]">
+          <div className="flex items-center gap-2 md:gap-3 pl-2 md:pl-4 border-l border-[#cbd5e1] dark:border-[var(--border-color)]">
             <div className="hidden md:flex flex-col text-right">
-              <span className="text-xs font-semibold text-text-primary leading-tight">{user.full_name || 'Operator'}</span>
-              <span className="text-[9px] font-mono text-text-secondary truncate max-w-[140px]">{user.email}</span>
+              <span className="text-xs font-bold text-[#0f172a] dark:text-white leading-tight">{user.full_name || 'Operator'}</span>
+              <span className="text-[9px] font-mono text-[#475569] dark:text-text-secondary truncate max-w-[140px] font-semibold">{user.email}</span>
             </div>
             
             <button 

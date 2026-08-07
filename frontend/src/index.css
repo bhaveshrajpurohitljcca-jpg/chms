@@ -177,6 +177,10 @@ html.light .text-white {
   color: #0f172a !important;
 }
 
+html.light .text-text-primary {
+  color: #0f172a !important;
+}
+
 html.light .text-white\/80,
 html.light .text-white\/70,
 html.light .text-white\/60,
@@ -186,7 +190,7 @@ html.light .text-zinc-400,
 html.light .text-\[rgba\(255\,255\,255\,0\.65\)\],
 html.light .text-\[rgba\(255\,255\,255\,0\.6\)\],
 html.light .text-text-secondary {
-  color: #334155 !important;
+  color: #475569 !important;
 }
 
 html.light .text-white\/50,
