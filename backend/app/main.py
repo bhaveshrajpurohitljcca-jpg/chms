@@ -32,39 +32,54 @@ async def lifespan(app: FastAPI):
         db = SessionLocal()
         try:
             from sqlalchemy import text
-            db.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS github_url VARCHAR(255);'))
-            db.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS linkedin_url VARCHAR(255);'))
-            db.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS auto_accept_invites BOOLEAN DEFAULT FALSE;'))
-            db.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS phone VARCHAR(20);'))
-            db.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS semester VARCHAR(10);'))
-            db.execute(text('ALTER TABLE "hackathon" ADD COLUMN IF NOT EXISTS is_strict_team_size BOOLEAN DEFAULT FALSE;'))
-            db.execute(text('ALTER TABLE "hackathon" ADD COLUMN IF NOT EXISTS strict_team_size INTEGER;'))
-            db.execute(text('ALTER TABLE "submission" ADD COLUMN IF NOT EXISTS problem_statement_id VARCHAR(36);'))
-            db.execute(text('ALTER TABLE "submission" ADD COLUMN IF NOT EXISTS repo_url VARCHAR(500);'))
-            db.execute(text('ALTER TABLE "submission" ADD COLUMN IF NOT EXISTS demo_url VARCHAR(500);'))
-            db.execute(text('ALTER TABLE "submission" ADD COLUMN IF NOT EXISTS video_url VARCHAR(500);'))
-            db.execute(text('ALTER TABLE "submission" ADD COLUMN IF NOT EXISTS additional_notes TEXT;'))
-            db.execute(text('ALTER TABLE "submission" ADD COLUMN IF NOT EXISTS file_url VARCHAR(500);'))
-            db.execute(text('ALTER TABLE "submission" ADD COLUMN IF NOT EXISTS file_name VARCHAR(255);'))
-            db.execute(text('ALTER TABLE "submission" ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT \'submitted\';'))
 
-            # Migration for evaluation table columns
-            db.execute(text('ALTER TABLE "evaluation" ADD COLUMN IF NOT EXISTS score_technical FLOAT DEFAULT 0.0;'))
-            db.execute(text('ALTER TABLE "evaluation" ADD COLUMN IF NOT EXISTS score_uiux FLOAT DEFAULT 0.0;'))
-            db.execute(text('ALTER TABLE "evaluation" ADD COLUMN IF NOT EXISTS score_impact FLOAT DEFAULT 0.0;'))
-            db.execute(text('ALTER TABLE "evaluation" ADD COLUMN IF NOT EXISTS strengths TEXT;'))
-            db.execute(text('ALTER TABLE "evaluation" ADD COLUMN IF NOT EXISTS weaknesses TEXT;'))
-            db.execute(text('ALTER TABLE "evaluation" ADD COLUMN IF NOT EXISTS suggestions TEXT;'))
-            db.execute(text('ALTER TABLE "evaluation" ADD COLUMN IF NOT EXISTS recommendation VARCHAR(50) DEFAULT \'pending\';'))
-            db.execute(text('ALTER TABLE "evaluation" ADD COLUMN IF NOT EXISTS is_draft BOOLEAN DEFAULT TRUE;'))
-            db.execute(text('ALTER TABLE "evaluation" ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMP;'))
+            def _add_column_if_missing(db, table: str, column: str, col_def: str):
+                """SQLite-compatible ADD COLUMN: checks PRAGMA table_info first."""
+                rows = db.execute(text(f'PRAGMA table_info("{table}")')).fetchall()
+                existing = {row[1] for row in rows}
+                if column not in existing:
+                    db.execute(text(f'ALTER TABLE "{table}" ADD COLUMN {column} {col_def}'))
+                    logger.info(f"Added column {table}.{column}")
 
-            # Migration for judge_assignment table columns
-            db.execute(text('ALTER TABLE "judge_assignment" ADD COLUMN IF NOT EXISTS hackathon_id VARCHAR(36);'))
-            db.execute(text('ALTER TABLE "judge_assignment" ADD COLUMN IF NOT EXISTS submission_id VARCHAR(36);'))
-            db.execute(text('ALTER TABLE "judge_assignment" ADD COLUMN IF NOT EXISTS judge_id VARCHAR(36);'))
-            db.execute(text('ALTER TABLE "judge_assignment" ADD COLUMN IF NOT EXISTS assigned_by_id VARCHAR(36);'))
-            db.execute(text('ALTER TABLE "judge_assignment" ADD COLUMN IF NOT EXISTS assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;'))
+            # user table
+            _add_column_if_missing(db, 'user', 'github_url', 'VARCHAR(255)')
+            _add_column_if_missing(db, 'user', 'linkedin_url', 'VARCHAR(255)')
+            _add_column_if_missing(db, 'user', 'auto_accept_invites', 'BOOLEAN DEFAULT FALSE')
+            _add_column_if_missing(db, 'user', 'phone', 'VARCHAR(20)')
+            _add_column_if_missing(db, 'user', 'semester', 'VARCHAR(10)')
+
+            # hackathon table
+            _add_column_if_missing(db, 'hackathon', 'is_strict_team_size', 'BOOLEAN DEFAULT FALSE')
+            _add_column_if_missing(db, 'hackathon', 'strict_team_size', 'INTEGER')
+
+            # submission table
+            _add_column_if_missing(db, 'submission', 'problem_statement_id', 'VARCHAR(36)')
+            _add_column_if_missing(db, 'submission', 'repo_url', 'VARCHAR(500)')
+            _add_column_if_missing(db, 'submission', 'demo_url', 'VARCHAR(500)')
+            _add_column_if_missing(db, 'submission', 'video_url', 'VARCHAR(500)')
+            _add_column_if_missing(db, 'submission', 'additional_notes', 'TEXT')
+            _add_column_if_missing(db, 'submission', 'file_url', 'VARCHAR(500)')
+            _add_column_if_missing(db, 'submission', 'file_name', 'VARCHAR(255)')
+            _add_column_if_missing(db, 'submission', 'status', "VARCHAR(50) DEFAULT 'submitted'")
+
+            # evaluation table
+            _add_column_if_missing(db, 'evaluation', 'score_technical', 'FLOAT DEFAULT 0.0')
+            _add_column_if_missing(db, 'evaluation', 'score_uiux', 'FLOAT DEFAULT 0.0')
+            _add_column_if_missing(db, 'evaluation', 'score_impact', 'FLOAT DEFAULT 0.0')
+            _add_column_if_missing(db, 'evaluation', 'strengths', 'TEXT')
+            _add_column_if_missing(db, 'evaluation', 'weaknesses', 'TEXT')
+            _add_column_if_missing(db, 'evaluation', 'suggestions', 'TEXT')
+            _add_column_if_missing(db, 'evaluation', 'recommendation', "VARCHAR(50) DEFAULT 'pending'")
+            _add_column_if_missing(db, 'evaluation', 'is_draft', 'BOOLEAN DEFAULT TRUE')
+            _add_column_if_missing(db, 'evaluation', 'submitted_at', 'TIMESTAMP')
+
+            # judge_assignment table
+            _add_column_if_missing(db, 'judge_assignment', 'hackathon_id', 'VARCHAR(36)')
+            _add_column_if_missing(db, 'judge_assignment', 'submission_id', 'VARCHAR(36)')
+            _add_column_if_missing(db, 'judge_assignment', 'judge_id', 'VARCHAR(36)')
+            _add_column_if_missing(db, 'judge_assignment', 'assigned_by_id', 'VARCHAR(36)')
+            _add_column_if_missing(db, 'judge_assignment', 'assigned_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP')
+
             db.commit()
             logger.info("Database schema migrations verified and executed successfully.")
         except Exception as e:
