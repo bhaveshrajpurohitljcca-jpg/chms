@@ -276,6 +276,49 @@ html.light [class*="text-accent-third"] {
   color: #6d28d9 !important;
 }
 
+/* Hero Banners & Pastel Gradients in Light Mode */
+html.light .from-black\/80,
+html.light .from-black\/90,
+html.light .from-black {
+  --tw-gradient-from: #dbeafe var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(219, 234, 254, 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+html.light .to-accent-primary\/10,
+html.light .to-accent-primary\/20 {
+  --tw-gradient-to: #e0f2fe var(--tw-gradient-to-position) !important;
+}
+
+/* Badge Pill Colors in Light Mode (Matching Screenshot) */
+html.light .bg-\[rgba\(0\,243\,255\,0\.08\)\],
+html.light .bg-accent-primary\/10 {
+  background-color: #e0f2fe !important;
+  color: #0369a1 !important;
+  border-color: #7dd3fc !important;
+}
+
+html.light .bg-\[rgba\(0\,255\,157\,0\.08\)\],
+html.light .bg-success\/10 {
+  background-color: #d1fae5 !important;
+  color: #047857 !important;
+  border-color: #6ee7b7 !important;
+}
+
+html.light .bg-\[rgba\(255\,200\,87\,0\.08\)\],
+html.light .bg-warning\/10 {
+  background-color: #fef3c7 !important;
+  color: #b45309 !important;
+  border-color: #fde047 !important;
+}
+
+/* Join Code Box & Container Overrides */
+html.light .bg-black\/40,
+html.light .bg-black\/60 {
+  background-color: #dbe4ee !important;
+  border-color: #b0c4de !important;
+}
+
 /* Fix for background dots and grid */
 html.light .mix-blend-overlay {
   mix-blend-mode: multiply !important;
