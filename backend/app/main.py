@@ -32,58 +32,58 @@ async def lifespan(app: FastAPI):
         db = SessionLocal()
         try:
             from sqlalchemy import text
+            def _add_col(table_name, col_name, col_spec):
+                try:
+                    res = db.execute(text(f'PRAGMA table_info("{table_name}")')).fetchall()
+                    existing_cols = [r[1] for r in res]
+                    if col_name not in existing_cols:
+                        db.execute(text(f'ALTER TABLE "{table_name}" ADD COLUMN {col_name} {col_spec};'))
+                        db.commit()
+                except Exception as ex:
+                    db.rollback()
+                    logger.warning(f"Failed adding column {col_name} to {table_name}: {ex}")
 
-            def _add_column_if_missing(db, table: str, column: str, col_def: str):
-                """SQLite-compatible ADD COLUMN: checks PRAGMA table_info first."""
-                rows = db.execute(text(f'PRAGMA table_info("{table}")')).fetchall()
-                existing = {row[1] for row in rows}
-                if column not in existing:
-                    db.execute(text(f'ALTER TABLE "{table}" ADD COLUMN {column} {col_def}'))
-                    logger.info(f"Added column {table}.{column}")
+            # User columns
+            _add_col("user", "github_url", "VARCHAR(255)")
+            _add_col("user", "linkedin_url", "VARCHAR(255)")
+            _add_col("user", "auto_accept_invites", "BOOLEAN DEFAULT FALSE")
+            _add_col("user", "phone", "VARCHAR(20)")
+            _add_col("user", "semester", "VARCHAR(10)")
 
-            # user table
-            _add_column_if_missing(db, 'user', 'github_url', 'VARCHAR(255)')
-            _add_column_if_missing(db, 'user', 'linkedin_url', 'VARCHAR(255)')
-            _add_column_if_missing(db, 'user', 'auto_accept_invites', 'BOOLEAN DEFAULT FALSE')
-            _add_column_if_missing(db, 'user', 'phone', 'VARCHAR(20)')
-            _add_column_if_missing(db, 'user', 'semester', 'VARCHAR(10)')
+            # Hackathon columns
+            _add_col("hackathon", "is_strict_team_size", "BOOLEAN DEFAULT FALSE")
+            _add_col("hackathon", "strict_team_size", "INTEGER")
 
-            # hackathon table
-            _add_column_if_missing(db, 'hackathon', 'is_strict_team_size', 'BOOLEAN DEFAULT FALSE')
-            _add_column_if_missing(db, 'hackathon', 'strict_team_size', 'INTEGER')
+            # Submission columns
+            _add_col("submission", "problem_statement_id", "VARCHAR(36)")
+            _add_col("submission", "repo_url", "VARCHAR(500)")
+            _add_col("submission", "demo_url", "VARCHAR(500)")
+            _add_col("submission", "video_url", "VARCHAR(500)")
+            _add_col("submission", "additional_notes", "TEXT")
+            _add_col("submission", "file_url", "VARCHAR(500)")
+            _add_col("submission", "file_name", "VARCHAR(255)")
+            _add_col("submission", "status", "VARCHAR(50) DEFAULT 'submitted'")
 
-            # submission table
-            _add_column_if_missing(db, 'submission', 'problem_statement_id', 'VARCHAR(36)')
-            _add_column_if_missing(db, 'submission', 'repo_url', 'VARCHAR(500)')
-            _add_column_if_missing(db, 'submission', 'demo_url', 'VARCHAR(500)')
-            _add_column_if_missing(db, 'submission', 'video_url', 'VARCHAR(500)')
-            _add_column_if_missing(db, 'submission', 'additional_notes', 'TEXT')
-            _add_column_if_missing(db, 'submission', 'file_url', 'VARCHAR(500)')
-            _add_column_if_missing(db, 'submission', 'file_name', 'VARCHAR(255)')
-            _add_column_if_missing(db, 'submission', 'status', "VARCHAR(50) DEFAULT 'submitted'")
+            # Evaluation columns
+            _add_col("evaluation", "score_technical", "FLOAT DEFAULT 0.0")
+            _add_col("evaluation", "score_uiux", "FLOAT DEFAULT 0.0")
+            _add_col("evaluation", "score_impact", "FLOAT DEFAULT 0.0")
+            _add_col("evaluation", "strengths", "TEXT")
+            _add_col("evaluation", "weaknesses", "TEXT")
+            _add_col("evaluation", "suggestions", "TEXT")
+            _add_col("evaluation", "recommendation", "VARCHAR(50) DEFAULT 'pending'")
+            _add_col("evaluation", "is_draft", "BOOLEAN DEFAULT TRUE")
+            _add_col("evaluation", "submitted_at", "TIMESTAMP")
 
-            # evaluation table
-            _add_column_if_missing(db, 'evaluation', 'score_technical', 'FLOAT DEFAULT 0.0')
-            _add_column_if_missing(db, 'evaluation', 'score_uiux', 'FLOAT DEFAULT 0.0')
-            _add_column_if_missing(db, 'evaluation', 'score_impact', 'FLOAT DEFAULT 0.0')
-            _add_column_if_missing(db, 'evaluation', 'strengths', 'TEXT')
-            _add_column_if_missing(db, 'evaluation', 'weaknesses', 'TEXT')
-            _add_column_if_missing(db, 'evaluation', 'suggestions', 'TEXT')
-            _add_column_if_missing(db, 'evaluation', 'recommendation', "VARCHAR(50) DEFAULT 'pending'")
-            _add_column_if_missing(db, 'evaluation', 'is_draft', 'BOOLEAN DEFAULT TRUE')
-            _add_column_if_missing(db, 'evaluation', 'submitted_at', 'TIMESTAMP')
-
-            # judge_assignment table
-            _add_column_if_missing(db, 'judge_assignment', 'hackathon_id', 'VARCHAR(36)')
-            _add_column_if_missing(db, 'judge_assignment', 'submission_id', 'VARCHAR(36)')
-            _add_column_if_missing(db, 'judge_assignment', 'judge_id', 'VARCHAR(36)')
-            _add_column_if_missing(db, 'judge_assignment', 'assigned_by_id', 'VARCHAR(36)')
-            _add_column_if_missing(db, 'judge_assignment', 'assigned_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP')
-
-            db.commit()
+            # Judge Assignment columns
+            _add_col("judge_assignment", "hackathon_id", "VARCHAR(36)")
+            _add_col("judge_assignment", "submission_id", "VARCHAR(36)")
+            _add_col("judge_assignment", "judge_id", "VARCHAR(36)")
+            _add_col("judge_assignment", "assigned_by_id", "VARCHAR(36)")
+            _add_col("judge_assignment", "assigned_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+            logger.info("Database schema migrations verified and executed successfully.")
             logger.info("Database schema migrations verified and executed successfully.")
         except Exception as e:
-            db.rollback()
             logger.error(f"Migration error (non-fatal): {e}")
         finally:
             db.close()

@@ -1,6 +1,6 @@
-from typing import Optional, List
+from typing import Optional, List, Any
 from datetime import datetime
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from app.models.user import UserRole
 
 class UserRegister(BaseModel):
@@ -12,10 +12,17 @@ class UserRegister(BaseModel):
     college_id: Optional[str] = None
     bio: Optional[str] = None
     phone: Optional[str] = None
-    semester: Optional[str] = None
+    semester: Optional[Any] = None
     avatar_url: Optional[str] = None
     github_url: Optional[str] = None
     linkedin_url: Optional[str] = None
+
+    @field_validator('semester', mode='before')
+    @classmethod
+    def stringify_semester(cls, v):
+        if v is not None:
+            return str(v)
+        return v
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -49,7 +56,7 @@ class UserResponse(BaseModel):
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
     phone: Optional[str] = None
-    semester: Optional[str] = None
+    semester: Optional[Any] = None
     is_active: bool
     is_deleted: bool
     auto_accept_invites: bool
@@ -57,6 +64,13 @@ class UserResponse(BaseModel):
     linkedin_url: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+
+    @field_validator('semester', mode='before')
+    @classmethod
+    def stringify_semester(cls, v):
+        if v is not None:
+            return str(v)
+        return v
 
     class Config:
         orm_mode = True
@@ -77,11 +91,18 @@ class UserUpdateAdmin(BaseModel):
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
     phone: Optional[str] = None
-    semester: Optional[str] = None
+    semester: Optional[Any] = None
     is_active: Optional[bool] = None
     auto_accept_invites: Optional[bool] = None
     github_url: Optional[str] = None
     linkedin_url: Optional[str] = None
+
+    @field_validator('semester', mode='before')
+    @classmethod
+    def stringify_semester(cls, v):
+        if v is not None:
+            return str(v)
+        return v
 
 class UserStatusUpdate(BaseModel):
     is_active: bool

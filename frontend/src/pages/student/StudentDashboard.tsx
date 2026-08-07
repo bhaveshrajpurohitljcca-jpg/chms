@@ -160,7 +160,7 @@ export const StudentDashboard: React.FC = () => {
     return (
       <div className="flex flex-col gap-8 max-w-7xl mx-auto w-full font-manrope">
         <div className="relative overflow-hidden glass-card rounded-[40px] p-8 md:p-10 border-accent-primary/20 bg-gradient-to-r from-accent-primary/10 via-transparent to-accent-secondary/10">
-          <h2 className="font-archivo text-3xl md:text-4xl font-black text-white uppercase tracking-tight">
+          <h2 className="font-archivo text-xl sm:text-3xl md:text-4xl font-black text-white uppercase tracking-tight">
             Welcome Back, <span className="text-glow-cyan text-accent-primary">{user?.full_name || 'Student'}</span>
           </h2>
         </div>
@@ -287,7 +287,7 @@ export const StudentDashboard: React.FC = () => {
 
       {/* 4. Main Workspace Display for Selected Hackathon */}
       {activeReg ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-8">
           
           {/* Active Team Card */}
           <Card className="flex flex-col gap-5 border-accent-primary/20">
@@ -518,7 +518,7 @@ export const StudentDashboard: React.FC = () => {
             <p className="text-sm text-white/50">No {activeTab} hackathons right now.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {displayedHackathons.slice(0, 3).map((hackathon) => (
               <HackathonCard
                 key={hackathon.id}
