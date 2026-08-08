@@ -1363,6 +1363,10 @@ const AnnouncementsView = () => {
   const [targetType, setTargetType] = useState<'platform' | 'hackathon'>('platform');
   const [selectedHackathonId, setSelectedHackathonId] = useState('');
   const [hackathonTarget, setHackathonTarget] = useState('all_users');
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userSearchResults, setUserSearchResults] = useState<any[]>([]);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [success, setSuccess] = useState('');
 
@@ -1421,22 +1425,58 @@ const AnnouncementsView = () => {
     fetchTeams();
   }, [selectedHackathonId]);
 
+  useEffect(() => {
+    if (hackathonTarget !== 'specific_user') {
+      setUserSearchResults([]);
+      return;
+    }
+    if (userSearchQuery.trim().length < 3) {
+      setUserSearchResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingUsers(true);
+      try {
+        const res = await apiService.searchUsers(userSearchQuery.trim());
+        setUserSearchResults(res.data || []);
+      } catch {
+        setUserSearchResults([]);
+      } finally {
+        setIsSearchingUsers(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [userSearchQuery, hackathonTarget]);
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !message.trim()) return;
+    if (targetType === 'hackathon' && hackathonTarget === 'specific_user' && !selectedUserId) {
+      alert('Please select a user to send this announcement to.');
+      return;
+    }
     setIsSending(true);
     setSuccess('');
     try {
+      let target = targetType === 'platform' ? 'all_platform_users' : hackathonTarget;
+      if (targetType === 'hackathon' && hackathonTarget === 'specific_user') {
+        target = `user:${selectedUserId}`;
+      }
       const payload = {
         title,
         message,
-        target: targetType === 'platform' ? 'all_platform_users' : hackathonTarget,
+        target,
         hackathon_id: targetType === 'platform' ? undefined : selectedHackathonId
       };
       const res = await apiService.sendAnnouncement(payload);
       setSuccess(res.message || `Announcement sent to ${res.data} user(s) successfully!`);
       setTitle('');
       setMessage('');
+      setSelectedUserId('');
+      setUserSearchQuery('');
+      setUserSearchResults([]);
       // Refresh feed
       const notifRes = await apiService.listNotifications(1, 100);
       if (notifRes.data && notifRes.data.notifications) {
@@ -1514,10 +1554,52 @@ const AnnouncementsView = () => {
                 >
                   <option value="all_users">All Hackathon Participants</option>
                   <option value="team_leaders">Team Leaders Only</option>
+                  <option value="specific_user">Specific User</option>
                   {teams.map((t) => (
                     <option key={t.id} value={t.id}>Team: {t.name}</option>
                   ))}
                 </select>
+              </div>
+            )}
+
+            {targetType === 'hackathon' && hackathonTarget === 'specific_user' && (
+              <div className="flex flex-col gap-2">
+                <label className="font-bold text-white/70">Search User by Name or Email</label>
+                <input
+                  type="text"
+                  value={userSearchQuery}
+                  onChange={(e) => {
+                    setUserSearchQuery(e.target.value);
+                    setSelectedUserId('');
+                  }}
+                  placeholder="Type at least 3 characters..."
+                  className="p-2.5 rounded-xl bg-black border border-white/10 text-white text-[11px] focus:border-accent-primary"
+                />
+                {isSearchingUsers && (
+                  <p className="text-[10px] text-white/40">Searching users...</p>
+                )}
+                {userSearchResults.length > 0 && (
+                  <div className="flex flex-col gap-1 max-h-40 overflow-y-auto rounded-xl border border-white/10 bg-black/50 p-2">
+                    {userSearchResults.map((u) => (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedUserId(u.id);
+                          setUserSearchQuery(u.full_name ? `${u.full_name} (${u.email})` : u.email);
+                          setUserSearchResults([]);
+                        }}
+                        className={`text-left p-2 rounded-lg text-[11px] transition-colors ${
+                          selectedUserId === u.id
+                            ? 'bg-accent-primary/20 text-accent-primary border border-accent-primary/30'
+                            : 'text-white/70 hover:bg-white/5'
+                        }`}
+                      >
+                        {u.full_name || u.email} — {u.email}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -2218,6 +2300,10 @@ const CoordinatorView = () => {
   const [announcementTitle, setAnnouncementTitle] = useState('');
   const [announcementMessage, setAnnouncementMessage] = useState('');
   const [announcementTarget, setAnnouncementTarget] = useState('all_users');
+  const [announcementUserId, setAnnouncementUserId] = useState('');
+  const [announcementUserQuery, setAnnouncementUserQuery] = useState('');
+  const [announcementUserResults, setAnnouncementUserResults] = useState<any[]>([]);
+  const [isSearchingAnnouncementUsers, setIsSearchingAnnouncementUsers] = useState(false);
   const [isSendingAnnouncement, setIsSendingAnnouncement] = useState(false);
   const [announcementSuccess, setAnnouncementSuccess] = useState('');
 
@@ -2282,6 +2368,31 @@ const CoordinatorView = () => {
     setSelectedPSTeam(null);
     setSelectedTeam(null);
   }, [selectedHackathon]);
+
+  useEffect(() => {
+    if (announcementTarget !== 'specific_user') {
+      setAnnouncementUserResults([]);
+      return;
+    }
+    if (announcementUserQuery.trim().length < 3) {
+      setAnnouncementUserResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingAnnouncementUsers(true);
+      try {
+        const res = await apiService.searchUsers(announcementUserQuery.trim());
+        setAnnouncementUserResults(res.data || []);
+      } catch {
+        setAnnouncementUserResults([]);
+      } finally {
+        setIsSearchingAnnouncementUsers(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [announcementUserQuery, announcementTarget]);
 
   // Handle PS Edit
   const handleOpenEditPS = (ps: any) => {
@@ -3023,19 +3134,30 @@ const CoordinatorView = () => {
             onSubmit={async (e) => {
               e.preventDefault();
               if (!announcementTitle.trim() || !announcementMessage.trim()) return;
+              if (announcementTarget === 'specific_user' && !announcementUserId) {
+                alert('Please select a user to send this announcement to.');
+                return;
+              }
               setIsSendingAnnouncement(true);
               setAnnouncementSuccess('');
               try {
+                let target = announcementTarget;
+                if (announcementTarget === 'specific_user') {
+                  target = `user:${announcementUserId}`;
+                }
                 const res = await apiService.sendAnnouncement({
                   hackathon_id: selectedHackathon.id,
                   title: announcementTitle,
                   message: announcementMessage,
-                  target: announcementTarget
+                  target
                 });
                 setAnnouncementSuccess(res.message || `Announcement sent to ${res.data} user(s).`);
                 setAnnouncementTitle('');
                 setAnnouncementMessage('');
                 setAnnouncementTarget('all_users');
+                setAnnouncementUserId('');
+                setAnnouncementUserQuery('');
+                setAnnouncementUserResults([]);
               } catch (err: any) {
                 alert(err.message || 'Failed to send announcement.');
               } finally {
@@ -3054,11 +3176,53 @@ const CoordinatorView = () => {
               >
                 <option value="all_users">📢 All Registered Users (every team member)</option>
                 <option value="team_leaders">👑 Team Leaders Only</option>
+                <option value="specific_user">👤 Specific User</option>
                 {teams.map((t: any) => (
                   <option key={t.id} value={t.id}>🏷️ Team: {t.name}</option>
                 ))}
               </select>
             </div>
+
+            {announcementTarget === 'specific_user' && (
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-white/70">Search User by Name or Email</label>
+                <input
+                  type="text"
+                  value={announcementUserQuery}
+                  onChange={(e) => {
+                    setAnnouncementUserQuery(e.target.value);
+                    setAnnouncementUserId('');
+                  }}
+                  placeholder="Type at least 3 characters..."
+                  className="p-2.5 rounded-xl bg-black border border-white/10 text-white text-[11px] focus:border-accent-primary transition-all"
+                />
+                {isSearchingAnnouncementUsers && (
+                  <p className="text-[10px] text-white/40">Searching users...</p>
+                )}
+                {announcementUserResults.length > 0 && (
+                  <div className="flex flex-col gap-1 max-h-40 overflow-y-auto rounded-xl border border-white/10 bg-black/50 p-2">
+                    {announcementUserResults.map((u: any) => (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => {
+                          setAnnouncementUserId(u.id);
+                          setAnnouncementUserQuery(u.full_name ? `${u.full_name} (${u.email})` : u.email);
+                          setAnnouncementUserResults([]);
+                        }}
+                        className={`text-left p-2 rounded-lg text-[11px] transition-colors ${
+                          announcementUserId === u.id
+                            ? 'bg-accent-primary/20 text-accent-primary border border-accent-primary/30'
+                            : 'text-white/70 hover:bg-white/5'
+                        }`}
+                      >
+                        {u.full_name || u.email} — {u.email}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Title */}
             <Input

@@ -8,6 +8,7 @@ from app.models.user import User, UserRole
 from app.schemas.announcement import AnnouncementCreate, AnnouncementUpdate, AnnouncementResponse
 from app.schemas.response import StandardResponse
 from app.api.deps import get_current_active_user, RoleChecker
+from app.services.announcement_service import dispatch_announcement
 
 router = APIRouter(prefix="/announcements", tags=["Announcements"])
 
@@ -29,7 +30,6 @@ def list_announcements(
         query = query.filter(Announcement.is_published == True)
 
     if hackathon_id:
-        # Return announcements for this hackathon + platform-wide announcements
         query = query.filter(
             (Announcement.hackathon_id == hackathon_id) |
             (Announcement.hackathon_id == None)
@@ -51,7 +51,7 @@ def create_announcement(
     db: Session = Depends(get_db),
     current_user: User = Depends(RoleChecker([UserRole.ADMIN, UserRole.COORDINATOR]))
 ):
-    """Create a new announcement. Coordinator/Admin only."""
+    """Create a new announcement. Coordinator/Admin only. Sends emails when published."""
     if payload.hackathon_id:
         hackathon = db.query(Hackathon).filter(Hackathon.id == payload.hackathon_id).first()
         if not hackathon:
@@ -68,6 +68,18 @@ def create_announcement(
     db.add(announcement)
     db.commit()
     db.refresh(announcement)
+
+    if announcement.is_published:
+        target = "all_users" if payload.hackathon_id else "all_platform_users"
+        dispatch_announcement(
+            db=db,
+            title=payload.title,
+            message=payload.content,
+            target=target,
+            sender=current_user,
+            hackathon_id=payload.hackathon_id,
+            send_emails=True,
+        )
 
     return StandardResponse(
         success=True,
@@ -105,12 +117,25 @@ def update_announcement(
         if not hackathon:
             raise HTTPException(status_code=404, detail="Hackathon not found.")
 
+    was_published = announcement.is_published
     update_data = payload.dict(exclude_unset=True)
     for field, value in update_data.items():
         setattr(announcement, field, value)
 
     db.commit()
     db.refresh(announcement)
+
+    if announcement.is_published and not was_published:
+        target = "all_users" if announcement.hackathon_id else "all_platform_users"
+        dispatch_announcement(
+            db=db,
+            title=announcement.title,
+            message=announcement.content,
+            target=target,
+            sender=current_user,
+            hackathon_id=announcement.hackathon_id,
+            send_emails=True,
+        )
 
     return StandardResponse(
         success=True,

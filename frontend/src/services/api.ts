@@ -900,7 +900,7 @@ export const apiService = {
     hackathon_id?: string;
     title: string;
     message: string;
-    target: string; // "all_users" | "team_leaders" | team_id
+    target: string; // "all_platform_users" | "all_users" | "team_leaders" | "user:<id>" | team_id
   }) {
     return request<number>('/notifications/announce', {
       method: 'POST',
