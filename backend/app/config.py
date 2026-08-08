@@ -32,6 +32,12 @@ class Settings(BaseSettings):
     JWT_SECRET: str = os.getenv("JWT_SECRET", "super-secret-key-for-chms-development-at-least-32-chars-long")
     JWT_ALGORITHM: str = "HS256"
 
+    # Email (Gmail SMTP) — set these to enable invitation email notifications
+    SMTP_FROM_EMAIL: str = os.getenv("SMTP_FROM_EMAIL", "")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
+
     if SettingsConfigDict is not None:
         model_config = SettingsConfigDict(
             env_file=os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"),

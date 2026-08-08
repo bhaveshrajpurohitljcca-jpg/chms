@@ -12,6 +12,7 @@ from app.schemas.invitation import InvitationCreate, InvitationResponse
 from app.schemas.response import StandardResponse
 from app.schemas.user import UserResponse
 from app.api.deps import get_current_active_user
+from app.utils.email import send_team_invitation_email
 
 router = APIRouter(prefix="/teams", tags=["Teams"])
 
@@ -386,6 +387,15 @@ def send_invitation(
         db.commit()
         db.refresh(invitation)
         
+        # Send email notification to the auto-accepted invitee
+        send_team_invitation_email(
+            to_email=invitee.email,
+            invitee_name=invitee.full_name or invitee.email,
+            team_name=team.name,
+            hackathon_name=hackathon.title,
+            inviter_name=current_user.full_name or current_user.email,
+        )
+        
         return StandardResponse(
             success=True,
             message=f"{invitee.full_name} had Auto-Join enabled and has been added to your team immediately!",
@@ -402,6 +412,15 @@ def send_invitation(
     db.add(invitation)
     db.commit()
     db.refresh(invitation)
+
+    # Send email notification to the invitee
+    send_team_invitation_email(
+        to_email=invitee.email,
+        invitee_name=invitee.full_name or invitee.email,
+        team_name=team.name,
+        hackathon_name=hackathon.title,
+        inviter_name=current_user.full_name or current_user.email,
+    )
 
     return StandardResponse(
         success=True,
