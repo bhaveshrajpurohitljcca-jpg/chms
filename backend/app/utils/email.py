@@ -27,9 +27,26 @@ logger = logging.getLogger("chms.email")
 import urllib.error
 
 
+def _resolve_resend_sender(smtp_email: str) -> Optional[str]:
+    """
+    Choose a valid sender for Resend.
+
+    Resend's testing sender (`onboarding@resend.dev`) is limited and should not
+    hijack normal SMTP delivery for real recipients. Prefer an explicitly
+    configured verified sender, then a non-Gmail SMTP sender, otherwise skip
+    Resend and fall back to the next provider.
+    """
+    resend_from = getattr(settings, "RESEND_FROM_EMAIL", "").strip()
+    if resend_from and "@" in resend_from:
+        return resend_from
+    if smtp_email and "@" in smtp_email and not smtp_email.lower().endswith("@gmail.com"):
+        return smtp_email
+    return None
+
+
 def _send_via_resend(api_key: str, from_email: str, to_email: str, subject: str, html_body: str) -> tuple[bool, str]:
     try:
-        sender = f"CHMS Hackathons <{from_email}>" if "@" in from_email and not from_email.endswith("@gmail.com") else "CHMS Hackathons <onboarding@resend.dev>"
+        sender = f"CHMS Hackathons <{from_email}>"
         payload = json.dumps({
             "from": sender,
             "to": [to_email],
@@ -138,11 +155,22 @@ def _send_html_email(
     smtp_email = getattr(settings, "SMTP_FROM_EMAIL", "").strip()
 
     if resend_key:
-        ok, _ = _send_via_resend(resend_key, smtp_email, to_email, subject, html_body)
-        return ok
+        resend_sender = _resolve_resend_sender(smtp_email)
+        if resend_sender:
+            ok, _ = _send_via_resend(resend_key, resend_sender, to_email, subject, html_body)
+            if ok:
+                return True
+            logger.warning("Resend delivery failed for %s, falling back to next provider.", to_email)
+        else:
+            logger.warning(
+                "RESEND_API_KEY is configured but no verified Resend sender is available. "
+                "Set RESEND_FROM_EMAIL to a verified domain sender or remove the key to use SMTP/Brevo."
+            )
     if brevo_key:
         ok, _ = _send_via_brevo(brevo_key, smtp_email, to_email, subject, html_body)
-        return ok
+        if ok:
+            return True
+        logger.warning("Brevo delivery failed for %s, falling back to SMTP.", to_email)
 
     smtp_password = getattr(settings, "SMTP_PASSWORD", "").strip().replace(" ", "")
     smtp_host = getattr(settings, "SMTP_HOST", "smtp.gmail.com")
@@ -506,6 +534,7 @@ def send_bulk_announcement_emails(
 
     if (resend_key or brevo_key) and recipients:
         bulk_delivered = 0
+        resend_sender = _resolve_resend_sender(smtp_email)
         for to_email, recipient_name in recipients:
             if not to_email or "@" not in to_email:
                 continue
@@ -514,14 +543,21 @@ def send_bulk_announcement_emails(
             html_body = _build_announcement_html(recipient_name, title, message, sender_name, hackathon_name)
             subject = f"CHMS Announcement: {title}"
 
-            if resend_key:
-                ok, _ = _send_via_resend(resend_key, smtp_email, to_email, subject, html_body)
+            if resend_key and resend_sender:
+                ok, _ = _send_via_resend(resend_key, resend_sender, to_email, subject, html_body)
                 if ok:
                     bulk_delivered += 1
-            elif brevo_key:
+                    continue
+            elif resend_key and not resend_sender:
+                logger.warning(
+                    "Skipping Resend bulk delivery because RESEND_FROM_EMAIL is missing or invalid for production sending."
+                )
+
+            if brevo_key:
                 ok, _ = _send_via_brevo(brevo_key, smtp_email, to_email, subject, html_body)
                 if ok:
                     bulk_delivered += 1
+                    continue
         return bulk_delivered
 
     smtp_password = getattr(settings, "SMTP_PASSWORD", "").strip().replace(" ", "")

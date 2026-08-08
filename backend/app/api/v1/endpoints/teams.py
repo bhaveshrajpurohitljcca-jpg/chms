@@ -388,7 +388,7 @@ def send_invitation(
         db.refresh(invitation)
         
         # Send email notification to the auto-accepted invitee
-        send_team_invitation_email(
+        email_sent = send_team_invitation_email(
             to_email=invitee.email,
             invitee_name=invitee.full_name or invitee.email,
             team_name=team.name,
@@ -398,7 +398,12 @@ def send_invitation(
         
         return StandardResponse(
             success=True,
-            message=f"{invitee.full_name} had Auto-Join enabled and has been added to your team immediately!",
+            message=(
+                f"{invitee.full_name} had Auto-Join enabled and has been added to your team immediately!"
+                if email_sent else
+                f"{invitee.full_name} had Auto-Join enabled and has been added to your team immediately, "
+                "but the email notification could not be delivered."
+            ),
             data=InvitationResponse.from_orm(invitation)
         )
 
@@ -414,7 +419,7 @@ def send_invitation(
     db.refresh(invitation)
 
     # Send email notification to the invitee
-    send_team_invitation_email(
+    email_sent = send_team_invitation_email(
         to_email=invitee.email,
         invitee_name=invitee.full_name or invitee.email,
         team_name=team.name,
@@ -424,7 +429,12 @@ def send_invitation(
 
     return StandardResponse(
         success=True,
-        message=f"Invitation sent to {payload.invitee_email}.",
+        message=(
+            f"Invitation sent to {payload.invitee_email}."
+            if email_sent else
+            f"Invitation created for {payload.invitee_email}, but email delivery failed. "
+            "Please check the mail provider configuration or use the SMTP diagnostic endpoint."
+        ),
         data=InvitationResponse.from_orm(invitation)
     )
 

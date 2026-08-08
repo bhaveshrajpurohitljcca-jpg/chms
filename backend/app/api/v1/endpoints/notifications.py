@@ -53,11 +53,24 @@ def test_smtp_delivery(
         "attempts": []
     }
 
-    from app.utils.email import IPv4SMTP, IPv4SMTP_SSL, _send_via_resend, _send_via_brevo
+    from app.utils.email import IPv4SMTP, IPv4SMTP_SSL, _send_via_resend, _send_via_brevo, _resolve_resend_sender
 
     if resend_key:
-        ok, err = _send_via_resend(resend_key, smtp_from, target_email, "CHMS Test Email", "<p>Test via Resend API</p>")
-        diag["attempts"].append({"provider": "Resend HTTP API (Port 443)", "status": "SUCCESS" if ok else "FAILED", "detail": err})
+        resend_sender = _resolve_resend_sender(smtp_from)
+        if resend_sender:
+            ok, err = _send_via_resend(resend_key, resend_sender, target_email, "CHMS Test Email", "<p>Test via Resend API</p>")
+            diag["attempts"].append({
+                "provider": "Resend HTTP API (Port 443)",
+                "sender": resend_sender,
+                "status": "SUCCESS" if ok else "FAILED",
+                "detail": err
+            })
+        else:
+            diag["attempts"].append({
+                "provider": "Resend HTTP API (Port 443)",
+                "status": "SKIPPED",
+                "detail": "RESEND_API_KEY is set but RESEND_FROM_EMAIL is missing, and SMTP_FROM_EMAIL is a Gmail/non-verified sender."
+            })
     if brevo_key:
         ok, err = _send_via_brevo(brevo_key, smtp_from, target_email, "CHMS Test Email", "<p>Test via Brevo API</p>")
         diag["attempts"].append({"provider": "Brevo HTTP API (Port 443)", "status": "SUCCESS" if ok else "FAILED", "detail": err})
