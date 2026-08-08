@@ -175,7 +175,7 @@ export const AuthModal: React.FC = () => {
                 <Input type="text" placeholder="e.g. Bhavesh Rajpurohit" value={fullName} onChange={(e) => setFullName(e.target.value)} leftIcon={<User size={16} />} />
               </div>
 
-              {/* Semester + Roll Number */}
+              {/* Semester + Enrollment Number */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-mono text-zinc-400 mb-1.5 uppercase tracking-wider">Semester *</label>
@@ -187,8 +187,18 @@ export const AuthModal: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-mono text-zinc-400 mb-1.5 uppercase tracking-wider">Roll Number *</label>
-                  <Input type="text" placeholder="LJ2024001" value={rollNumber} onChange={(e) => setRollNumber(e.target.value)} leftIcon={<Hash size={16} />} />
+                  <label className="block text-xs font-mono text-zinc-400 mb-1.5 uppercase tracking-wider">Enrollment Number *</label>
+                  <Input
+                    type="text"
+                    placeholder="2400111221"
+                    value={rollNumber}
+                    maxLength={10}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setRollNumber(digits);
+                    }}
+                    leftIcon={<Hash size={16} />}
+                  />
                 </div>
               </div>
 

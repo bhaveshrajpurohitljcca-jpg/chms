@@ -147,7 +147,7 @@ export default function Signup() {
               {...register('fullName')}
             />
 
-            {/* Semester + Roll Number */}
+            {/* Semester + Enrollment Number */}
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className={labelClass}>Semester</label>
@@ -166,10 +166,16 @@ export default function Signup() {
                 )}
               </div>
               <Input
-                label="Roll Number"
-                placeholder="LJ2024001"
+                label="Enrollment Number"
+                placeholder="2400111221"
+                maxLength={10}
+                inputMode="numeric"
                 error={errors.rollNumber?.message}
-                {...register('rollNumber')}
+                {...register('rollNumber', {
+                  onChange: (e) => {
+                    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  }
+                })}
               />
             </div>
 

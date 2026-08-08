@@ -5839,10 +5839,15 @@ const AdminView = () => {
                 </select>
               </div>
               <Input
-                label="Roll Number"
-                placeholder="LJ2024001"
+                label="Enrollment Number"
+                placeholder="2400111221"
+                maxLength={10}
+                inputMode="numeric"
                 value={newCoordinator.rollNumber}
-                onChange={(e) => setNewCoordinator(prev => ({ ...prev, rollNumber: e.target.value }))}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  setNewCoordinator(prev => ({ ...prev, rollNumber: digits }));
+                }}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
