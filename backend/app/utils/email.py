@@ -42,6 +42,7 @@ def _send_via_resend(api_key: str, from_email: str, to_email: str, subject: str,
             headers={
                 "Authorization": f"Bearer {api_key.strip()}",
                 "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) CHMS/1.0",
             },
             method="POST",
         )
@@ -75,6 +76,7 @@ def _send_via_brevo(api_key: str, from_email: str, to_email: str, subject: str, 
                 "api-key": api_key.strip(),
                 "Content-Type": "application/json",
                 "Accept": "application/json",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) CHMS/1.0",
             },
             method="POST",
         )
