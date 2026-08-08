@@ -24,6 +24,59 @@ class AnnouncementCreate(BaseModel):
     target: str  # all_platform_users | all_users | team_leaders | user:<id> | <team_id>
 
 
+import smtplib
+from app.config import settings
+
+
+@router.post("/test-smtp", response_model=StandardResponse[dict])
+def test_smtp_delivery(
+    email: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Debug endpoint to test SMTP credentials and ports on Render live server."""
+    target_email = email or current_user.email
+    smtp_from = getattr(settings, "SMTP_FROM_EMAIL", "").strip()
+    smtp_pass = getattr(settings, "SMTP_PASSWORD", "").strip().replace(" ", "")
+    smtp_host = getattr(settings, "SMTP_HOST", "smtp.gmail.com")
+
+    diag = {
+        "smtp_from_configured": bool(smtp_from),
+        "smtp_from_masked": (smtp_from[:3] + "***@" + smtp_from.split("@")[-1]) if "@" in smtp_from else "NOT_SET",
+        "smtp_pass_configured": bool(smtp_pass),
+        "smtp_pass_length": len(smtp_pass),
+        "target_email": target_email,
+        "attempts": []
+    }
+
+    if not smtp_from or not smtp_pass:
+        return StandardResponse(
+            success=False,
+            message="SMTP credentials (SMTP_FROM_EMAIL or SMTP_PASSWORD) are not set on Render.",
+            data=diag
+        )
+
+    # Test Port 587 TLS
+    try:
+        with smtplib.SMTP(smtp_host, 587, timeout=10) as s:
+            s.ehlo()
+            s.starttls()
+            s.login(smtp_from, smtp_pass)
+            diag["attempts"].append({"port": 587, "status": "SUCCESS"})
+    except Exception as e:
+        diag["attempts"].append({"port": 587, "status": "FAILED", "error": str(e)})
+
+    # Test Port 465 SSL
+    try:
+        with smtplib.SMTP_SSL(smtp_host, 465, timeout=10) as s:
+            s.login(smtp_from, smtp_pass)
+            diag["attempts"].append({"port": 465, "status": "SUCCESS"})
+    except Exception as e:
+        diag["attempts"].append({"port": 465, "status": "FAILED", "error": str(e)})
+
+    return StandardResponse(success=True, message="SMTP Diagnostic Completed", data=diag)
+
+
 @router.post("/announce", response_model=StandardResponse[int])
 def send_announcement(
     payload: AnnouncementCreate,
