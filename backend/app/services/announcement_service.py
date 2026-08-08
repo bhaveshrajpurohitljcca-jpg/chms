@@ -12,7 +12,7 @@ from app.models.notification import NotificationType
 from app.models.team import Team, TeamMember
 from app.models.user import User, UserRole
 from app.services.notification_service import notification_service
-from app.utils.email import send_announcement_email
+from app.utils.email import send_announcement_email, send_bulk_announcement_emails
 
 
 def _unique_active_users(users: list[User]) -> list[User]:
@@ -153,15 +153,18 @@ def dispatch_announcement(
         )
         notification_count += 1
 
-        if send_emails and recipient.email:
-            if send_announcement_email(
-                to_email=recipient.email,
-                recipient_name=recipient.full_name or recipient.email,
-                title=title,
-                message=message,
-                sender_name=sender_name,
-                hackathon_name=hackathon_name,
-            ):
-                email_count += 1
+    if send_emails:
+        email_recipients = [
+            (recipient.email, recipient.full_name or recipient.email)
+            for recipient in recipients
+            if recipient.email
+        ]
+        email_count = send_bulk_announcement_emails(
+            recipients=email_recipients,
+            title=title,
+            message=message,
+            sender_name=sender_name,
+            hackathon_name=hackathon_name,
+        )
 
     return notification_count, email_count

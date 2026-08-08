@@ -375,3 +375,88 @@ def send_announcement_email(
     if sent:
         logger.info("Announcement email sent to %s (title: %s)", to_email, title)
     return sent
+
+
+def send_bulk_announcement_emails(
+    recipients: list[tuple[str, str]],
+    title: str,
+    message: str,
+    sender_name: str,
+    hackathon_name: Optional[str] = None,
+) -> int:
+    """
+    Send announcement emails to multiple recipients using a single reusable SMTP connection.
+    Returns the count of successfully sent emails.
+    """
+    smtp_email = getattr(settings, "SMTP_FROM_EMAIL", "").strip()
+    smtp_password = getattr(settings, "SMTP_PASSWORD", "").strip().replace(" ", "")
+    smtp_host = getattr(settings, "SMTP_HOST", "smtp.gmail.com")
+    try:
+        smtp_port = int(getattr(settings, "SMTP_PORT", 587))
+    except (ValueError, TypeError):
+        smtp_port = 587
+
+    if not smtp_email or not smtp_password or not recipients:
+        return 0
+
+    def _send_on_server(server) -> int:
+        delivered_count = 0
+        for to_email, recipient_name in recipients:
+            if not to_email or "@" not in to_email:
+                continue
+            try:
+                msg = MIMEMultipart("alternative")
+                msg["Subject"] = f"CHMS Announcement: {title}"
+                msg["From"] = f"CHMS Hackathons <{smtp_email}>"
+                msg["To"] = to_email
+
+                scope = f" ({hackathon_name})" if hackathon_name else ""
+                plain_text = (
+                    f"Hi {recipient_name},\n\n"
+                    f"{sender_name} published a new announcement on CHMS{scope}.\n\n"
+                    f"Title: {title}\n\n"
+                    f"{message}\n\n"
+                    f"— CHMS Team"
+                )
+                html_body = _build_announcement_html(
+                    recipient_name=recipient_name,
+                    title=title,
+                    message=message,
+                    sender_name=sender_name,
+                    hackathon_name=hackathon_name,
+                )
+                msg.attach(MIMEText(plain_text, "plain"))
+                msg.attach(MIMEText(html_body, "html"))
+
+                server.sendmail(smtp_email, to_email, msg.as_string())
+                delivered_count += 1
+                logger.info("Bulk announcement email sent to %s", to_email)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Failed sending bulk email to %s: %s", to_email, exc)
+        return delivered_count
+
+    # Attempt 1: Configured port
+    try:
+        if smtp_port == 465:
+            with smtplib.SMTP_SSL(smtp_host, 465, timeout=15) as server:
+                server.login(smtp_email, smtp_password)
+                return _send_on_server(server)
+        else:
+            with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
+                server.ehlo()
+                server.starttls()
+                server.login(smtp_email, smtp_password)
+                return _send_on_server(server)
+    except Exception as exc1:  # noqa: BLE001
+        logger.warning("Primary bulk SMTP failed (%s:%s): %s. Trying SSL fallback (465)...", smtp_host, smtp_port, exc1)
+
+    # Attempt 2: Fallback SSL (Port 465)
+    if smtp_port != 465:
+        try:
+            with smtplib.SMTP_SSL(smtp_host, 465, timeout=15) as server:
+                server.login(smtp_email, smtp_password)
+                return _send_on_server(server)
+        except Exception as exc2:  # noqa: BLE001
+            logger.error("Bulk SMTP SSL fallback failed: %s", exc2)
+
+    return 0
