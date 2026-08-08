@@ -47,11 +47,13 @@ class Settings(BaseSettings):
     JWT_SECRET: str = os.getenv("JWT_SECRET", "super-secret-key-for-chms-development-at-least-32-chars-long")
     JWT_ALGORITHM: str = "HS256"
 
-    # Email (Gmail SMTP) — set these to enable invitation and announcement emails
+    # Email (Gmail SMTP & HTTP API Providers)
     SMTP_FROM_EMAIL: str = os.getenv("SMTP_FROM_EMAIL", "")
     SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
     SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
     SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
+    RESEND_API_KEY: str = os.getenv("RESEND_API_KEY", "")
+    BREVO_API_KEY: str = os.getenv("BREVO_API_KEY", "")
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "https://chms-lj.vercel.app")
 
     if SettingsConfigDict is not None:

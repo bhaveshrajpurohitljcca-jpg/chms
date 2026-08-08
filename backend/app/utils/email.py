@@ -10,9 +10,11 @@ If credentials are not configured, emails are silently skipped.
 """
 
 import html
+import json
 import smtplib
 import socket
 import logging
+import urllib.request
 from typing import Optional
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -20,6 +22,61 @@ from email.mime.text import MIMEText
 from app.config import settings
 
 logger = logging.getLogger("chms.email")
+
+
+def _send_via_resend(api_key: str, from_email: str, to_email: str, subject: str, html_body: str) -> bool:
+    try:
+        sender = f"CHMS Hackathons <{from_email}>" if "@" in from_email and not from_email.endswith("@gmail.com") else "CHMS Hackathons <onboarding@resend.dev>"
+        payload = json.dumps({
+            "from": sender,
+            "to": [to_email],
+            "subject": subject,
+            "html": html_body,
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            "https://api.resend.com/emails",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {api_key.strip()}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            if resp.status in (200, 201):
+                logger.info("Email sent via Resend HTTP API to %s", to_email)
+                return True
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Resend HTTP API failed for %s: %s", to_email, exc)
+    return False
+
+
+def _send_via_brevo(api_key: str, from_email: str, to_email: str, subject: str, html_body: str) -> bool:
+    try:
+        sender_email = from_email if "@" in from_email else "no-reply@chms-app.com"
+        payload = json.dumps({
+            "sender": {"name": "CHMS Hackathons", "email": sender_email},
+            "to": [{"email": to_email}],
+            "subject": subject,
+            "htmlContent": html_body,
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            "https://api.brevo.com/v3/smtp/email",
+            data=payload,
+            headers={
+                "api-key": api_key.strip(),
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            if resp.status in (200, 201, 202):
+                logger.info("Email sent via Brevo HTTP API to %s", to_email)
+                return True
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Brevo HTTP API failed for %s: %s", to_email, exc)
+    return False
 
 
 def _frontend_url() -> str:
@@ -60,8 +117,16 @@ def _send_html_email(
     plain_text: str,
     html_body: str,
 ) -> bool:
-    """Send a multipart email via Gmail SMTP (supports 587 TLS with 465 SSL fallback)."""
+    """Send email via Resend/Brevo HTTP API or Gmail SMTP (with SSL fallback)."""
+    resend_key = getattr(settings, "RESEND_API_KEY", "").strip()
+    brevo_key = getattr(settings, "BREVO_API_KEY", "").strip()
     smtp_email = getattr(settings, "SMTP_FROM_EMAIL", "").strip()
+
+    if resend_key:
+        return _send_via_resend(resend_key, smtp_email, to_email, subject, html_body)
+    if brevo_key:
+        return _send_via_brevo(brevo_key, smtp_email, to_email, subject, html_body)
+
     smtp_password = getattr(settings, "SMTP_PASSWORD", "").strip().replace(" ", "")
     smtp_host = getattr(settings, "SMTP_HOST", "smtp.gmail.com")
     try:
@@ -418,7 +483,26 @@ def send_bulk_announcement_emails(
     Includes auto-reconnect on socket disconnect so failure on one recipient does not stop others.
     Returns the count of successfully sent emails.
     """
+    resend_key = getattr(settings, "RESEND_API_KEY", "").strip()
+    brevo_key = getattr(settings, "BREVO_API_KEY", "").strip()
     smtp_email = getattr(settings, "SMTP_FROM_EMAIL", "").strip()
+
+    if (resend_key or brevo_key) and recipients:
+        bulk_delivered = 0
+        for to_email, recipient_name in recipients:
+            if not to_email or "@" not in to_email:
+                continue
+            scope = f" ({hackathon_name})" if hackathon_name else ""
+            plain_text = f"Hi {recipient_name},\n\n{sender_name} published a new announcement on CHMS{scope}.\n\nTitle: {title}\n\n{message}\n\n— CHMS Team"
+            html_body = _build_announcement_html(recipient_name, title, message, sender_name, hackathon_name)
+            subject = f"CHMS Announcement: {title}"
+
+            if resend_key and _send_via_resend(resend_key, smtp_email, to_email, subject, html_body):
+                bulk_delivered += 1
+            elif brevo_key and _send_via_brevo(brevo_key, smtp_email, to_email, subject, html_body):
+                bulk_delivered += 1
+        return bulk_delivered
+
     smtp_password = getattr(settings, "SMTP_PASSWORD", "").strip().replace(" ", "")
     smtp_host = getattr(settings, "SMTP_HOST", "smtp.gmail.com")
     try:

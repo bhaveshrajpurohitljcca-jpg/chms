@@ -40,23 +40,27 @@ def test_smtp_delivery(
     smtp_pass = getattr(settings, "SMTP_PASSWORD", "").strip().replace(" ", "")
     smtp_host = getattr(settings, "SMTP_HOST", "smtp.gmail.com")
 
+    resend_key = getattr(settings, "RESEND_API_KEY", "").strip()
+    brevo_key = getattr(settings, "BREVO_API_KEY", "").strip()
+
     diag = {
         "smtp_from_configured": bool(smtp_from),
         "smtp_from_masked": (smtp_from[:3] + "***@" + smtp_from.split("@")[-1]) if "@" in smtp_from else "NOT_SET",
         "smtp_pass_configured": bool(smtp_pass),
-        "smtp_pass_length": len(smtp_pass),
+        "resend_api_key_configured": bool(resend_key),
+        "brevo_api_key_configured": bool(brevo_key),
         "target_email": target_email,
         "attempts": []
     }
 
-    if not smtp_from or not smtp_pass:
-        return StandardResponse(
-            success=False,
-            message="SMTP credentials (SMTP_FROM_EMAIL or SMTP_PASSWORD) are not set on Render.",
-            data=diag
-        )
+    from app.utils.email import IPv4SMTP, IPv4SMTP_SSL, _send_via_resend, _send_via_brevo
 
-    from app.utils.email import IPv4SMTP, IPv4SMTP_SSL
+    if resend_key:
+        ok = _send_via_resend(resend_key, smtp_from, target_email, "CHMS Test Email", "<p>Test via Resend API</p>")
+        diag["attempts"].append({"provider": "Resend HTTP API (Port 443)", "status": "SUCCESS" if ok else "FAILED"})
+    if brevo_key:
+        ok = _send_via_brevo(brevo_key, smtp_from, target_email, "CHMS Test Email", "<p>Test via Brevo API</p>")
+        diag["attempts"].append({"provider": "Brevo HTTP API (Port 443)", "status": "SUCCESS" if ok else "FAILED"})
 
     # Test Port 587 TLS (IPv4 Forced)
     try:
@@ -64,19 +68,19 @@ def test_smtp_delivery(
             s.ehlo()
             s.starttls()
             s.login(smtp_from, smtp_pass)
-            diag["attempts"].append({"port": 587, "status": "SUCCESS (IPv4)"})
+            diag["attempts"].append({"provider": "Gmail SMTP Port 587", "status": "SUCCESS (IPv4)"})
     except Exception as e:
-        diag["attempts"].append({"port": 587, "status": "FAILED", "error": str(e)})
+        diag["attempts"].append({"provider": "Gmail SMTP Port 587", "status": "FAILED", "error": str(e)})
 
     # Test Port 465 SSL (IPv4 Forced)
     try:
         with IPv4SMTP_SSL(smtp_host, 465, timeout=10) as s:
             s.login(smtp_from, smtp_pass)
-            diag["attempts"].append({"port": 465, "status": "SUCCESS (IPv4)"})
+            diag["attempts"].append({"provider": "Gmail SMTP Port 465", "status": "SUCCESS (IPv4)"})
     except Exception as e:
-        diag["attempts"].append({"port": 465, "status": "FAILED", "error": str(e)})
+        diag["attempts"].append({"provider": "Gmail SMTP Port 465", "status": "FAILED", "error": str(e)})
 
-    return StandardResponse(success=True, message="SMTP Diagnostic Completed", data=diag)
+    return StandardResponse(success=True, message="SMTP & HTTP API Diagnostic Completed", data=diag)
 
 
 @router.post("/announce", response_model=StandardResponse[int])
