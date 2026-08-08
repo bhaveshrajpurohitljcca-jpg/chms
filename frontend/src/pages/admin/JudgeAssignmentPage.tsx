@@ -19,6 +19,13 @@ export default function JudgeAssignmentPage() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  const getAssignmentJudgeLabel = (assignment: JudgeAssignmentRecord) => {
+    if (assignment.judge_name) return assignment.judge_name;
+    if (assignment.judge?.full_name) return assignment.judge.full_name;
+    if (assignment.judge_id) return `Judge ${assignment.judge_id.slice(0, 6)}`;
+    return 'Assigned Judge';
+  };
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -245,7 +252,7 @@ export default function JudgeAssignmentPage() {
                           {subAssignments.map((asg) => (
                             <span key={asg.id} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-accent-primary/10 border border-accent-primary/20 text-xs font-semibold text-accent-primary">
                               <Users size={12} />
-                              {asg.judge?.full_name ?? `Judge ${asg.judge_id.slice(0, 6)}`}
+                              {getAssignmentJudgeLabel(asg)}
                               <button
                                 onClick={() => handleRemove(asg.id)}
                                 className="ml-1 text-white/40 hover:text-red-400 transition-colors"

@@ -36,6 +36,7 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const DEMO_AUTH_ENABLED = import.meta.env.DEV;
 
 // Default fallback mock user if API is offline
 const MOCK_DEMO_USERS: Record<string, UserProfile> = {
@@ -83,6 +84,17 @@ const MOCK_DEMO_USERS: Record<string, UserProfile> = {
     bio: 'Platform Administrator.',
     is_active: true
   }
+};
+
+const getDemoUserForEmail = (email: string): UserProfile | null => {
+  if (!DEMO_AUTH_ENABLED) {
+    return null;
+  }
+  const cleanEmail = email.toLowerCase();
+  if (cleanEmail !== 'student@college.edu') {
+    return null;
+  }
+  return MOCK_DEMO_USERS.student;
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -152,8 +164,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       throw new Error("Invalid response format");
     } catch (err: any) {
-      // Fallback for demo mode if backend is not actively listening
-      const matchingDemo = Object.values(MOCK_DEMO_USERS).find(u => u.email.toLowerCase() === email.toLowerCase());
+      // Development-only fallback for the non-privileged demo student account.
+      const matchingDemo = getDemoUserForEmail(email);
       if (matchingDemo) {
         setUser(matchingDemo);
         closeAuthModal();
@@ -190,21 +202,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       throw new Error("Invalid response format");
     } catch (err: any) {
-      // Fallback user creation locally if backend is unavailable
-      const newUser: UserProfile = {
-        id: `user-${Date.now()}`,
-        email: payload.email,
-        full_name: payload.full_name,
-        role: payload.role || 'student',
-        department: payload.department || 'Computer Science',
-        college_id: payload.college_id || 'STUDENT-2026',
-        avatar_url: payload.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=250&q=80',
-        is_active: true
-      };
-      setUser(newUser);
-      closeAuthModal();
+      if (DEMO_AUTH_ENABLED && (payload.role ?? 'student') === 'student') {
+        const newUser: UserProfile = {
+          id: `user-${Date.now()}`,
+          email: payload.email,
+          full_name: payload.full_name,
+          role: 'student',
+          department: payload.department || 'Computer Science',
+          college_id: payload.college_id || 'STUDENT-2026',
+          avatar_url: payload.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=250&q=80',
+          is_active: true
+        };
+        setUser(newUser);
+        closeAuthModal();
+        setIsLoading(false);
+        return newUser;
+      }
       setIsLoading(false);
-      return newUser;
+      throw err;
     }
   };
 
@@ -225,8 +240,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await login(demoEmail, password);
     } catch (e) {
-      setUser(MOCK_DEMO_USERS[role]);
-      closeAuthModal();
+      if (DEMO_AUTH_ENABLED && role === 'student') {
+        setUser(MOCK_DEMO_USERS.student);
+        closeAuthModal();
+        return;
+      }
+      throw e;
     }
   };
 

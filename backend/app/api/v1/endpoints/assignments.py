@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User, UserRole
-from app.models.submission import Submission, JudgeAssignment
+from app.models.submission import Submission, JudgeAssignment, SubmissionStatus
 from app.models.hackathon import Hackathon, CoordinatorAssignment
 from app.api.deps import get_current_active_user, RoleChecker
 from app.schemas.response import StandardResponse
@@ -48,6 +48,26 @@ class CoordinatorAssignmentResponse(BaseModel):
     class Config:
         orm_mode = True
         from_attributes = True
+
+
+def _get_coordinator_hackathon_ids(db: Session, coordinator_id: str) -> list[str]:
+    return [
+        assignment.hackathon_id
+        for assignment in db.query(CoordinatorAssignment).filter(
+            CoordinatorAssignment.coordinator_id == coordinator_id
+        ).all()
+    ]
+
+
+def _assert_coordinator_scope(current_user: User, hackathon_id: str, db: Session) -> None:
+    if current_user.role != UserRole.COORDINATOR:
+        return
+    assigned_ids = _get_coordinator_hackathon_ids(db, current_user.id)
+    if hackathon_id not in assigned_ids:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. This hackathon is not assigned to you."
+        )
 
 # ─────────────────────────────────────────────────────────────
 # COORDINATOR ASSIGNMENTS ENDPOINTS
@@ -156,7 +176,11 @@ def list_judge_assignments(
     admin_user: User = Depends(RoleChecker([UserRole.ADMIN, UserRole.COORDINATOR]))
 ):
     """List all judge assignments in the system."""
-    assigns = db.query(JudgeAssignment).all()
+    query = db.query(JudgeAssignment)
+    if admin_user.role == UserRole.COORDINATOR:
+        assigned_ids = _get_coordinator_hackathon_ids(db, admin_user.id)
+        query = query.filter(JudgeAssignment.hackathon_id.in_(assigned_ids))
+    assigns = query.all()
     results = []
     for a in assigns:
         judge = db.query(User).filter(User.id == a.judge_id).first()
@@ -211,6 +235,8 @@ def assign_judge(
     if not payload.hackathon_id:
         raise HTTPException(status_code=400, detail="hackathon_id is required.")
 
+    _assert_coordinator_scope(admin_user, payload.hackathon_id, db)
+
     hack = db.query(Hackathon).filter(Hackathon.id == payload.hackathon_id).first()
     if not hack:
         raise HTTPException(status_code=404, detail="Hackathon not found.")
@@ -260,6 +286,8 @@ def revoke_judge_hackathon_assignment(
     admin_user: User = Depends(RoleChecker([UserRole.ADMIN, UserRole.COORDINATOR]))
 ):
     """Revoke a judge's hackathon scope assignment (and all associated submissions)."""
+    _assert_coordinator_scope(admin_user, hackathon_id, db)
+
     hack_assign = db.query(JudgeAssignment).filter(
         JudgeAssignment.judge_id == judge_id,
         JudgeAssignment.hackathon_id == hackathon_id,
@@ -295,6 +323,8 @@ def revoke_judge_submission_assignment(
     admin_user: User = Depends(RoleChecker([UserRole.ADMIN, UserRole.COORDINATOR]))
 ):
     """Revoke a judge's assignment to a specific team submission."""
+    _assert_coordinator_scope(admin_user, hackathon_id, db)
+
     assign = db.query(JudgeAssignment).filter(
         JudgeAssignment.judge_id == judge_id,
         JudgeAssignment.hackathon_id == hackathon_id,

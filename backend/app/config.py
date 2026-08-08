@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     # Supabase
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://placeholder.supabase.co")
     SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "placeholder")
-    JWT_SECRET: str = os.getenv("JWT_SECRET", "super-secret-key-for-chms-development-at-least-32-chars-long")
+    JWT_SECRET: str = os.getenv("JWT_SECRET", "")
     JWT_ALGORITHM: str = "HS256"
 
     # Email (Gmail SMTP & HTTP API Providers)

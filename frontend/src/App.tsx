@@ -8,7 +8,8 @@ import {
   Navigate,
   Outlet,
   useSearchParams,
-  useLocation
+  useLocation,
+  useNavigate
 } from 'react-router-dom';
 import { 
   Zap, 
@@ -2291,6 +2292,8 @@ const HackathonAnalyticsView: React.FC<HackathonAnalyticsProps> = ({ hackathonId
 // 10. COORDINATOR HUB
 const CoordinatorView = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [assignedHackathons, setAssignedHackathons] = useState<any[]>([]);
   const [selectedHackathon, setSelectedHackathon] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'problems' | 'teams' | 'announcements' | 'analytics'>('problems');
@@ -2321,6 +2324,22 @@ const CoordinatorView = () => {
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
   const [judgeAssignments, setJudgeAssignments] = useState<any[]>([]);
 
+  const getCoordinatorRouteState = (pathname: string): {
+    tab: 'problems' | 'teams' | 'announcements' | 'analytics';
+    shouldOpenHackathon: boolean;
+  } => {
+    if (pathname.startsWith('/coordinator/registrations')) {
+      return { tab: 'teams', shouldOpenHackathon: true };
+    }
+    if (pathname.startsWith('/coordinator/problem-statements')) {
+      return { tab: 'problems', shouldOpenHackathon: true };
+    }
+    if (pathname.startsWith('/coordinator/hackathons')) {
+      return { tab: 'problems', shouldOpenHackathon: false };
+    }
+    return { tab: 'problems', shouldOpenHackathon: false };
+  };
+
   // Fetch assigned hackathons for this coordinator
   useEffect(() => {
     const fetchAssigned = async () => {
@@ -2343,6 +2362,26 @@ const CoordinatorView = () => {
     };
     fetchAssigned();
   }, [user]);
+
+  useEffect(() => {
+    const routeState = getCoordinatorRouteState(location.pathname);
+    setActiveTab(routeState.tab);
+
+    if (location.pathname.startsWith('/coordinator/announcements')) {
+      return;
+    }
+
+    if (!routeState.shouldOpenHackathon) {
+      if (location.pathname.startsWith('/coordinator/hackathons')) {
+        setSelectedHackathon(null);
+      }
+      return;
+    }
+
+    if (!selectedHackathon && assignedHackathons.length > 0) {
+      setSelectedHackathon(assignedHackathons[0]);
+    }
+  }, [location.pathname, assignedHackathons, selectedHackathon]);
 
   // When a hackathon is selected, fetch registrations, teams, submissions, judge assignments
   useEffect(() => {
@@ -2481,7 +2520,10 @@ const CoordinatorView = () => {
             {assignedHackathons.map(h => (
               <div
                 key={h.id}
-                onClick={() => setSelectedHackathon(h)}
+                onClick={() => {
+                  setSelectedHackathon(h);
+                  navigate('/coordinator/problem-statements');
+                }}
                 className="p-6 rounded-2xl border border-white/5 bg-white/[0.02] hover:border-accent-primary hover:shadow-[0_0_25px_rgba(0,243,255,0.08)] cursor-pointer transition-all group flex flex-col gap-4"
               >
                 <div className="flex items-center justify-between">
@@ -2523,7 +2565,12 @@ const CoordinatorView = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white/[0.02] border border-white/5 p-5 rounded-2xl gap-4">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => { setSelectedHackathon(null); setActiveTab('problems'); setSelectedPSTeam(null); }}
+            onClick={() => {
+              setSelectedHackathon(null);
+              setActiveTab('problems');
+              setSelectedPSTeam(null);
+              navigate('/coordinator/hackathons');
+            }}
             className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold uppercase tracking-wider transition-all"
           >
             ← Back
@@ -2538,7 +2585,13 @@ const CoordinatorView = () => {
         {/* Tab Switcher */}
         <div className="flex p-1 bg-white/5 rounded-xl border border-white/10">
           <button
-            onClick={() => { setActiveTab('problems'); setSelectedPS(null); setSelectedPSTeam(null); setSelectedTeam(null); }}
+            onClick={() => {
+              setActiveTab('problems');
+              setSelectedPS(null);
+              setSelectedPSTeam(null);
+              setSelectedTeam(null);
+              navigate('/coordinator/problem-statements');
+            }}
             className={`px-5 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${
               activeTab === 'problems'
                 ? 'bg-accent-primary text-black shadow-[0_0_12px_rgba(0,243,255,0.3)]'
@@ -2548,7 +2601,13 @@ const CoordinatorView = () => {
             Problem Statements
           </button>
           <button
-            onClick={() => { setActiveTab('teams'); setSelectedPS(null); setSelectedPSTeam(null); setSelectedTeam(null); }}
+            onClick={() => {
+              setActiveTab('teams');
+              setSelectedPS(null);
+              setSelectedPSTeam(null);
+              setSelectedTeam(null);
+              navigate('/coordinator/registrations');
+            }}
             className={`px-5 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${
               activeTab === 'teams'
                 ? 'bg-accent-primary text-black shadow-[0_0_12px_rgba(0,243,255,0.3)]'
@@ -2558,7 +2617,13 @@ const CoordinatorView = () => {
             Registered Teams
           </button>
           <button
-            onClick={() => { setActiveTab('announcements'); setSelectedPS(null); setSelectedPSTeam(null); setSelectedTeam(null); }}
+            onClick={() => {
+              setActiveTab('announcements');
+              setSelectedPS(null);
+              setSelectedPSTeam(null);
+              setSelectedTeam(null);
+              navigate('/coordinator/announcements');
+            }}
             className={`px-5 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${
               activeTab === 'announcements'
                 ? 'bg-accent-primary text-black shadow-[0_0_12px_rgba(0,243,255,0.3)]'
@@ -3499,6 +3564,53 @@ const AdminView = () => {
   const [judgeAssignments, setJudgeAssignments] = useState<any[]>([]);
   const [coordinatorAssignments, setCoordinatorAssignments] = useState<any[]>([]);
 
+  const normalizeJudgeAssignment = (assignment: any) => {
+    const judgeId = assignment.judgeId ?? assignment.judge_id ?? assignment.judge?.id ?? '';
+    const judgeName = assignment.judgeName ?? assignment.judge_name ?? assignment.judge?.full_name ?? 'Unknown Judge';
+    const judgeEmail = assignment.judgeEmail ?? assignment.judge_email ?? assignment.judge?.email ?? '';
+    const hackathonId = assignment.hackathonId ?? assignment.hackathon_id ?? '';
+    const hackathonName = assignment.hackathonName ?? assignment.hackathon_name ?? '';
+    const submissionId = assignment.submissionId ?? assignment.submission_id ?? undefined;
+
+    return {
+      ...assignment,
+      judgeId,
+      judge_id: judgeId,
+      judgeName,
+      judge_name: judgeName,
+      judgeEmail,
+      judge_email: judgeEmail,
+      hackathonId,
+      hackathon_id: hackathonId,
+      hackathonName,
+      hackathon_name: hackathonName,
+      submissionId,
+      submission_id: submissionId,
+    };
+  };
+
+  const normalizeCoordinatorAssignment = (assignment: any) => {
+    const coordinatorId = assignment.coordinatorId ?? assignment.coordinator_id ?? '';
+    const coordinatorName = assignment.coordinatorName ?? assignment.coordinator_name ?? 'Unknown Coordinator';
+    const coordinatorEmail = assignment.coordinatorEmail ?? assignment.coordinator_email ?? '';
+    const hackathonId = assignment.hackathonId ?? assignment.hackathon_id ?? '';
+    const hackathonName = assignment.hackathonName ?? assignment.hackathon_name ?? '';
+
+    return {
+      ...assignment,
+      coordinatorId,
+      coordinator_id: coordinatorId,
+      coordinatorName,
+      coordinator_name: coordinatorName,
+      coordinatorEmail,
+      coordinator_email: coordinatorEmail,
+      hackathonId,
+      hackathon_id: hackathonId,
+      hackathonName,
+      hackathon_name: hackathonName,
+    };
+  };
+
 
   // Toast alert
   const showToast = (text: string) => {
@@ -3510,28 +3622,13 @@ const AdminView = () => {
     try {
       const judgeRes = await apiService.listJudgeAssignments();
       if (judgeRes && judgeRes.data) {
-        const mappedJudges = judgeRes.data.map((a: any) => ({
-          id: a.id,
-          judgeId: a.judge_id,
-          judgeName: a.judge_name,
-          judgeEmail: a.judge_email,
-          hackathonId: a.hackathon_id,
-          hackathonName: a.hackathon_name,
-          submissionId: a.submission_id
-        }));
+        const mappedJudges = judgeRes.data.map((a: any) => normalizeJudgeAssignment(a));
         setJudgeAssignments(mappedJudges);
       }
       
       const coordRes = await apiService.listCoordinatorAssignments();
       if (coordRes && coordRes.data) {
-        const mappedCoords = coordRes.data.map((a: any) => ({
-          id: a.id,
-          coordinatorId: a.coordinator_id,
-          coordinatorName: a.coordinator_name,
-          coordinatorEmail: a.coordinator_email,
-          hackathonId: a.hackathon_id,
-          hackathonName: a.hackathon_name
-        }));
+        const mappedCoords = coordRes.data.map((a: any) => normalizeCoordinatorAssignment(a));
         setCoordinatorAssignments(mappedCoords);
       }
     } catch (err: any) {
@@ -6285,6 +6382,9 @@ function App() {
           {/* Coordinator Protected Portal */}
           <Route path="/coordinator" element={<RoleLayout allowedRoles={['coordinator']} />}>
             <Route index element={<CoordinatorView />} />
+            <Route path="hackathons" element={<CoordinatorView />} />
+            <Route path="problem-statements" element={<CoordinatorView />} />
+            <Route path="registrations" element={<CoordinatorView />} />
             <Route path="submissions" element={<SubmissionsView />} />
             <Route path="assignments" element={<JudgeAssignmentPage />} />
             <Route path="announcements" element={<AnnouncementsView />} />

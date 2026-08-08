@@ -19,6 +19,7 @@ from app.models.submission import (
     SubmissionStatus, EvaluationRecommendation
 )
 from app.models.user import User, UserRole
+from app.models.hackathon import CoordinatorAssignment
 from app.schemas.submission import (
     JudgeAssignmentCreate, JudgeAssignmentResponse,
     EvaluationDraftSave, EvaluationFinalSubmit, EvaluationResponse,
@@ -58,6 +59,42 @@ def _verify_assigned(db: Session, submission_id: str, judge_id: str):
         )
 
 
+def _get_coordinator_hackathon_ids(db: Session, coordinator_id: str) -> list[str]:
+    return [
+        assignment.hackathon_id
+        for assignment in db.query(CoordinatorAssignment).filter(
+            CoordinatorAssignment.coordinator_id == coordinator_id
+        ).all()
+    ]
+
+
+def _assert_submission_scope(db: Session, current_user: User, submission: Submission) -> None:
+    if current_user.role != UserRole.COORDINATOR:
+        return
+    assigned_ids = _get_coordinator_hackathon_ids(db, current_user.id)
+    if submission.hackathon_id not in assigned_ids:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. This hackathon is not assigned to you."
+        )
+
+
+def _scoped_assignments_query(db: Session, current_user: User):
+    query = db.query(JudgeAssignment).options(joinedload(JudgeAssignment.judge))
+    if current_user.role == UserRole.COORDINATOR:
+        assigned_ids = _get_coordinator_hackathon_ids(db, current_user.id)
+        query = query.filter(JudgeAssignment.hackathon_id.in_(assigned_ids))
+    return query
+
+
+def _scoped_evaluations_query(db: Session, current_user: User):
+    query = db.query(Evaluation).join(Submission).options(joinedload(Evaluation.judge))
+    if current_user.role == UserRole.COORDINATOR:
+        assigned_ids = _get_coordinator_hackathon_ids(db, current_user.id)
+        query = query.filter(Submission.hackathon_id.in_(assigned_ids))
+    return query
+
+
 # ─────────────────────────────────────────────────────────────
 # JUDGE ASSIGNMENT
 # ─────────────────────────────────────────────────────────────
@@ -72,6 +109,7 @@ def assign_judge(
     submission = db.query(Submission).filter(Submission.id == payload.submission_id).first()
     if not submission:
         raise HTTPException(status_code=404, detail="Submission not found.")
+    _assert_submission_scope(db, current_user, submission)
 
     judge = db.query(User).filter(
         User.id == payload.judge_id,
@@ -118,6 +156,10 @@ def remove_assignment(
     assignment = db.query(JudgeAssignment).filter(JudgeAssignment.id == assignment_id).first()
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found.")
+    if current_user.role == UserRole.COORDINATOR:
+        submission = db.query(Submission).filter(Submission.id == assignment.submission_id).first()
+        if submission:
+            _assert_submission_scope(db, current_user, submission)
 
     submission_id = assignment.submission_id
     db.delete(assignment)
@@ -141,8 +183,12 @@ def list_assignments(
     db: Session = Depends(get_db)
 ):
     """List all assignments. Filterable by submission or judge."""
-    query = db.query(JudgeAssignment).options(joinedload(JudgeAssignment.judge))
+    query = _scoped_assignments_query(db, current_user)
     if submission_id:
+        submission = db.query(Submission).filter(Submission.id == submission_id).first()
+        if not submission:
+            raise HTTPException(status_code=404, detail="Submission not found.")
+        _assert_submission_scope(db, current_user, submission)
         query = query.filter(JudgeAssignment.submission_id == submission_id)
     if judge_id:
         query = query.filter(JudgeAssignment.judge_id == judge_id)
@@ -213,7 +259,17 @@ def get_evaluation(
         _verify_assigned(db, submission_id, current_user.id)
         ev = _get_evaluation(db, submission_id, current_user.id)
     else:
-        ev = _get_evaluation(db, submission_id, current_user.id)
+        submission = db.query(Submission).filter(Submission.id == submission_id).first()
+        if not submission:
+            raise HTTPException(status_code=404, detail="Submission not found.")
+        _assert_submission_scope(db, current_user, submission)
+        ev = (
+            db.query(Evaluation)
+            .options(joinedload(Evaluation.judge))
+            .filter(Evaluation.submission_id == submission_id)
+            .order_by(Evaluation.submitted_at.desc().nullslast(), Evaluation.id.desc())
+            .first()
+        )
 
     return StandardResponse(
         success=True,
@@ -388,8 +444,12 @@ def get_evaluation_history(
     db: Session = Depends(get_db)
 ):
     """Admin/Coordinator: Full evaluation history with filters."""
-    query = db.query(Evaluation).options(joinedload(Evaluation.judge))
+    query = _scoped_evaluations_query(db, current_user)
     if submission_id:
+        submission = db.query(Submission).filter(Submission.id == submission_id).first()
+        if not submission:
+            raise HTTPException(status_code=404, detail="Submission not found.")
+        _assert_submission_scope(db, current_user, submission)
         query = query.filter(Evaluation.submission_id == submission_id)
     if judge_id:
         query = query.filter(Evaluation.judge_id == judge_id)
