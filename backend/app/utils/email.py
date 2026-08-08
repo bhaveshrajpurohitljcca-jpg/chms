@@ -11,6 +11,7 @@ If credentials are not configured, emails are silently skipped.
 
 import html
 import smtplib
+import socket
 import logging
 from typing import Optional
 from email.mime.multipart import MIMEMultipart
@@ -386,6 +387,7 @@ def send_bulk_announcement_emails(
 ) -> int:
     """
     Send announcement emails to multiple recipients using a single reusable SMTP connection.
+    Includes auto-reconnect on socket disconnect so failure on one recipient does not stop others.
     Returns the count of successfully sent emails.
     """
     smtp_email = getattr(settings, "SMTP_FROM_EMAIL", "").strip()
@@ -399,40 +401,64 @@ def send_bulk_announcement_emails(
     if not smtp_email or not smtp_password or not recipients:
         return 0
 
-    def _send_on_server(server) -> int:
+    def _send_on_server(initial_server) -> int:
         delivered_count = 0
+        server = initial_server
+
         for to_email, recipient_name in recipients:
             if not to_email or "@" not in to_email:
                 continue
-            try:
-                msg = MIMEMultipart("alternative")
-                msg["Subject"] = f"CHMS Announcement: {title}"
-                msg["From"] = f"CHMS Hackathons <{smtp_email}>"
-                msg["To"] = to_email
 
-                scope = f" ({hackathon_name})" if hackathon_name else ""
-                plain_text = (
-                    f"Hi {recipient_name},\n\n"
-                    f"{sender_name} published a new announcement on CHMS{scope}.\n\n"
-                    f"Title: {title}\n\n"
-                    f"{message}\n\n"
-                    f"— CHMS Team"
-                )
-                html_body = _build_announcement_html(
-                    recipient_name=recipient_name,
-                    title=title,
-                    message=message,
-                    sender_name=sender_name,
-                    hackathon_name=hackathon_name,
-                )
-                msg.attach(MIMEText(plain_text, "plain"))
-                msg.attach(MIMEText(html_body, "html"))
+            for attempt in range(2):
+                try:
+                    msg = MIMEMultipart("alternative")
+                    msg["Subject"] = f"CHMS Announcement: {title}"
+                    msg["From"] = f"CHMS Hackathons <{smtp_email}>"
+                    msg["To"] = to_email
 
-                server.sendmail(smtp_email, to_email, msg.as_string())
-                delivered_count += 1
-                logger.info("Bulk announcement email sent to %s", to_email)
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Failed sending bulk email to %s: %s", to_email, exc)
+                    scope = f" ({hackathon_name})" if hackathon_name else ""
+                    plain_text = (
+                        f"Hi {recipient_name},\n\n"
+                        f"{sender_name} published a new announcement on CHMS{scope}.\n\n"
+                        f"Title: {title}\n\n"
+                        f"{message}\n\n"
+                        f"— CHMS Team"
+                    )
+                    html_body = _build_announcement_html(
+                        recipient_name=recipient_name,
+                        title=title,
+                        message=message,
+                        sender_name=sender_name,
+                        hackathon_name=hackathon_name,
+                    )
+                    msg.attach(MIMEText(plain_text, "plain"))
+                    msg.attach(MIMEText(html_body, "html"))
+
+                    server.sendmail(smtp_email, to_email, msg.as_string())
+                    delivered_count += 1
+                    logger.info("Bulk announcement email sent to %s", to_email)
+                    break
+                except (smtplib.SMTPServerDisconnected, smtplib.SMTPConnectError, socket.error) as conn_err:
+                    logger.warning("SMTP connection lost while sending to %s (attempt %d): %s", to_email, attempt + 1, conn_err)
+                    if attempt == 0:
+                        try:
+                            if smtp_port == 465:
+                                server = smtplib.SMTP_SSL(smtp_host, 465, timeout=12)
+                                server.login(smtp_email, smtp_password)
+                            else:
+                                server = smtplib.SMTP(smtp_host, smtp_port, timeout=12)
+                                server.ehlo()
+                                server.starttls()
+                                server.login(smtp_email, smtp_password)
+                        except Exception as rec_err:  # noqa: BLE001
+                            logger.error("Failed to reconnect SMTP server: %s", rec_err)
+                            break
+                    else:
+                        break
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Failed sending bulk email to %s: %s", to_email, exc)
+                    break
+
         return delivered_count
 
     # Attempt 1: Configured port
