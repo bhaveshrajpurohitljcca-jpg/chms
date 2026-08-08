@@ -26,6 +26,19 @@ def _frontend_url() -> str:
     return getattr(settings, "FRONTEND_URL", "https://chms-lj.vercel.app").rstrip("/")
 
 
+class IPv4SMTP(smtplib.SMTP):
+    """SMTP subclass forcing IPv4 socket connection to bypass Render IPv6 unreachable route."""
+    def _get_socket(self, host, port, timeout):
+        return socket.create_connection((host, port), timeout, family=socket.AF_INET)
+
+
+class IPv4SMTP_SSL(smtplib.SMTP_SSL):
+    """SMTP_SSL subclass forcing IPv4 socket connection to bypass Render IPv6 unreachable route."""
+    def _get_socket(self, host, port, timeout):
+        new_sock = socket.create_connection((host, port), timeout, family=socket.AF_INET)
+        return self.context.wrap_socket(new_sock, server_hostname=self._host)
+
+
 def _send_html_email(
     to_email: str,
     subject: str,
@@ -58,11 +71,11 @@ def _send_html_email(
     # Attempt 1: Configured port (587 TLS or 465 SSL)
     try:
         if smtp_port == 465:
-            with smtplib.SMTP_SSL(smtp_host, 465, timeout=12) as server:
+            with IPv4SMTP_SSL(smtp_host, 465, timeout=12) as server:
                 server.login(smtp_email, smtp_password)
                 server.sendmail(smtp_email, to_email, msg.as_string())
         else:
-            with smtplib.SMTP(smtp_host, smtp_port, timeout=12) as server:
+            with IPv4SMTP(smtp_host, smtp_port, timeout=12) as server:
                 server.ehlo()
                 server.starttls()
                 server.login(smtp_email, smtp_password)
@@ -77,10 +90,10 @@ def _send_html_email(
     # Attempt 2: Fallback to SSL on port 465
     if smtp_port != 465:
         try:
-            with smtplib.SMTP_SSL(smtp_host, 465, timeout=12) as server:
+            with IPv4SMTP_SSL(smtp_host, 465, timeout=12) as server:
                 server.login(smtp_email, smtp_password)
                 server.sendmail(smtp_email, to_email, msg.as_string())
-            logger.info("Fallback SMTP_SSL (port 465) succeeded for %s", to_email)
+            logger.info("Fallback IPv4SMTP_SSL (port 465) succeeded for %s", to_email)
             return True
         except Exception as exc2:  # noqa: BLE001
             logger.error("Failed to send email to %s after SSL fallback: %s", to_email, exc2)
@@ -443,10 +456,10 @@ def send_bulk_announcement_emails(
                     if attempt == 0:
                         try:
                             if smtp_port == 465:
-                                server = smtplib.SMTP_SSL(smtp_host, 465, timeout=12)
+                                server = IPv4SMTP_SSL(smtp_host, 465, timeout=12)
                                 server.login(smtp_email, smtp_password)
                             else:
-                                server = smtplib.SMTP(smtp_host, smtp_port, timeout=12)
+                                server = IPv4SMTP(smtp_host, smtp_port, timeout=12)
                                 server.ehlo()
                                 server.starttls()
                                 server.login(smtp_email, smtp_password)
@@ -464,11 +477,11 @@ def send_bulk_announcement_emails(
     # Attempt 1: Configured port
     try:
         if smtp_port == 465:
-            with smtplib.SMTP_SSL(smtp_host, 465, timeout=15) as server:
+            with IPv4SMTP_SSL(smtp_host, 465, timeout=15) as server:
                 server.login(smtp_email, smtp_password)
                 return _send_on_server(server)
         else:
-            with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
+            with IPv4SMTP(smtp_host, smtp_port, timeout=15) as server:
                 server.ehlo()
                 server.starttls()
                 server.login(smtp_email, smtp_password)
@@ -479,7 +492,7 @@ def send_bulk_announcement_emails(
     # Attempt 2: Fallback SSL (Port 465)
     if smtp_port != 465:
         try:
-            with smtplib.SMTP_SSL(smtp_host, 465, timeout=15) as server:
+            with IPv4SMTP_SSL(smtp_host, 465, timeout=15) as server:
                 server.login(smtp_email, smtp_password)
                 return _send_on_server(server)
         except Exception as exc2:  # noqa: BLE001

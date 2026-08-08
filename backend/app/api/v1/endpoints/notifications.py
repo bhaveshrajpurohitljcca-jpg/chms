@@ -56,21 +56,23 @@ def test_smtp_delivery(
             data=diag
         )
 
-    # Test Port 587 TLS
+    from app.utils.email import IPv4SMTP, IPv4SMTP_SSL
+
+    # Test Port 587 TLS (IPv4 Forced)
     try:
-        with smtplib.SMTP(smtp_host, 587, timeout=10) as s:
+        with IPv4SMTP(smtp_host, 587, timeout=10) as s:
             s.ehlo()
             s.starttls()
             s.login(smtp_from, smtp_pass)
-            diag["attempts"].append({"port": 587, "status": "SUCCESS"})
+            diag["attempts"].append({"port": 587, "status": "SUCCESS (IPv4)"})
     except Exception as e:
         diag["attempts"].append({"port": 587, "status": "FAILED", "error": str(e)})
 
-    # Test Port 465 SSL
+    # Test Port 465 SSL (IPv4 Forced)
     try:
-        with smtplib.SMTP_SSL(smtp_host, 465, timeout=10) as s:
+        with IPv4SMTP_SSL(smtp_host, 465, timeout=10) as s:
             s.login(smtp_from, smtp_pass)
-            diag["attempts"].append({"port": 465, "status": "SUCCESS"})
+            diag["attempts"].append({"port": 465, "status": "SUCCESS (IPv4)"})
     except Exception as e:
         diag["attempts"].append({"port": 465, "status": "FAILED", "error": str(e)})
 
