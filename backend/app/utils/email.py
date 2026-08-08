@@ -31,34 +31,61 @@ def _send_html_email(
     plain_text: str,
     html_body: str,
 ) -> bool:
-    """Send a multipart email. Returns True on success, False on failure (never raises)."""
+    """Send a multipart email via Gmail SMTP (supports 587 TLS with 465 SSL fallback)."""
     smtp_email = getattr(settings, "SMTP_FROM_EMAIL", "").strip()
     smtp_password = getattr(settings, "SMTP_PASSWORD", "").strip().replace(" ", "")
     smtp_host = getattr(settings, "SMTP_HOST", "smtp.gmail.com")
-    smtp_port = getattr(settings, "SMTP_PORT", 587)
+    try:
+        smtp_port = int(getattr(settings, "SMTP_PORT", 587))
+    except (ValueError, TypeError):
+        smtp_port = 587
 
     if not smtp_email or not smtp_password:
-        logger.warning("SMTP credentials not configured — skipping email to %s", to_email)
+        logger.warning(
+            "SMTP credentials not configured (SMTP_FROM_EMAIL or SMTP_PASSWORD empty) — skipping email to %s",
+            to_email,
+        )
         return False
 
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = f"CHMS Hackathons <{smtp_email}>"
+    msg["To"] = to_email
+    msg.attach(MIMEText(plain_text, "plain"))
+    msg.attach(MIMEText(html_body, "html"))
+
+    # Attempt 1: Configured port (587 TLS or 465 SSL)
     try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"] = f"CHMS Hackathons <{smtp_email}>"
-        msg["To"] = to_email
-        msg.attach(MIMEText(plain_text, "plain"))
-        msg.attach(MIMEText(html_body, "html"))
-
-        with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
-            server.ehlo()
-            server.starttls()
-            server.login(smtp_email, smtp_password)
-            server.sendmail(smtp_email, to_email, msg.as_string())
-
+        if smtp_port == 465:
+            with smtplib.SMTP_SSL(smtp_host, 465, timeout=12) as server:
+                server.login(smtp_email, smtp_password)
+                server.sendmail(smtp_email, to_email, msg.as_string())
+        else:
+            with smtplib.SMTP(smtp_host, smtp_port, timeout=12) as server:
+                server.ehlo()
+                server.starttls()
+                server.login(smtp_email, smtp_password)
+                server.sendmail(smtp_email, to_email, msg.as_string())
         return True
-    except Exception as exc:  # noqa: BLE001
-        logger.error("Failed to send email to %s: %s", to_email, exc)
-        return False
+    except Exception as exc1:  # noqa: BLE001
+        logger.warning(
+            "Primary SMTP attempt (host: %s, port: %s) failed for %s: %s. Trying SSL fallback (port 465)...",
+            smtp_host, smtp_port, to_email, exc1,
+        )
+
+    # Attempt 2: Fallback to SSL on port 465
+    if smtp_port != 465:
+        try:
+            with smtplib.SMTP_SSL(smtp_host, 465, timeout=12) as server:
+                server.login(smtp_email, smtp_password)
+                server.sendmail(smtp_email, to_email, msg.as_string())
+            logger.info("Fallback SMTP_SSL (port 465) succeeded for %s", to_email)
+            return True
+        except Exception as exc2:  # noqa: BLE001
+            logger.error("Failed to send email to %s after SSL fallback: %s", to_email, exc2)
+            return False
+
+    return False
 
 
 def _build_invitation_html(
