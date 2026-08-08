@@ -22,7 +22,7 @@ logger = logging.getLogger("chms.email")
 
 
 def _frontend_url() -> str:
-    return getattr(settings, "FRONTEND_URL", "http://localhost:5173").rstrip("/")
+    return getattr(settings, "FRONTEND_URL", "https://chms-lj.vercel.app").rstrip("/")
 
 
 def _send_html_email(

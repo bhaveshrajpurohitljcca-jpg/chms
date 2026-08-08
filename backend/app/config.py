@@ -1,6 +1,21 @@
 import os
 from typing import List, Union
 
+def _load_env_file(filepath: str):
+    if not os.path.exists(filepath):
+        return
+    with open(filepath, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                os.environ[key] = value
+
+env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+_load_env_file(env_path)
+
 try:
     from pydantic_settings import BaseSettings, SettingsConfigDict
 except ImportError:
@@ -37,7 +52,7 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
     SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
     SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
-    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "https://chms-lj.vercel.app")
 
     if SettingsConfigDict is not None:
         model_config = SettingsConfigDict(
