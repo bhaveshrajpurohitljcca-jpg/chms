@@ -89,19 +89,19 @@ const GlobalLayout = () => {
   ];
 
   return (
-    <div className="relative min-h-screen bg-[#050505] text-white flex flex-col font-manrope selection:bg-accent-primary selection:text-black overflow-x-hidden">
+    <div className="relative min-h-screen bg-[#e5e9f0] dark:bg-[#050505] text-[#0f172a] dark:text-white flex flex-col font-manrope selection:bg-accent-primary selection:text-black overflow-x-hidden">
       
       {/* Dynamic 3D WebGL particle field */}
       <ThreeParticleBg isInteractive={location.pathname === '/'} />
 
       {/* FIXED TOPBAR NAVIGATION */}
-      <header className="fixed top-0 left-0 right-0 h-16 md:h-24 z-40 px-4 md:px-8 py-4 md:py-6 flex items-center justify-between bg-[#050505]/40 backdrop-blur-md border-b border-[rgba(255,255,255,0.05)] pointer-events-auto">
+      <header className="fixed top-0 left-0 right-0 h-16 md:h-24 z-40 px-4 md:px-8 py-4 md:py-6 flex items-center justify-between bg-[#e5e9f0]/95 dark:bg-[#050505]/40 backdrop-blur-md border-b border-[#cbd5e1] dark:border-[rgba(255,255,255,0.05)] pointer-events-auto">
         {/* Left Brand Logo — only icon redirects */}
         <div className="flex items-center gap-2 md:gap-3 select-none">
-          <Link to="/" className="w-9 h-9 md:w-10 md:h-10 rounded-[12px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.1)] flex items-center justify-center shadow-[0_0_15px_rgba(0,243,255,0.15)] hover:border-accent-primary transition-all duration-300">
-            <Zap size={16} className="text-accent-primary animate-pulse" />
+          <Link to="/" className="w-9 h-9 md:w-10 md:h-10 rounded-[12px] bg-[#0252cd] dark:bg-[rgba(255,255,255,0.03)] border border-[#0252cd] dark:border-[rgba(255,255,255,0.1)] flex items-center justify-center text-white dark:text-accent-primary hover:border-accent-primary transition-all duration-300">
+            <Zap size={16} className="dark:animate-pulse" />
           </Link>
-          <span className="font-archivo text-base md:text-lg tracking-wider font-black text-glow-cyan text-white cursor-default">
+          <span className="font-archivo text-base md:text-lg tracking-wider font-black text-[#0252cd] dark:text-white dark:text-glow-cyan cursor-default">
             CHMS
           </span>
         </div>
@@ -115,8 +115,8 @@ const GlobalLayout = () => {
               className={({ isActive }) =>
                 `relative py-2 text-xs font-semibold uppercase tracking-[0.2em] transition-all duration-300 group ${
                   isActive
-                    ? 'text-white'
-                    : 'text-[rgba(255,255,255,0.65)] hover:text-white'
+                    ? 'text-[#0f172a] dark:text-white'
+                    : 'text-[#475569] dark:text-[rgba(255,255,255,0.65)] hover:text-[#0f172a] dark:hover:text-white'
                 }`
               }
             >
@@ -140,20 +140,20 @@ const GlobalLayout = () => {
             <div className="flex items-center gap-2 md:gap-3">
               <Link 
                 to={`/${user.role.toLowerCase()}`}
-                className="hidden sm:inline-flex items-center h-9 md:h-10 px-4 md:px-6 rounded-full bg-accent-primary text-black font-semibold text-xs uppercase tracking-wider transition-all duration-300 hover:shadow-[0_0_15px_rgba(0,243,255,0.35)]"
+                className="hidden sm:inline-flex items-center h-9 md:h-10 px-4 md:px-6 rounded-full bg-[#0252cd] dark:bg-accent-primary text-white dark:text-black font-semibold text-xs uppercase tracking-wider transition-all duration-300 hover:shadow-[0_0_15px_rgba(0,243,255,0.35)]"
               >
                 Console
               </Link>
               <Link
                 to="/profile"
-                className="flex items-center gap-2 px-2 md:px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:border-accent-primary transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+                className="flex items-center gap-2 px-2 md:px-3 py-1.5 rounded-full bg-white dark:bg-white/5 border border-[#cbd5e1] dark:border-white/10 hover:border-accent-primary transition-all shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.5)]"
               >
                 <img
                   src={user.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80'}
                   alt={user.full_name}
                   className="w-7 h-7 rounded-full object-cover border border-accent-primary/50"
                 />
-                <span className="text-xs font-semibold text-white max-w-[80px] truncate hidden sm:inline">
+                <span className="text-xs font-bold text-[#0f172a] dark:text-white max-w-[80px] truncate hidden sm:inline">
                   {user.full_name}
                 </span>
                 <span className="text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded-md bg-accent-primary/10 text-accent-primary border border-accent-primary/30">
@@ -179,7 +179,7 @@ const GlobalLayout = () => {
           <button
             onClick={toggleTheme}
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            className="w-9 h-9 rounded-xl border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.05)] flex items-center justify-center text-accent-primary hover:border-accent-primary transition-all duration-300"
+            className="w-9 h-9 rounded-xl border border-[#cbd5e1] dark:border-[rgba(255,255,255,0.15)] bg-white dark:bg-[rgba(255,255,255,0.05)] flex items-center justify-center text-[#0252cd] dark:text-accent-primary hover:border-accent-primary transition-all duration-300"
             aria-label="Toggle theme"
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
@@ -188,7 +188,7 @@ const GlobalLayout = () => {
           {/* Mobile hamburger — opens full-screen drawer */}
           <button
             onClick={() => setIsMenuOpen(true)}
-            className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.05)] text-white hover:border-accent-primary/50 hover:text-accent-primary transition-all duration-300"
+            className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl border border-[#cbd5e1] dark:border-[rgba(255,255,255,0.15)] bg-white dark:bg-[rgba(255,255,255,0.05)] text-[#0f172a] dark:text-white hover:border-accent-primary/50 hover:text-accent-primary transition-all duration-300"
             aria-label="Open menu"
           >
             <Menu size={18} />
@@ -253,27 +253,21 @@ const GlobalLayout = () => {
                 {!!user && (
                   <div className="flex flex-col gap-3">
                     <h5 className="text-[10px] uppercase tracking-[0.2em] font-semibold text-accent-primary">
-                      Authorized Workspaces
+                      Your Workspace
                     </h5>
                     <ul className="flex flex-col gap-2.5">
                       <li>
-                        <Link to="/student" onClick={() => setIsMenuOpen(false)} className="text-sm font-light text-white/70 hover:text-accent-primary transition-colors flex items-center gap-1.5">
-                          <span>Student Portal</span>
-                        </Link>
-                      </li>
-                      <li>
-                        <Link to="/judge" onClick={() => setIsMenuOpen(false)} className="text-sm font-light text-white/70 hover:text-accent-primary transition-colors flex items-center gap-1.5">
-                          <span>Judge Matrix</span>
-                        </Link>
-                      </li>
-                      <li>
-                        <Link to="/coordinator" onClick={() => setIsMenuOpen(false)} className="text-sm font-light text-white/70 hover:text-accent-primary transition-colors flex items-center gap-1.5">
-                          <span>Coordinator Console</span>
-                        </Link>
-                      </li>
-                      <li>
-                        <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="text-sm font-light text-white/70 hover:text-accent-primary transition-colors flex items-center gap-1.5">
-                          <span>Admin Command Console</span>
+                        <Link 
+                          to={`/${user.role.toLowerCase()}`} 
+                          onClick={() => setIsMenuOpen(false)} 
+                          className="text-sm font-medium text-white/90 hover:text-accent-primary transition-colors flex items-center gap-1.5"
+                        >
+                          <span>
+                            {user.role.toLowerCase() === 'admin' && 'Admin Command Console'}
+                            {user.role.toLowerCase() === 'coordinator' && 'Coordinator Console'}
+                            {user.role.toLowerCase() === 'judge' && 'Judge Matrix'}
+                            {user.role.toLowerCase() === 'student' && 'Student Portal'}
+                          </span>
                         </Link>
                       </li>
                     </ul>
@@ -351,7 +345,7 @@ const PublicLanding = () => {
       <section className="min-h-screen flex flex-col justify-center items-center px-4 sm:px-8 pt-24 pb-16 text-center max-w-7xl mx-auto w-full relative">
         <StatusPulseBadge text="CHMS Core Module Active" className="mb-6 md:mb-8" />
 
-        <h2 className="font-archivo text-[clamp(2.5rem,10vw,8rem)] font-black tracking-tighter leading-[0.9] select-none mb-6 md:mb-10 bg-gradient-to-b from-white via-white/80 to-white/10 bg-clip-text text-transparent uppercase">
+        <h2 className="font-archivo text-[clamp(2.5rem,10vw,8rem)] font-black tracking-tighter leading-[0.9] select-none mb-6 md:mb-10 text-[#0f172a] dark:bg-gradient-to-b dark:from-white dark:via-white/80 dark:to-white/10 dark:bg-clip-text dark:text-transparent uppercase">
           College Hackathon<br />Management System
         </h2>
 
@@ -384,15 +378,15 @@ const PublicLanding = () => {
       </section>
 
       {/* Infinite Horizontal Marquee */}
-      <section className="py-8 md:py-12 border-y border-[rgba(255,255,255,0.08)] bg-[#050505]/60 backdrop-blur-md overflow-hidden select-none">
+      <section className="py-8 md:py-12 border-y border-[#cbd5e1] dark:border-[rgba(255,255,255,0.08)] bg-[#1e293b] dark:bg-[#050505]/60 backdrop-blur-md overflow-hidden select-none">
         <div className="flex w-max min-w-full whitespace-nowrap animate-marquee">
           <div className="flex shrink-0 items-center justify-around min-w-full pr-8">
-            <span className="font-archivo text-2xl sm:text-4xl md:text-5xl font-black uppercase text-white/10 tracking-[0.1em]">
+            <span className="font-archivo text-2xl sm:text-4xl md:text-5xl font-black uppercase text-white/80 dark:text-white/10 tracking-[0.1em]">
               LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION •
             </span>
           </div>
           <div className="flex shrink-0 items-center justify-around min-w-full pr-8">
-            <span className="font-archivo text-2xl sm:text-4xl md:text-5xl font-black uppercase text-white/10 tracking-[0.1em]">
+            <span className="font-archivo text-2xl sm:text-4xl md:text-5xl font-black uppercase text-white/80 dark:text-white/10 tracking-[0.1em]">
               LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION • LJ COLLEGE OF COMPUTER APPLICATION •
             </span>
           </div>
@@ -438,7 +432,7 @@ const PublicLanding = () => {
           
           <div className="flex-1 flex flex-col gap-4 md:gap-6">
             <span className="text-xs uppercase tracking-[0.3em] text-accent-secondary font-semibold">Advance Innovation Research & Analysis Lab</span>
-            <h2 className="font-archivo text-4xl sm:text-5xl md:text-7xl font-black uppercase text-white tracking-tighter leading-none select-none">
+            <h2 className="font-archivo text-3xl sm:text-5xl md:text-7xl font-black uppercase text-white tracking-tighter leading-none select-none">
               AiRA LAB
             </h2>
             <p className="text-xs md:text-sm text-text-secondary leading-relaxed font-light">
@@ -472,20 +466,20 @@ const PublicLanding = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-[rgba(255,255,255,0.08)] bg-[#050505]/80 backdrop-blur-md pt-16 pb-10 px-8 w-full">
+      <footer className="border-t border-[#cbd5e1] dark:border-[rgba(255,255,255,0.08)] bg-[#1e293b] dark:bg-[#050505]/80 backdrop-blur-md pt-16 pb-10 px-8 w-full">
         <div className="max-w-7xl mx-auto w-full flex flex-col gap-12">
           
           {/* Centered WhatsApp Invite Block */}
           <div className="flex flex-col items-center justify-center text-center py-6 gap-5 w-full max-w-xl mx-auto">
-            <div className="w-14 h-14 rounded-full bg-accent-primary/10 border border-accent-primary/30 flex items-center justify-center text-accent-primary shadow-[0_0_20px_rgba(0,243,255,0.1)]">
+            <div className="w-14 h-14 rounded-full bg-[#0252cd]/10 dark:bg-accent-primary/10 border border-[#0252cd]/30 dark:border-accent-primary/30 flex items-center justify-center text-[#93c5fd] dark:text-accent-primary">
               <MessageCircle size={28} />
             </div>
             
             <div className="flex flex-col gap-2">
-              <h4 className="font-archivo text-2xl md:text-3xl uppercase font-black tracking-tight text-white">
+              <h4 className="font-archivo text-2xl md:text-3xl uppercase font-black tracking-tight text-white dark:text-white">
                 Join the Community
               </h4>
-              <p className="text-xs text-white/50 leading-relaxed font-light">
+              <p className="text-xs text-white/70 dark:text-white/50 leading-relaxed font-light">
                 Connect with developers, innovators, and analysts inside the Advance Innovation Research & Analysis Lab.
               </p>
             </div>
@@ -494,24 +488,24 @@ const PublicLanding = () => {
               href="https://whatsapp.com/channel/0029VbClQzuDzgT2mJ7z1o2v" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="px-8 h-12 rounded-full bg-accent-primary hover:bg-[#00d4df] text-black font-archivo text-xs uppercase font-black tracking-wider flex items-center gap-3 transition-all duration-300 shadow-[0_0_25px_rgba(0,243,255,0.25)] hover:scale-105"
+              className="px-8 h-12 rounded-full bg-[#0252cd] dark:bg-accent-primary hover:bg-[#0341a8] dark:hover:bg-[#00d4df] text-white dark:text-black font-archivo text-xs uppercase font-black tracking-wider flex items-center gap-3 transition-all duration-300 shadow-lg dark:shadow-[0_0_25px_rgba(0,243,255,0.25)] hover:scale-105"
             >
               <span>Join AiRA Lab Community</span>
               <ExternalLink size={14} />
             </a>
           </div>
 
-          <div className="border-t border-[rgba(255,255,255,0.05)] pt-8 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="border-t border-white/10 dark:border-[rgba(255,255,255,0.05)] pt-8 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex flex-col gap-1.5 text-center sm:text-left">
-              <span className="text-[9px] uppercase tracking-[0.3em] text-[rgba(255,255,255,0.35)] select-none">
+              <span className="text-[9px] uppercase tracking-[0.3em] text-white/60 dark:text-[rgba(255,255,255,0.35)] select-none">
                 © 2026 AiRA LAB. ALL RIGHTS RESERVED.
               </span>
-              <span className="text-[9px] uppercase tracking-[0.1em] text-accent-primary font-mono select-none">
+              <span className="text-[9px] uppercase tracking-[0.1em] text-[#93c5fd] dark:text-accent-primary font-mono select-none">
                 Developed By Team Zero ( Yash Chaudary , Dhyey Trivedi , Bhavesh Rajpurohit )
               </span>
             </div>
             
-            <div className="flex gap-6 text-[9px] uppercase tracking-wider text-[rgba(255,255,255,0.35)]">
+            <div className="flex gap-6 text-[9px] uppercase tracking-wider text-white/60 dark:text-[rgba(255,255,255,0.35)]">
               <a href="#" className="hover:text-accent-primary transition-colors">Privacy Policy</a>
               <a href="#" className="hover:text-accent-primary transition-colors">Terms of Use</a>
             </div>
@@ -1731,7 +1725,7 @@ export const JudgeView = () => {
       </div>
 
       {/* Grid: Stats row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         <Card hoverable className="flex flex-col justify-between p-6">
           <div>
             <p className="text-xs uppercase tracking-wider font-bold text-white/40">Assigned Projects</p>
@@ -2351,9 +2345,9 @@ const CoordinatorView = () => {
   // ─── HACKATHON CARDS (no hackathon selected) ───
   if (!selectedHackathon) {
     return (
-      <div className="flex flex-col gap-8 w-full max-w-6xl">
+      <div className="flex flex-col gap-4 sm:gap-8 w-full">
         <div>
-          <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-glow-cyan text-white">
+          <h2 className="font-archivo text-xl sm:text-2xl md:text-3xl uppercase tracking-wider font-black text-glow-cyan text-white">
             Operations Console
           </h2>
           <p className="text-xs text-text-secondary mt-1 font-light">
@@ -3131,7 +3125,7 @@ const CoordinatorView = () => {
                 className="w-full h-28 p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-primary transition-all resize-none"
               />
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-white/70">Category</label>
                 <select value={editPSData.category} onChange={e => setEditPSData({ ...editPSData, category: e.target.value })} className="p-2.5 rounded-xl bg-black border border-white/10 text-white text-[11px]">
@@ -4001,7 +3995,7 @@ const AdminView = () => {
           <span className="text-xs uppercase tracking-[0.25em] text-accent-primary font-bold font-archivo">
             CONTROL CENTER
           </span>
-          <h2 className="font-archivo text-4xl uppercase tracking-wider font-black text-glow-cyan text-white mt-1">
+          <h2 className="font-archivo text-2xl sm:text-3xl md:text-4xl uppercase tracking-wider font-black text-glow-cyan text-white mt-1">
             {activeTab === 'dashboard' && "Command Console"}
             {activeTab === 'hackathons' && "Manage Hackathons"}
             {activeTab === 'users' && "Manage Users"}
@@ -4014,7 +4008,7 @@ const AdminView = () => {
         </div>
 
         {/* System Diagnostics panel */}
-        <div className="flex items-center gap-5 bg-white/[0.01] border border-white/5 rounded-2xl px-5 py-3">
+        <div className="hidden sm:flex items-center gap-5 bg-white/[0.01] border border-white/5 rounded-2xl px-5 py-3">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
             <span className="text-[10px] font-mono text-white/50 uppercase">FastAPI: OK</span>
@@ -4037,7 +4031,7 @@ const AdminView = () => {
       {/* ========================================================================= */}
       {activeTab === 'dashboard' && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {kpiStats.map((kpi, idx) => {
               const Icon = kpi.icon;
               return (
@@ -5505,7 +5499,7 @@ const AdminView = () => {
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Input 
                 label="Launch Date" 
                 type="date"

@@ -92,7 +92,7 @@ export const HackathonsListPage: React.FC = () => {
             <Trophy size={14} />
             <span>Internal Hackathon Directory</span>
           </div>
-          <h2 className="font-archivo text-3xl md:text-4xl font-black text-white uppercase tracking-tight">
+          <h2 className="font-archivo text-3xl md:text-4xl font-black text-[#0f172a] dark:text-white uppercase tracking-tight">
             Explore College Hackathons
           </h2>
         </div>
@@ -105,7 +105,7 @@ export const HackathonsListPage: React.FC = () => {
     return (
       <div className="flex flex-col gap-8 max-w-7xl mx-auto w-full font-manrope">
         <div>
-          <h2 className="font-archivo text-3xl md:text-4xl font-black text-white uppercase tracking-tight">
+          <h2 className="font-archivo text-3xl md:text-4xl font-black text-[#0f172a] dark:text-white uppercase tracking-tight">
             Explore College Hackathons
           </h2>
         </div>
@@ -128,10 +128,10 @@ export const HackathonsListPage: React.FC = () => {
             <Trophy size={14} />
             <span>Internal Hackathon Directory</span>
           </div>
-          <h2 className="font-archivo text-3xl md:text-4xl font-black text-white uppercase tracking-tight">
+          <h2 className="font-archivo text-3xl md:text-4xl font-black text-[#0f172a] dark:text-white uppercase tracking-tight">
             Explore College Hackathons
           </h2>
-          <p className="text-xs md:text-sm text-[rgba(255,255,255,0.65)] font-light mt-1">
+          <p className="text-xs md:text-sm text-[#475569] dark:text-[rgba(255,255,255,0.65)] font-light mt-1">
             View active sprints, problem statements, registration deadlines.
           </p>
         </div>
@@ -152,12 +152,12 @@ export const HackathonsListPage: React.FC = () => {
         </div>
 
         {/* Status Filter */}
-        <div className="flex items-center gap-2 px-3 h-12 rounded-input bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.10)] text-xs text-white">
+        <div className="flex items-center gap-2 px-3 h-12 rounded-input bg-white dark:bg-[rgba(255,255,255,0.03)] border border-[#cbd5e1] dark:border-[rgba(255,255,255,0.10)] text-xs text-[#0f172a] dark:text-white">
           <Filter size={14} className="text-accent-primary" />
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="bg-transparent text-white focus:outline-none cursor-pointer font-semibold"
+            className="bg-transparent text-[#0f172a] dark:text-white focus:outline-none cursor-pointer font-semibold"
           >
             <option value="all" className="bg-[#050505] text-white">All Statuses</option>
             <option value="active" className="bg-[#050505] text-white">Active</option>

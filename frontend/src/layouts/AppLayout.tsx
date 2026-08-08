@@ -1,120 +1,63 @@
 import React, { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
-  Trophy, 
+  Calendar, 
   Users, 
-  Layers, 
-  Award, 
-  Megaphone, 
-  BarChart3, 
-  LogOut, 
-  User, 
+  Settings, 
   Menu, 
-  X,
-  Code,
-  Shield,
-  ClipboardCheck,
-  Sliders,
-  Settings,
+  X, 
+  LogOut, 
+  Layers, 
+  User, 
+  Megaphone,
   Sun,
   Moon
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-export interface AppLayoutProps {
+interface AppLayoutProps {
   children: React.ReactNode;
 }
 
-export const AppLayout = ({ children }: AppLayoutProps) => {
+export default function AppLayout({ children }: AppLayoutProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Retrieve role state from localStorage, default to 'student'
+  // Role simulation state (persistent across page transitions for developer preview)
   const [activeRole, setActiveRole] = useState<string>(() => {
     return localStorage.getItem('chms_role') || 'student';
   });
 
-  // Dynamic user data mapping
-  const getUserProfile = (role: string) => {
+  // Mock currentUser info tied to selected preview role
+  const getMockUser = (role: string) => {
     switch (role) {
       case 'judge':
-        return {
-          name: 'Dr. Evelyn Carter',
-          role: 'Lead Evaluator (Judge)',
-          avatarColor: 'border-accent-secondary bg-accent-secondary/10'
-        };
+        return { name: 'Dr. Sarah Jenkins', role: 'Chief Evaluator', avatarColor: 'bg-accent-secondary/20 text-accent-secondary border-accent-secondary/30' };
       case 'admin':
-        return {
-          name: 'Dean Marcus Vance',
-          role: 'Dean / System Admin',
-          avatarColor: 'border-accent-third bg-accent-third/10'
-        };
+        return { name: 'Alex Rivera', role: 'System Admin', avatarColor: 'bg-accent-primary/20 text-accent-primary border-accent-primary/30' };
       case 'coordinator':
-        return {
-          name: 'Prof. Sarah Jenkins',
-          role: 'Ops Coordinator',
-          avatarColor: 'border-accent-primary bg-accent-primary/10'
-        };
+        return { name: 'Marcus Vance', role: 'Event Host', avatarColor: 'bg-warning/20 text-warning border-warning/30' };
       case 'student':
       default:
-        return {
-          name: 'Alex Mercer',
-          role: 'Student Developer',
-          avatarColor: 'border-accent-primary bg-accent-primary/10'
-        };
+        return { name: 'Bhavesh Rajpurohit', role: 'Lead Developer', avatarColor: 'bg-accent-primary/20 text-accent-primary border-accent-primary/30' };
     }
   };
 
-  const currentUser = getUserProfile(activeRole);
+  const currentUser = getMockUser(activeRole);
 
-  // Dynamic navigation items based on active role
-  const getNavItems = (role: string) => {
-    const baseItems = [
-      { label: 'Submissions', path: '/submissions', icon: Code },
-      { label: 'Leaderboard', path: '/leaderboard', icon: BarChart3 },
-      { label: 'Announcements', path: '/announcements', icon: Megaphone },
-    ];
+  const navItems = [
+    { label: 'Explore Hackathons', path: '/hackathons', icon: Calendar },
+    { label: 'Team Workspace', path: '/teams', icon: Users },
+  ];
 
-    switch (role) {
-      case 'judge':
-        return [
-          { label: 'Judge Dashboard', path: '/judge', icon: ClipboardCheck },
-          ...baseItems
-        ];
-      case 'admin':
-        return [
-          { label: 'Admin Dashboard', path: '/admin', icon: Shield },
-          ...baseItems
-        ];
-      case 'coordinator':
-        return [
-          { label: 'Operations Console', path: '/coordinator', icon: Sliders },
-          ...baseItems
-        ];
-      case 'student':
-      default:
-        return [
-          { label: 'Hackathons', path: '/hackathons', icon: Trophy },
-          { label: 'Team Portal', path: '/teams', icon: Users },
-          { label: 'Submissions', path: '/submissions', icon: Code },
-          { label: 'Leaderboard', path: '/leaderboard', icon: BarChart3 },
-          { label: 'Certificates', path: '/certificates', icon: Award },
-          { label: 'Announcements', path: '/announcements', icon: Megaphone },
-        ];
-    }
-  };
-
-  const navItems = getNavItems(activeRole);
-
-  // Handle preview role updates
+  // Handle role switch & redirection
   const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newRole = e.target.value;
     setActiveRole(newRole);
     localStorage.setItem('chms_role', newRole);
 
-    // Redirect to default page for role
     switch (newRole) {
       case 'judge':
         navigate('/judge');
@@ -136,14 +79,14 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   const isActive = (path: string) => location.pathname === path || (path !== '/' && location.pathname.startsWith(path));
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-[#050505] border-r border-[rgba(255,255,255,0.08)]">
+    <div className="flex flex-col h-full bg-[var(--bg-primary)] border-r border-[var(--border-color)]">
       {/* Brand Logo Header */}
-      <div className="h-20 flex items-center px-8 border-b border-[rgba(255,255,255,0.06)] gap-3 select-none">
+      <div className="h-20 flex items-center px-8 border-b border-[var(--border-color)] gap-3 select-none">
         <Link to="/" className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-accent-secondary to-accent-primary flex items-center justify-center shadow-[0_0_15px_rgba(0,243,255,0.25)]">
-            <Layers size={18} className="text-black" />
+          <div className="w-8 h-8 rounded-lg bg-accent-primary/10 border border-accent-primary/30 flex items-center justify-center text-accent-primary">
+            <Layers size={18} />
           </div>
-          <span className="font-archivo text-lg tracking-wider font-black text-glow-cyan text-white">
+          <span className="font-archivo text-lg tracking-wider font-black text-accent-primary">
             CHMS
           </span>
         </Link>
@@ -159,13 +102,13 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               key={item.path}
               to={item.path}
               onClick={() => setIsMobileOpen(false)}
-              className={`flex items-center gap-4 px-4 h-12 rounded-xl text-sm font-semibold transition-all duration-[400ms] ease-out ${
+              className={`flex items-center gap-4 px-4 h-12 rounded-xl text-sm font-semibold transition-all duration-300 ${
                 active 
-                  ? 'bg-[rgba(255,255,255,0.05)] border border-[rgba(0,243,255,0.2)] text-accent-primary shadow-[inset_0_0_10px_rgba(0,243,255,0.05)]' 
-                  : 'text-[rgba(255,255,255,0.65)] hover:text-white hover:bg-[rgba(255,255,255,0.02)]'
+                  ? 'bg-accent-primary text-white shadow-md' 
+                  : 'text-text-secondary hover:text-text-primary hover:bg-black/5'
               }`}
             >
-              <Icon size={18} className={active ? 'text-accent-primary' : 'text-current'} />
+              <Icon size={18} className={active ? 'text-white' : 'text-current'} />
               <span>{item.label}</span>
             </Link>
           );
@@ -173,7 +116,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       </nav>
 
       {/* Dynamic Preview Role Switcher Panel */}
-      <div className="px-6 py-4 border-t border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.015)] flex flex-col gap-3">
+      <div className="px-6 py-4 border-t border-[var(--border-color)] bg-black/5 flex flex-col gap-3">
         <div className="flex flex-col gap-1">
           <label htmlFor="preview-role-select" className="text-[10px] uppercase font-bold tracking-[0.15em] text-accent-secondary">
             Preview Role Simulation
@@ -183,27 +126,27 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               id="preview-role-select"
               value={activeRole}
               onChange={handleRoleChange}
-              className="w-full h-9 px-3 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-primary transition-all duration-300 appearance-none cursor-pointer"
+              className="w-full h-9 px-3 rounded-lg bg-black/5 border border-[var(--border-color)] text-xs text-text-primary focus:outline-none focus:border-accent-primary transition-all duration-300 appearance-none cursor-pointer"
             >
-              <option value="student" className="bg-[#050505] text-white">Student View</option>
-              <option value="judge" className="bg-[#050505] text-white">Judge View</option>
-              <option value="admin" className="bg-[#050505] text-white">Admin View</option>
-              <option value="coordinator" className="bg-[#050505] text-white">Coordinator View</option>
+              <option value="student">Student View</option>
+              <option value="judge">Judge View</option>
+              <option value="admin">Admin View</option>
+              <option value="coordinator">Coordinator View</option>
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-white/50">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-text-secondary">
               <Settings size={12} className="animate-spin-slow" />
             </div>
           </div>
         </div>
 
         {/* User Session Profile details */}
-        <div className="flex items-center gap-3 p-2 rounded-xl border border-[rgba(255,255,255,0.05)] bg-[rgba(0,0,0,0.2)]">
-          <div className={`w-9 h-9 rounded-full border flex items-center justify-center text-white ${currentUser.avatarColor}`}>
+        <div className="flex items-center gap-3 p-2 rounded-xl border border-[var(--border-color)] bg-black/5">
+          <div className={`w-9 h-9 rounded-full border flex items-center justify-center text-text-primary ${currentUser.avatarColor}`}>
             <User size={16} />
           </div>
           <div className="flex-1 min-w-0 select-none">
-            <p className="text-xs font-semibold text-white truncate">{currentUser.name}</p>
-            <p className="text-[10px] text-[rgba(255,255,255,0.45)] uppercase tracking-wider truncate font-medium">{currentUser.role}</p>
+            <p className="text-xs font-semibold text-text-primary truncate">{currentUser.name}</p>
+            <p className="text-[10px] text-text-secondary uppercase tracking-wider truncate font-medium">{currentUser.role}</p>
           </div>
           <button 
             title="Reset to Student"
@@ -212,7 +155,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               localStorage.setItem('chms_role', 'student');
               navigate('/hackathons');
             }}
-            className="p-2 rounded-lg text-white/40 hover:text-danger hover:bg-danger/10 transition-colors"
+            className="p-2 rounded-lg text-text-secondary hover:text-danger hover:bg-danger/10 transition-colors"
           >
             <LogOut size={16} />
           </button>
@@ -222,7 +165,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   );
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex overflow-hidden font-manrope">
+    <div className="min-h-screen bg-[var(--bg-primary)] text-text-primary flex overflow-hidden font-manrope">
       {/* Sidebar for Desktop */}
       <aside className="hidden lg:block w-64 flex-shrink-0 h-screen sticky top-0">
         {sidebarContent}
@@ -232,38 +175,38 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto h-screen">
         
         {/* Topbar Layout */}
-        <header className="h-20 border-b border-[rgba(255,255,255,0.08)] bg-[#050505]/80 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between px-8">
+        <header className="h-20 border-b border-[var(--border-color)] glass-surface backdrop-blur-md sticky top-0 z-30 flex items-center justify-between px-8">
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setIsMobileOpen(true)}
-              className="lg:hidden p-2.5 rounded-xl border border-[rgba(255,255,255,0.18)] text-white bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(0,243,255,0.08)] hover:border-accent-primary/50 hover:text-accent-primary transition-all duration-300 shadow-[0_0_10px_rgba(0,0,0,0.3)]"
+              className="lg:hidden p-2.5 rounded-xl border border-[var(--border-color)] text-text-primary bg-black/5 hover:bg-accent-primary/10 hover:border-accent-primary transition-all duration-300 shadow-sm"
               aria-label="Open navigation menu"
             >
               <Menu size={22} />
             </button>
-            <h1 className="font-archivo text-xl uppercase tracking-wider font-black text-white">
+            <h1 className="font-archivo text-xl uppercase tracking-wider font-black text-text-primary">
               CHMS Platform
             </h1>
           </div>
 
           <div className="flex items-center gap-4">
             {/* Context/Notification placeholder */}
-            <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(255,0,193,0.05)] border border-[rgba(255,0,193,0.15)] text-[10px] font-semibold tracking-wider text-accent-secondary uppercase select-none">
+            <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-accent-secondary/10 border border-accent-secondary/30 text-[10px] font-semibold tracking-wider text-accent-secondary uppercase select-none">
               <Megaphone size={12} />
               <span>Next Hackathon Starts Aug 15</span>
             </div>
             
-            <div className="w-[1px] h-6 bg-[rgba(255,255,255,0.1)] hidden md:block" />
+            <div className="w-[1px] h-6 bg-[var(--border-color)] hidden md:block" />
 
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-success animate-pulse" />
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-[rgba(255,255,255,0.45)] select-none">System Stable</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-text-secondary select-none">System Stable</span>
             </div>
 
             <button 
               onClick={toggleTheme}
               title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              className="w-9 h-9 rounded-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-accent-primary hover:border-accent-primary transition-all duration-300"
+              className="w-9 h-9 rounded-full bg-black/5 border border-[var(--border-color)] flex items-center justify-center text-accent-primary hover:border-accent-primary transition-all duration-300"
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
@@ -278,18 +221,18 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       </div>
 
       {/* Drawer Overlay for Mobile Navigation */}
-      {isMobileOpen ? (
+      {isMobileOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden">
           {/* Mobile Backdrop */}
           <div 
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setIsMobileOpen(false)}
           />
           {/* Drawer Panel */}
-          <div className="relative w-72 max-w-xs h-full bg-[#050505] flex flex-col z-50 shadow-[4px_0_40px_rgba(0,0,0,0.6)] border-r border-[rgba(255,255,255,0.08)] animate-[slideInLeft_0.25s_ease-out]">
+          <div className="relative w-72 max-w-xs h-full glass-card flex flex-col z-50 shadow-2xl border-r border-[var(--border-color)] animate-[slideInLeft_0.25s_ease-out]">
             <button 
               onClick={() => setIsMobileOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-white hover:text-accent-primary hover:border-accent-primary/30 transition-all"
+              className="absolute top-4 right-4 p-2 rounded-lg bg-black/5 border border-[var(--border-color)] text-text-primary hover:text-accent-primary transition-all"
             >
               <X size={16} />
             </button>
@@ -298,9 +241,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
             </div>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
-};
-
-export default AppLayout;
+}
