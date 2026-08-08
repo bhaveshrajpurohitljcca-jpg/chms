@@ -56,11 +56,11 @@ def test_smtp_delivery(
     from app.utils.email import IPv4SMTP, IPv4SMTP_SSL, _send_via_resend, _send_via_brevo
 
     if resend_key:
-        ok = _send_via_resend(resend_key, smtp_from, target_email, "CHMS Test Email", "<p>Test via Resend API</p>")
-        diag["attempts"].append({"provider": "Resend HTTP API (Port 443)", "status": "SUCCESS" if ok else "FAILED"})
+        ok, err = _send_via_resend(resend_key, smtp_from, target_email, "CHMS Test Email", "<p>Test via Resend API</p>")
+        diag["attempts"].append({"provider": "Resend HTTP API (Port 443)", "status": "SUCCESS" if ok else "FAILED", "detail": err})
     if brevo_key:
-        ok = _send_via_brevo(brevo_key, smtp_from, target_email, "CHMS Test Email", "<p>Test via Brevo API</p>")
-        diag["attempts"].append({"provider": "Brevo HTTP API (Port 443)", "status": "SUCCESS" if ok else "FAILED"})
+        ok, err = _send_via_brevo(brevo_key, smtp_from, target_email, "CHMS Test Email", "<p>Test via Brevo API</p>")
+        diag["attempts"].append({"provider": "Brevo HTTP API (Port 443)", "status": "SUCCESS" if ok else "FAILED", "detail": err})
 
     # Test Port 587 TLS (IPv4 Forced)
     try:

@@ -24,7 +24,10 @@ from app.config import settings
 logger = logging.getLogger("chms.email")
 
 
-def _send_via_resend(api_key: str, from_email: str, to_email: str, subject: str, html_body: str) -> bool:
+import urllib.error
+
+
+def _send_via_resend(api_key: str, from_email: str, to_email: str, subject: str, html_body: str) -> tuple[bool, str]:
     try:
         sender = f"CHMS Hackathons <{from_email}>" if "@" in from_email and not from_email.endswith("@gmail.com") else "CHMS Hackathons <onboarding@resend.dev>"
         payload = json.dumps({
@@ -45,13 +48,18 @@ def _send_via_resend(api_key: str, from_email: str, to_email: str, subject: str,
         with urllib.request.urlopen(req, timeout=10) as resp:
             if resp.status in (200, 201):
                 logger.info("Email sent via Resend HTTP API to %s", to_email)
-                return True
+                return True, "SUCCESS"
+    except urllib.error.HTTPError as exc:
+        err_body = exc.read().decode("utf-8", errors="ignore")
+        logger.warning("Resend HTTP API failed for %s: %s - %s", to_email, exc, err_body)
+        return False, f"HTTP {exc.code}: {err_body}"
     except Exception as exc:  # noqa: BLE001
         logger.warning("Resend HTTP API failed for %s: %s", to_email, exc)
-    return False
+        return False, str(exc)
+    return False, "Unknown failure"
 
 
-def _send_via_brevo(api_key: str, from_email: str, to_email: str, subject: str, html_body: str) -> bool:
+def _send_via_brevo(api_key: str, from_email: str, to_email: str, subject: str, html_body: str) -> tuple[bool, str]:
     try:
         sender_email = from_email if "@" in from_email else "no-reply@chms-app.com"
         payload = json.dumps({
@@ -73,10 +81,15 @@ def _send_via_brevo(api_key: str, from_email: str, to_email: str, subject: str, 
         with urllib.request.urlopen(req, timeout=10) as resp:
             if resp.status in (200, 201, 202):
                 logger.info("Email sent via Brevo HTTP API to %s", to_email)
-                return True
+                return True, "SUCCESS"
+    except urllib.error.HTTPError as exc:
+        err_body = exc.read().decode("utf-8", errors="ignore")
+        logger.warning("Brevo HTTP API failed for %s: %s - %s", to_email, exc, err_body)
+        return False, f"HTTP {exc.code}: {err_body}"
     except Exception as exc:  # noqa: BLE001
         logger.warning("Brevo HTTP API failed for %s: %s", to_email, exc)
-    return False
+        return False, str(exc)
+    return False, "Unknown failure"
 
 
 def _frontend_url() -> str:
@@ -123,9 +136,11 @@ def _send_html_email(
     smtp_email = getattr(settings, "SMTP_FROM_EMAIL", "").strip()
 
     if resend_key:
-        return _send_via_resend(resend_key, smtp_email, to_email, subject, html_body)
+        ok, _ = _send_via_resend(resend_key, smtp_email, to_email, subject, html_body)
+        return ok
     if brevo_key:
-        return _send_via_brevo(brevo_key, smtp_email, to_email, subject, html_body)
+        ok, _ = _send_via_brevo(brevo_key, smtp_email, to_email, subject, html_body)
+        return ok
 
     smtp_password = getattr(settings, "SMTP_PASSWORD", "").strip().replace(" ", "")
     smtp_host = getattr(settings, "SMTP_HOST", "smtp.gmail.com")
@@ -497,10 +512,14 @@ def send_bulk_announcement_emails(
             html_body = _build_announcement_html(recipient_name, title, message, sender_name, hackathon_name)
             subject = f"CHMS Announcement: {title}"
 
-            if resend_key and _send_via_resend(resend_key, smtp_email, to_email, subject, html_body):
-                bulk_delivered += 1
-            elif brevo_key and _send_via_brevo(brevo_key, smtp_email, to_email, subject, html_body):
-                bulk_delivered += 1
+            if resend_key:
+                ok, _ = _send_via_resend(resend_key, smtp_email, to_email, subject, html_body)
+                if ok:
+                    bulk_delivered += 1
+            elif brevo_key:
+                ok, _ = _send_via_brevo(brevo_key, smtp_email, to_email, subject, html_body)
+                if ok:
+                    bulk_delivered += 1
         return bulk_delivered
 
     smtp_password = getattr(settings, "SMTP_PASSWORD", "").strip().replace(" ", "")
