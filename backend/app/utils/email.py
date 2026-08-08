@@ -29,14 +29,29 @@ def _frontend_url() -> str:
 class IPv4SMTP(smtplib.SMTP):
     """SMTP subclass forcing IPv4 socket connection to bypass Render IPv6 unreachable route."""
     def _get_socket(self, host, port, timeout):
-        return socket.create_connection((host, port), timeout, family=socket.AF_INET)
+        res = socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_STREAM)
+        if not res:
+            raise socket.error(f"Could not resolve IPv4 address for {host}")
+        af, socktype, proto, _, sa = res[0]
+        sock = socket.socket(af, socktype, proto)
+        if timeout is not None and timeout != socket._GLOBAL_DEFAULT_TIMEOUT:
+            sock.settimeout(timeout)
+        sock.connect(sa)
+        return sock
 
 
 class IPv4SMTP_SSL(smtplib.SMTP_SSL):
     """SMTP_SSL subclass forcing IPv4 socket connection to bypass Render IPv6 unreachable route."""
     def _get_socket(self, host, port, timeout):
-        new_sock = socket.create_connection((host, port), timeout, family=socket.AF_INET)
-        return self.context.wrap_socket(new_sock, server_hostname=self._host)
+        res = socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_STREAM)
+        if not res:
+            raise socket.error(f"Could not resolve IPv4 address for {host}")
+        af, socktype, proto, _, sa = res[0]
+        sock = socket.socket(af, socktype, proto)
+        if timeout is not None and timeout != socket._GLOBAL_DEFAULT_TIMEOUT:
+            sock.settimeout(timeout)
+        sock.connect(sa)
+        return self.context.wrap_socket(sock, server_hostname=self._host)
 
 
 def _send_html_email(
