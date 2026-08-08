@@ -140,7 +140,7 @@ const GlobalLayout = () => {
             <div className="flex items-center gap-2 md:gap-3">
               <Link 
                 to={`/${user.role.toLowerCase()}`}
-                className="hidden sm:inline-flex items-center h-9 md:h-10 px-4 md:px-6 rounded-full bg-[#0252cd] dark:bg-accent-primary text-white dark:text-black font-semibold text-xs uppercase tracking-wider transition-all duration-300 hover:shadow-[0_0_15px_rgba(0,243,255,0.35)]"
+                className="hidden sm:inline-flex items-center h-9 md:h-10 px-4 md:px-6 rounded-full bg-[#0252cd] dark:bg-accent-primary text-white dark:text-black font-semibold text-xs uppercase tracking-wider transition-all duration-300 shadow-sm hover:bg-[#1a3c8f]"
               >
                 Console
               </Link>
@@ -170,7 +170,7 @@ const GlobalLayout = () => {
           ) : (
             <button
               onClick={() => openAuthModal('login')}
-              className="h-9 md:h-10 px-4 md:px-5 rounded-full bg-accent-primary/10 border border-accent-primary/40 text-accent-primary hover:bg-accent-primary hover:text-black text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-[0_0_15px_rgba(0,243,255,0.2)]"
+              className="h-9 md:h-10 px-4 md:px-5 rounded-full bg-accent-primary/10 border border-accent-primary/40 text-accent-primary hover:bg-accent-primary hover:text-white text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-sm"
             >
               Sign In
             </button>
@@ -345,7 +345,7 @@ const PublicLanding = () => {
       <section className="min-h-screen flex flex-col justify-center items-center px-4 sm:px-8 pt-24 pb-16 text-center max-w-7xl mx-auto w-full relative">
         <StatusPulseBadge text="CHMS Core Module Active" className="mb-6 md:mb-8" />
 
-        <h2 className="font-archivo text-[clamp(2.5rem,10vw,8rem)] font-black tracking-tighter leading-[0.9] select-none mb-6 md:mb-10 text-[#0f172a] dark:bg-gradient-to-b dark:from-white dark:via-white/80 dark:to-white/10 dark:bg-clip-text dark:text-transparent uppercase">
+        <h2 className="font-archivo text-[clamp(2.5rem,10vw,8rem)] font-black tracking-tighter leading-[0.9] select-none mb-6 md:mb-10 bg-gradient-to-b from-white via-white/80 to-white/10 bg-clip-text text-transparent uppercase">
           College Hackathon<br />Management System
         </h2>
 
@@ -495,19 +495,19 @@ const PublicLanding = () => {
             </a>
           </div>
 
-          <div className="border-t border-white/10 dark:border-[rgba(255,255,255,0.05)] pt-8 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="border-t border-[#cbd5e1] dark:border-[rgba(255,255,255,0.05)] pt-8 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex flex-col gap-1.5 text-center sm:text-left">
-              <span className="text-[9px] uppercase tracking-[0.3em] text-white/60 dark:text-[rgba(255,255,255,0.35)] select-none">
+              <span className="text-[9px] uppercase tracking-[0.3em] text-[#475569] dark:text-[rgba(255,255,255,0.35)] font-semibold select-none">
                 © 2026 AiRA LAB. ALL RIGHTS RESERVED.
               </span>
-              <span className="text-[9px] uppercase tracking-[0.1em] text-[#93c5fd] dark:text-accent-primary font-mono select-none">
+              <span className="text-[9px] uppercase tracking-[0.1em] text-[#0252cd] dark:text-accent-primary font-mono font-bold select-none">
                 Developed By Team Zero ( Yash Chaudary , Dhyey Trivedi , Bhavesh Rajpurohit )
               </span>
             </div>
             
-            <div className="flex gap-6 text-[9px] uppercase tracking-wider text-white/60 dark:text-[rgba(255,255,255,0.35)]">
-              <a href="#" className="hover:text-accent-primary transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-accent-primary transition-colors">Terms of Use</a>
+            <div className="flex gap-6 text-[9px] uppercase tracking-wider text-[#475569] dark:text-[rgba(255,255,255,0.35)] font-bold">
+              <a href="#" className="hover:text-[#0252cd] dark:hover:text-accent-primary transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-[#0252cd] dark:hover:text-accent-primary transition-colors">Terms of Use</a>
             </div>
           </div>
 

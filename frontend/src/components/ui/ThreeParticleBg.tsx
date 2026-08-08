@@ -61,10 +61,10 @@ export const ThreeParticleBg = ({ isInteractive = true }: ThreeParticleBgProps) 
 
     // 5. Material Setup: color changes based on theme
     const material = new THREE.PointsMaterial({
-      color: theme === 'light' ? 0x6366f1 : 0x00f3ff, // Indigo-500 instead of slate
-      size: theme === 'light' ? 0.012 : 0.006, // Slightly larger to show color better
+      color: theme === 'light' ? 0x1a3c8f : 0x00f3ff, // Deep Navy in light, Cyan in dark
+      size: theme === 'light' ? 0.008 : 0.006,
       transparent: true,
-      opacity: theme === 'light' ? 0.35 : (isInteractive ? 0.8 : 0.3),
+      opacity: theme === 'light' ? 0.25 : (isInteractive ? 0.8 : 0.3),
       sizeAttenuation: true,
       blending: theme === 'light' ? THREE.NormalBlending : THREE.AdditiveBlending
     });
@@ -155,10 +155,10 @@ export const ThreeParticleBg = ({ isInteractive = true }: ThreeParticleBgProps) 
   useEffect(() => {
     if (materialRef.current) {
       if (theme === 'light') {
-        materialRef.current.color.setHex(0x6366f1); // Vibrant Indigo (Theme friendly, clearly NOT black)
+        materialRef.current.color.setHex(0x1a3c8f); // Deep Navy (Dhyey's theme color)
         materialRef.current.blending = THREE.NormalBlending;
-        materialRef.current.opacity = 0.5;
-        materialRef.current.size = 0.012;
+        materialRef.current.opacity = 0.25;
+        materialRef.current.size = 0.008;
       } else {
         materialRef.current.color.setHex(0x00f3ff); // Cyan
         materialRef.current.blending = THREE.AdditiveBlending;
@@ -173,7 +173,11 @@ export const ThreeParticleBg = ({ isInteractive = true }: ThreeParticleBgProps) 
     <div 
       ref={containerRef} 
       className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
-      style={{ mixBlendMode: theme === 'light' ? 'normal' : 'screen', opacity: theme === 'light' ? 0.9 : 0.8 }}
+      style={{
+        backgroundColor: theme === 'light' ? '#ffffff' : 'transparent',
+        mixBlendMode: theme === 'light' ? 'normal' : 'screen',
+        opacity: theme === 'light' ? 1 : 0.8
+      }}
     />
   );
 };
