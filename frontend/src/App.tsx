@@ -103,13 +103,13 @@ const GlobalLayout = () => {
       <ThreeParticleBg isInteractive={location.pathname === '/'} />
 
       {/* FIXED TOPBAR NAVIGATION */}
-      <header className="fixed top-0 left-0 right-0 h-16 md:h-24 z-40 px-4 md:px-8 py-4 md:py-6 flex items-center justify-between bg-[#e5e9f0]/95 dark:bg-[#050505]/40 backdrop-blur-md border-b border-[#cbd5e1] dark:border-[rgba(255,255,255,0.05)] pointer-events-auto">
+      <header className="fixed top-0 left-0 right-0 h-16 md:h-24 z-40 px-4 md:px-8 py-4 md:py-6 flex items-center justify-between bg-[#050505]/95 dark:bg-[#050505]/95 backdrop-blur-md border-b border-[rgba(255,255,255,0.1)] pointer-events-auto">
         {/* Left Brand Logo — only icon redirects */}
         <div className="flex items-center gap-2 md:gap-3 select-none">
-          <Link to="/" className="w-9 h-9 md:w-10 md:h-10 rounded-[12px] bg-[#0252cd] dark:bg-[rgba(255,255,255,0.03)] border border-[#0252cd] dark:border-[rgba(255,255,255,0.1)] flex items-center justify-center text-white dark:text-accent-primary hover:border-accent-primary transition-all duration-300">
-            <Zap size={16} className="dark:animate-pulse" />
+          <Link to="/" className="w-9 h-9 md:w-10 md:h-10 rounded-[12px] bg-accent-primary/10 border border-accent-primary/30 flex items-center justify-center text-accent-primary hover:border-accent-primary transition-all duration-300">
+            <Zap size={16} className="text-accent-primary" />
           </Link>
-          <span className="font-archivo text-base md:text-lg tracking-wider font-black text-[#0252cd] dark:text-white dark:text-glow-cyan cursor-default">
+          <span className="font-archivo text-base md:text-lg tracking-wider font-black text-white text-glow-cyan cursor-default">
               HackZero
           </span>
         </div>
@@ -123,8 +123,8 @@ const GlobalLayout = () => {
               className={({ isActive }) =>
                 `relative py-2 text-xs font-semibold uppercase tracking-[0.2em] transition-all duration-300 group ${
                   isActive
-                    ? 'text-[#0f172a] dark:text-white'
-                    : 'text-[#475569] dark:text-[rgba(255,255,255,0.65)] hover:text-[#0f172a] dark:hover:text-white'
+                    ? 'text-white font-bold'
+                    : 'text-white/70 hover:text-white'
                 }`
               }
             >
@@ -483,7 +483,7 @@ const PublicLanding = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-[#cbd5e1] dark:border-[rgba(255,255,255,0.08)] bg-[#1e293b] dark:bg-[#050505]/80 backdrop-blur-md pt-16 pb-10 px-8 w-full">
+      <footer className="border-t border-white/10 bg-[#050505]/95 dark:bg-[#050505]/95 backdrop-blur-md pt-16 pb-10 px-8 w-full">
         <div className="max-w-7xl mx-auto w-full flex flex-col gap-12">
           
           {/* Centered WhatsApp Invite Block */}
