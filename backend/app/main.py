@@ -44,6 +44,20 @@ async def lifespan(app: FastAPI):
                     db.rollback()
                     logger.warning(f"Failed adding column {col_name} to {table_name}: {ex}")
 
+            def _fix_nullable_col(table_name, col_name, default_val="0.0"):
+                try:
+                    inspector = inspect(engine)
+                    existing_cols = [c['name'] for c in inspector.get_columns(table_name)]
+                    if col_name in existing_cols:
+                        if engine.dialect.name == "postgresql":
+                            db.execute(text(f'ALTER TABLE "{table_name}" ALTER COLUMN "{col_name}" DROP NOT NULL;'))
+                            db.execute(text(f'ALTER TABLE "{table_name}" ALTER COLUMN "{col_name}" SET DEFAULT {default_val};'))
+                        db.commit()
+                        logger.info(f"Fixed nullable/default for column {col_name} in {table_name}")
+                except Exception as ex:
+                    db.rollback()
+                    logger.warning(f"Failed altering column {col_name} in {table_name}: {ex}")
+
             # User columns
             _add_col("user", "github_url", "VARCHAR(255)")
             _add_col("user", "linkedin_url", "VARCHAR(255)")
@@ -76,6 +90,7 @@ async def lifespan(app: FastAPI):
             _add_col("evaluation", "recommendation", "VARCHAR(50) DEFAULT 'pending'")
             _add_col("evaluation", "is_draft", "BOOLEAN DEFAULT TRUE")
             _add_col("evaluation", "submitted_at", "TIMESTAMP")
+            _fix_nullable_col("evaluation", "score_execution", "0.0")
 
             # Judge Assignment columns
             _add_col("judge_assignment", "hackathon_id", "VARCHAR(36)")
