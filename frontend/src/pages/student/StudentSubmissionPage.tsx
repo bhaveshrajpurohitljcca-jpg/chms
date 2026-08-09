@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Upload, X, CheckCircle2, AlertCircle, Clock, FileText,
   GitBranch, Globe, Presentation, StickyNote, Users,
-  RefreshCw, Send, Loader2, Trash2, Award, ExternalLink
+  RefreshCw, Send, Loader2, Trash2, Award, ExternalLink, Code
 } from 'lucide-react';
 import { apiService, type SubmissionRecord, STATIC_BASE } from '@/services/api';
 
@@ -15,6 +15,7 @@ const GITHUB_REGEX = /^https:\/\/github\.com\/[\w\-\.]+\/[\w\-\.]+\/?$/;
 const submissionSchema = z.object({
   title: z.string().min(3, 'Project title must be at least 3 characters').max(255),
   description: z.string().min(10, 'Please provide a meaningful project description').max(2000),
+  tech_stack: z.string().optional().or(z.literal('')),
   repo_url: z.string()
     .min(1, 'GitHub repository URL is required')
     .regex(GITHUB_REGEX, 'Must be a valid GitHub URL: https://github.com/username/repository'),
@@ -283,6 +284,7 @@ export default function StudentSubmissionPage() {
     defaultValues: {
       title: '',
       description: '',
+      tech_stack: '',
       repo_url: '',
       demo_url: '',
       video_url: '',
@@ -324,6 +326,7 @@ export default function StudentSubmissionPage() {
             reset({
               title: existing.title,
               description: existing.description ?? '',
+              tech_stack: existing.tech_stack ?? '',
               repo_url: existing.repo_url,
               demo_url: existing.demo_url ?? '',
               video_url: existing.video_url ?? '',
@@ -427,6 +430,7 @@ export default function StudentSubmissionPage() {
           ...submission,
           title: data.title,
           description: data.description,
+          tech_stack: data.tech_stack || undefined,
           repo_url: data.repo_url,
           demo_url: data.demo_url || undefined,
           video_url: data.video_url || undefined,
@@ -444,6 +448,7 @@ export default function StudentSubmissionPage() {
           hackathon_id: activeTeam.hackathon_id,
           title: data.title,
           description: data.description,
+          tech_stack: data.tech_stack || undefined,
           repo_url: data.repo_url,
           demo_url: data.demo_url || undefined,
           video_url: data.video_url || undefined,
@@ -468,6 +473,7 @@ export default function StudentSubmissionPage() {
         const res = await apiService.updateSubmission(submission.id, {
           title: data.title,
           description: data.description,
+          tech_stack: data.tech_stack || undefined,
           repo_url: data.repo_url,
           demo_url: data.demo_url || undefined,
           video_url: data.video_url || undefined,
@@ -481,6 +487,7 @@ export default function StudentSubmissionPage() {
           hackathon_id: activeTeam.hackathon_id,
           title: data.title,
           description: data.description,
+          tech_stack: data.tech_stack || undefined,
           repo_url: data.repo_url,
           demo_url: data.demo_url || undefined,
           video_url: data.video_url || undefined,
@@ -676,6 +683,21 @@ export default function StudentSubmissionPage() {
             rows={4}
             placeholder="Describe your project, the problem it solves, and your approach..."
             className={`${inputCls(!!errors.description, isLocked)} resize-none`}
+          />
+        </FormField>
+
+        {/* Tech Stack */}
+        <FormField
+          label="Technologies Used / Tech Stack"
+          icon={<Code size={14} />}
+          error={errors.tech_stack?.message}
+          hint="e.g. React, Node.js, Python, TailwindCSS, PostgreSQL"
+        >
+          <input
+            {...register('tech_stack')}
+            disabled={isLocked}
+            placeholder="e.g. React, Node.js, Python, FastAPI"
+            className={inputCls(!!errors.tech_stack, isLocked)}
           />
         </FormField>
 

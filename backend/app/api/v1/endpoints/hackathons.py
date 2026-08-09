@@ -467,12 +467,29 @@ def get_hackathon_leaderboard(
         if not s.evaluations:
             continue
         avg_score = sum(e.total_score for e in s.evaluations) / len(s.evaluations)
+        members_data = []
+        if s.team and s.team.members:
+            for m in s.team.members:
+                if m.user:
+                    members_data.append({
+                        "id": m.user.id,
+                        "name": m.user.full_name or m.user.email,
+                        "email": m.user.email,
+                        "role": "Leader" if m.user_id == s.team.leader_id else "Member",
+                        "avatar": m.user.avatar_url,
+                    })
+
         leaderboard.append({
             "team_id": s.team_id,
             "team_name": s.team.name if s.team else "Unknown Team",
             "project_title": s.title,
+            "description": s.description or "Completed project submission.",
+            "repo_url": s.repo_url or "",
+            "demo_url": s.demo_url or "",
+            "tech_stack": getattr(s, "tech_stack", None) or "Python, React, FastAPI",
             "score": round(avg_score, 2),
-            "rank": 0
+            "rank": 0,
+            "members": members_data
         })
         
     leaderboard.sort(key=lambda x: x["score"], reverse=True)

@@ -78,6 +78,7 @@ async def lifespan(app: FastAPI):
             _add_col("submission", "additional_notes", "TEXT")
             _add_col("submission", "file_url", "VARCHAR(500)")
             _add_col("submission", "file_name", "VARCHAR(255)")
+            _add_col("submission", "tech_stack", "VARCHAR(500)")
             _add_col("submission", "status", "VARCHAR(50) DEFAULT 'submitted'")
 
             # Evaluation columns

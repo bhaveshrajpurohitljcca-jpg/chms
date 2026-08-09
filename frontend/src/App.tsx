@@ -560,13 +560,20 @@ const GalleryView = () => {
                   projects.push({
                     id: `${h.id}-${idx}`,
                     title: item.project_title || 'Project Submission',
-                    description: item.feedback || 'Completed project submission.',
-                    techStack: ['Python', 'FastAPI', 'React'],
+                    description: item.description || item.feedback || 'Completed project submission.',
+                    techStack: item.tech_stack ? item.tech_stack.split(',').map((t: string) => t.trim()) : ['Python', 'React', 'FastAPI'],
+                    demo_url: item.demo_url || undefined,
+                    repo_url: item.repo_url || undefined,
                     team: {
-                      id: `team-${idx}`,
+                      id: item.team_id || `team-${idx}`,
                       name: item.team_name || 'Project Squad',
                       projectTitle: item.project_title || 'Project Submission',
-                      members: []
+                      members: (item.members && item.members.length > 0) ? item.members.map((m: any) => ({
+                        id: m.id,
+                        name: m.name,
+                        role: m.role || 'Member',
+                        avatar: m.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+                      })) : []
                     }
                   });
                 });
@@ -680,9 +687,20 @@ const LeaderboardView = () => {
             team: item.team_name,
             project: item.project_title,
             branch: 'Academic Standings',
-            problemStatement: 'Problem Statement Solution',
+            problemStatement: item.project_title || 'Problem Statement Solution',
             score: item.score,
-            feedback: 'Graded performance metrics'
+            feedback: item.description || 'Graded performance metrics',
+            teamData: {
+              id: item.team_id,
+              name: item.team_name,
+              projectTitle: item.project_title,
+              members: (item.members && item.members.length > 0) ? item.members.map((m: any) => ({
+                id: m.id,
+                name: m.name,
+                role: m.role || 'Member',
+                avatar: m.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+              })) : []
+            }
           }));
           setActiveLeaderboard(mapped);
         } else {
@@ -787,16 +805,7 @@ const LeaderboardView = () => {
                 return (
                   <div 
                     key={winner.team} 
-                    onClick={() => setSelectedTeam({
-                      id: winner.team,
-                      name: winner.team,
-                      projectTitle: winner.project,
-                      members: [
-                        { id: 'u1', name: 'Alice Chen', role: 'Full Stack Dev', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&q=80' },
-                        { id: 'u2', name: 'Bob Smith', role: 'UI/UX Designer', avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=150&q=80' },
-                        { id: 'u3', name: 'Charlie Davis', role: 'Backend Engineer', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80' }
-                      ]
-                    })}
+                    onClick={() => setSelectedTeam(winner.teamData)}
                     className={`glass-card ${rankClass} ${rankSurface} rounded-xl md:rounded-[32px] border p-2.5 sm:p-4 md:p-8 flex flex-col justify-between items-center text-center relative ${accentBorder} ${glowShadow} ${cardHeight} hover:-translate-y-1 hover:bg-white/[0.08] cursor-pointer transition-all duration-300`}
                   >
                     {/* Ranking Medals Badge */}
@@ -843,16 +852,7 @@ const LeaderboardView = () => {
                 {activeLeaderboard.map((team) => (
                   <TableRow 
                     key={team.team} 
-                    onClick={() => setSelectedTeam({
-                      id: team.team,
-                      name: team.team,
-                      projectTitle: team.project,
-                      members: [
-                        { id: 'u1', name: 'Alice Chen', role: 'Full Stack Dev', avatar: 'https://images.unsplash.com/photo-1494790108377-w=150&q=80' },
-                        { id: 'u2', name: 'Bob Smith', role: 'UI/UX Designer', avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=150&q=80' },
-                        { id: 'u3', name: 'Charlie Davis', role: 'Backend Engineer', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80' }
-                      ]
-                    })}
+                    onClick={() => setSelectedTeam(team.teamData)}
                     className="hover:bg-white/[0.05] cursor-pointer transition-all"
                   >
                     {/* Rank */}
@@ -2335,7 +2335,7 @@ const CoordinatorView = () => {
   const [selectedPS, setSelectedPS] = useState<any>(null);
   const [selectedPSTeam, setSelectedPSTeam] = useState<any>(null);
   const [editingPS, setEditingPS] = useState<any>(null);
-  const [editPSData, setEditPSData] = useState({ title: '', description: '', category: 'Open Innovation', difficulty: 'Medium', maxTeams: 10 });
+  const [editPSData, setEditPSData] = useState({ title: '', description: '', technical_deliverable: '', category: 'Open Innovation', difficulty: 'Medium', maxTeams: 10 });
   const [showEditPSModal, setShowEditPSModal] = useState(false);
 
   // Teams / Registrations states
@@ -2459,6 +2459,7 @@ const CoordinatorView = () => {
     setEditPSData({
       title: ps.title,
       description: ps.description,
+      technical_deliverable: ps.technical_deliverable || '',
       category: ps.category || 'Open Innovation',
       difficulty: ps.difficulty || 'Medium',
       maxTeams: ps.max_teams || 10
@@ -2474,6 +2475,7 @@ const CoordinatorView = () => {
       await apiService.updateProblemStatement(selectedHackathon.id, editingPS.id, {
         title: editPSData.title,
         description: editPSData.description,
+        technical_deliverable: editPSData.technical_deliverable || undefined,
         category: editPSData.category,
         difficulty: editPSData.difficulty,
         max_teams: editPSData.maxTeams
@@ -2700,6 +2702,12 @@ const CoordinatorView = () => {
                     </div>
                     <h4 className="font-bold text-white group-hover:text-accent-secondary transition-colors text-sm">{ps.title}</h4>
                     <p className="text-[10px] text-white/40 line-clamp-2">{ps.description}</p>
+                    {ps.technical_deliverable && (
+                      <div className="p-2.5 rounded-xl bg-accent-primary/10 border border-accent-primary/20 text-[10px] text-white/80">
+                        <span className="font-bold text-accent-primary uppercase tracking-wider block text-[9px] mb-0.5">Technical Deliverable</span>
+                        {ps.technical_deliverable}
+                      </div>
+                    )}
                     <div className="flex items-center justify-between border-t border-white/5 pt-2 text-[9px] text-white/30 font-mono">
                       <span>Difficulty: {ps.difficulty || 'Medium'} • Max: {ps.max_teams || '∞'} teams</span>
                       <span className="text-accent-secondary">{teamsForPS.length} team(s) selected</span>
@@ -2729,8 +2737,14 @@ const CoordinatorView = () => {
                 </button>
               </div>
 
-              <Card className="p-6">
+              <Card className="p-6 flex flex-col gap-3">
                 <p className="text-xs text-white/60 leading-relaxed">{selectedPS.description}</p>
+                {selectedPS.technical_deliverable && (
+                  <div className="p-3 rounded-xl bg-accent-primary/10 border border-accent-primary/20 text-xs text-white/80">
+                    <span className="font-bold text-accent-primary uppercase tracking-wider block text-[10px] mb-1">Technical Deliverable Requirement</span>
+                    {selectedPS.technical_deliverable}
+                  </div>
+                )}
               </Card>
 
               {/* Teams that selected this PS */}
@@ -3372,7 +3386,16 @@ const CoordinatorView = () => {
                 required
                 value={editPSData.description}
                 onChange={(e) => setEditPSData({ ...editPSData, description: e.target.value })}
-                className="w-full h-28 p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-primary transition-all resize-none"
+                className="w-full h-24 p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-primary transition-all resize-none"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-white/70">Technical Deliverable</label>
+              <textarea
+                value={editPSData.technical_deliverable}
+                onChange={(e) => setEditPSData({ ...editPSData, technical_deliverable: e.target.value })}
+                placeholder="Expected output, deliverables or technical requirements..."
+                className="w-full h-20 p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-primary transition-all resize-none"
               />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -3888,6 +3911,7 @@ const AdminView = () => {
     setEditPSData({
       title: ps.title,
       description: ps.description,
+      technical_deliverable: ps.technical_deliverable || '',
       category: ps.category || 'Open Innovation',
       difficulty: ps.difficulty || 'Medium',
       maxTeams: ps.max_teams || 10
@@ -3902,6 +3926,7 @@ const AdminView = () => {
       await apiService.updateProblemStatement(selectedHackathon.id, selectedPSForEdit.id, {
         title: editPSData.title,
         description: editPSData.description,
+        technical_deliverable: editPSData.technical_deliverable || undefined,
         category: editPSData.category,
         difficulty: editPSData.difficulty,
         max_teams: editPSData.maxTeams

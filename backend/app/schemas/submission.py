@@ -19,6 +19,7 @@ class SubmissionCreate(BaseModel):
     demo_url: Optional[str] = None
     video_url: Optional[str] = None
     additional_notes: Optional[str] = None
+    tech_stack: Optional[str] = None
 
     @field_validator('repo_url')
     @classmethod
@@ -49,6 +50,7 @@ class SubmissionUpdate(BaseModel):
     demo_url: Optional[str] = None
     video_url: Optional[str] = None
     additional_notes: Optional[str] = None
+    tech_stack: Optional[str] = None
 
     @field_validator('repo_url', mode='before')
     @classmethod
@@ -215,6 +217,7 @@ class SubmissionResponse(BaseModel):
     additional_notes: Optional[str] = None
     file_url: Optional[str] = None
     file_name: Optional[str] = None
+    tech_stack: Optional[str] = None
     status: str
     submitted_at: datetime
     evaluations: List[EvaluationResponse] = []

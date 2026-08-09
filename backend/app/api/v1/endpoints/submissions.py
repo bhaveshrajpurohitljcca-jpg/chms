@@ -229,6 +229,7 @@ def create_submission(
     demo_url = payload.demo_url if payload.demo_url and payload.demo_url.strip() else None
     video_url = payload.video_url if payload.video_url and payload.video_url.strip() else None
     notes = payload.additional_notes if payload.additional_notes and payload.additional_notes.strip() else None
+    tech_stack = payload.tech_stack.strip() if payload.tech_stack and payload.tech_stack.strip() else None
 
     # 6. Create submission
     submission = Submission(
@@ -241,6 +242,7 @@ def create_submission(
         demo_url=demo_url,
         video_url=video_url,
         additional_notes=notes,
+        tech_stack=tech_stack,
         status=SubmissionStatus.SUBMITTED
     )
     db.add(submission)

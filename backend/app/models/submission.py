@@ -36,6 +36,7 @@ class Submission(BaseTable):
     additional_notes = Column(Text, nullable=True)
     file_url = Column(String(500), nullable=True)
     file_name = Column(String(255), nullable=True)
+    tech_stack = Column(String(500), nullable=True)
     status = Column(String(50), default=SubmissionStatus.SUBMITTED, nullable=False)
     submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 

@@ -246,8 +246,9 @@ export const ProfilePage: React.FC = () => {
         </div>
       )}
 
-      {/* Auto-Accept Card - Prominently Displayed */}
-      <div className="max-w-4xl mx-auto">
+      {/* Auto-Accept Card - Prominently Displayed for Students Only */}
+      {user.role === 'student' && (
+        <div className="max-w-4xl mx-auto">
         <Card className={`p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 transition-all duration-300 border ${
           autoAccept ? 'bg-accent-primary/10 border-accent-primary/50 shadow-[0_0_30px_rgba(0,243,255,0.2)]' : 'bg-white/[0.02] border-white/10'
         }`}>
@@ -276,6 +277,7 @@ export const ProfilePage: React.FC = () => {
           </button>
         </Card>
       </div>
+      )}
 
       {/* Main Settings Card */}
       <div className="max-w-4xl mx-auto">

@@ -178,6 +178,7 @@ export interface SubmissionRecord {
   additional_notes?: string;
   file_url?: string;
   file_name?: string;
+  tech_stack?: string;
   status: string;
   submitted_at: string;
   evaluations?: EvaluationRecord[];
@@ -687,6 +688,7 @@ export const apiService = {
     demo_url?: string;
     video_url?: string;
     additional_notes?: string;
+    tech_stack?: string;
   }) {
     return request<SubmissionRecord>('/submissions', {
       method: 'POST',
@@ -704,6 +706,7 @@ export const apiService = {
       demo_url?: string;
       video_url?: string;
       additional_notes?: string;
+      tech_stack?: string;
     }
   ) {
     return request<SubmissionRecord>(`/submissions/${submissionId}`, {

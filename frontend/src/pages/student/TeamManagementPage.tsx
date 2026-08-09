@@ -356,8 +356,8 @@ export const TeamManagementPage: React.FC = () => {
               <div className="flex items-center justify-between border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <ShieldCheck size={18} className="text-accent-primary" />
-                  <h4 className="font-archivo text-lg uppercase font-bold text-white">
-                    Team Members ({memberCount} / {maxTeamSize})
+                  <h4 className="font-archivo text-lg uppercase font-bold text-white tracking-wider">
+                    TEAM MEMBERS ({memberCount} / {maxTeamSize})
                   </h4>
                 </div>
 
