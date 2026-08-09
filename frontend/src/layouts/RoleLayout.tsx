@@ -17,7 +17,6 @@ import {
   Moon
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
-import StatusPulseBadge from '../components/ui/StatusPulseBadge';
 
 interface SidebarItem {
   label: string;
@@ -123,9 +122,9 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
     location.pathname + location.search === path ||
     (location.pathname === path && path === '/admin' && !location.search);
 
-  // Shared nav link renderer (Horizontal top bar & drawer)
+  // Shared nav link renderer (Horizontal top bar)
   const NavLinks = ({ onNavigate }: { onNavigate?: () => void }) => (
-    <div className="flex items-center gap-1 md:gap-1.5 overflow-x-auto no-scrollbar max-w-full py-1">
+    <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 overflow-x-auto no-scrollbar max-w-full py-1">
       {menuItems.map((item) => {
         const Icon = item.icon;
         const active = isActive(item.path);
@@ -134,10 +133,10 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
             key={item.path}
             to={item.path}
             onClick={onNavigate}
-            className={`flex items-center gap-2 px-3 xl:px-4 h-9 xl:h-10 rounded-full text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-300 touch-target ${
+            className={`flex items-center gap-2 px-3 sm:px-4 h-9 sm:h-10 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-300 touch-target ${
               active
                 ? 'bg-[#0252cd] dark:bg-accent-primary text-white shadow-md shadow-[#0252cd]/20 dark:shadow-accent-primary/20 scale-[1.02]'
-                : 'text-[#475569] dark:text-text-secondary hover:text-[#0f172a] dark:hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/5'
+                : 'text-[#475569] dark:text-text-secondary hover:text-[#0f172a] dark:hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/10'
             }`}
           >
             <Icon size={14} className={active ? 'text-white' : 'text-[#64748b] dark:text-text-secondary'} />
@@ -152,51 +151,41 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
     <div className="relative min-h-screen bg-[var(--bg-primary)] text-text-primary flex flex-col font-manrope selection:bg-accent-primary selection:text-white overflow-x-hidden">
 
       {/* ── TOP HEADER WITH INTEGRATED TOP NAVIGATION BAR ─────── */}
-      <header className="fixed top-0 left-0 right-0 h-16 md:h-20 z-30 px-3 md:px-6 flex items-center justify-between glass-surface backdrop-blur-md border-b border-[var(--border-color)]">
+      <header className="fixed top-0 left-0 right-0 h-16 md:h-18 z-30 px-4 md:px-8 flex items-center justify-between glass-surface backdrop-blur-md border-b border-[var(--border-color)]">
         
-        {/* Left: Brand */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <Link to="/" className="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-[#0252cd] dark:bg-accent-primary/10 border border-[#0252cd] dark:border-accent-primary/30 flex items-center justify-center text-white dark:text-accent-primary flex-shrink-0">
-              <Zap size={16} />
-            </Link>
-            <span className="font-archivo text-sm md:text-lg tracking-wider font-black text-[#0252cd] dark:text-accent-primary cursor-default">
-              HackZero
-            </span>
+        {/* Left: HackZero Home Link */}
+        <Link to="/" className="flex items-center gap-2.5 flex-shrink-0 group hover:opacity-90 transition-opacity" title="Home">
+          <div className="w-9 h-9 rounded-xl bg-[#0252cd] dark:bg-accent-primary/10 border border-[#0252cd] dark:border-accent-primary/30 flex items-center justify-center text-white dark:text-accent-primary flex-shrink-0 group-hover:scale-105 transition-transform">
+            <Zap size={18} />
           </div>
-          <span className="hidden sm:block w-1.5 h-1.5 rounded-full bg-[#64748b] dark:bg-text-secondary/40 flex-shrink-0" />
-          <span className="hidden sm:block text-[10px] font-mono tracking-widest text-[#475569] dark:text-text-secondary uppercase truncate font-semibold">
-            {user.role} workspace
+          <span className="font-archivo text-base md:text-lg tracking-wider font-black text-[#0252cd] dark:text-accent-primary">
+            HackZero
           </span>
-        </div>
+        </Link>
 
         {/* Center: TOP MENU OPTIONS (Desktop Navigation) */}
-        <nav className="hidden md:flex items-center justify-center mx-3 flex-1 min-w-0">
+        <nav className="hidden md:flex items-center justify-center mx-4 flex-1 min-w-0">
           <NavLinks />
         </nav>
 
-        {/* Right: Badge + user + actions */}
+        {/* Right: Actions (Theme Toggle & Profile Link) */}
         <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
-          <div className="hidden xl:block">
-            <StatusPulseBadge text="NODE SECURED" />
-          </div>
+          <button 
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            className="w-9 h-9 rounded-full bg-black/5 dark:bg-white/5 border border-[var(--border-color)] flex items-center justify-center text-accent-primary hover:border-accent-primary transition-all duration-300"
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
 
-          <div className="flex items-center gap-2 md:gap-3 pl-2 md:pl-3 border-l border-[#cbd5e1] dark:border-[var(--border-color)]">
-            <div className="hidden sm:flex flex-col text-right">
-              <span className="text-xs font-bold text-[#0f172a] dark:text-white leading-tight">{user.full_name || 'Operator'}</span>
-              <span className="text-[9px] font-mono text-[#475569] dark:text-text-secondary truncate max-w-[130px] font-semibold">{user.email}</span>
-            </div>
-            
-            <button 
-              onClick={toggleTheme}
-              title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-              className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-black/5 border border-[var(--border-color)] flex items-center justify-center text-accent-primary hover:border-accent-primary transition-all duration-300"
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? <Sun size={13} /> : <Moon size={13} />}
-            </button>
-
-          </div>
+          <Link
+            to={`/${user.role.toLowerCase()}/profile`}
+            title="Profile Settings"
+            className="w-9 h-9 rounded-full bg-[#0252cd]/10 dark:bg-accent-primary/10 border border-[#0252cd]/20 dark:border-accent-primary/20 flex items-center justify-center text-[#0252cd] dark:text-accent-primary hover:bg-[#0252cd] hover:text-white dark:hover:bg-accent-primary dark:hover:text-white transition-all duration-300"
+          >
+            <UserIcon size={15} />
+          </Link>
         </div>
       </header>
 
