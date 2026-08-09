@@ -2,20 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CSS Variables for design system tokens */
+/* ==========================================================================
+   DESIGN TOKENS — Tech-Noir Dark (Default) vs. Claymorphism Light Mode
+   ========================================================================== */
 :root {
+  /* Dark Mode Default Tokens (Tech-Noir Glassmorphism) */
   --bg-primary: #050505;
   --bg-surface: rgba(255, 255, 255, 0.03);
   --bg-card: rgba(255, 255, 255, 0.05);
+  --bg-inset: rgba(0, 0, 0, 0.40);
   
   --accent-primary: #00f3ff;
+  --accent-hover: #38f8ff;
   --accent-secondary: #ff00c1;
   --accent-third: #9d00ff;
   
   --text-primary: #ffffff;
   --text-secondary: rgba(255, 255, 255, 0.65);
+  --text-muted: rgba(255, 255, 255, 0.45);
   
   --border-color: rgba(255, 255, 255, 0.10);
+  
+  --shadow-raised: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --shadow-raised-hover: 0 15px 40px rgba(0, 243, 255, 0.15);
+  --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+  --shadow-inset-focus: 0 0 12px rgba(0, 243, 255, 0.25);
   
   --success: #00ff9d;
   --warning: #ffc857;
@@ -36,6 +47,7 @@ body {
   color: var(--text-primary);
   font-family: var(--font-manrope);
   overflow-x: hidden;
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
 /* Custom Scrollbar for Tech-Noir Aesthetics */
@@ -114,34 +126,91 @@ body {
   }
 }
 
-/* ============================================
-   LIGHT THEME — Premium White + Navy Blue
-   ============================================ */
+/* ==========================================================================
+   LIGHT MODE — Professional Modern Claymorphism UI
+   Soft tactile depth, gentle multi-directional shadows, recessed inputs,
+   raised surfaces, clean typography, comfortable contrast for long usage.
+   ========================================================================== */
 html.light, [data-theme="light"] {
-  /* Backgrounds */
-  --bg-primary:  #ffffff;                        /* Pure crisp white */
-  --bg-surface:  #f0f4ff;                        /* Icy blue-white tint for surfaces */
-  --bg-card:     #ffffff;                        /* White cards */
+  /* 1. Surfaces & Backgrounds */
+  --bg-primary: #eef2f6;                          /* Soft neutral page canvas */
+  --bg-surface: #f4f7fb;                          /* Secondary container surface */
+  --bg-card: #ffffff;                             /* Crisp raised off-white clay surface */
+  --bg-inset: #e5ebf2;                            /* Recessed well surface (inputs, tab rails) */
+  --bg-inset-subtle: #edf2f8;                     /* Very soft inset for table headers */
 
-  /* Navy-Blue Accent Palette */
-  --accent-primary:   #1a3c8f;                   /* Deep Navy Blue — primary CTA */
-  --accent-secondary: #2563eb;                   /* Vivid Royal Blue — highlights */
-  --accent-third:     #0ea5e9;                   /* Sky Blue — soft accents / icons */
+  /* 2. Professional Brand Accent Palette */
+  --accent-primary: #0252cd;                      /* Royal brand blue */
+  --accent-hover: #1d4ed8;                        /* Deep rich blue */
+  --accent-secondary: #0284c7;                    /* Sky cerulean */
+  --accent-third: #7c3aed;                        /* Royal violet */
+  --accent-light: #e0ecff;                        /* Soft blue wash */
 
-  /* Typography */
-  --text-primary:   #0f1c3f;                     /* Near-black navy for headings */
-  --text-secondary: #3d5080;                     /* Mid navy-blue for body text */
+  /* 3. Typography Hierarchy */
+  --text-primary: #182230;                        /* Rich dark charcoal */
+  --text-secondary: #475569;                      /* Mid slate gray */
+  --text-muted: #64748b;                          /* Muted gray for captions & hints */
+  --text-on-accent: #ffffff;                      /* Crisp white text on brand buttons */
 
-  /* Borders */
-  --border-color: rgba(26, 60, 143, 0.18);       /* Subtle navy border */
+  /* 4. Borders */
+  --border-color: rgba(0, 0, 0, 0.07);            /* Very subtle light border */
+  --border-subtle: rgba(226, 232, 240, 0.85);
 
-  /* Status colors */
+  /* 5. Status System (Accessible & Claymorphic) */
   --success: #059669;
+  --success-bg: #ecfdf5;
+  --success-border: #a7f3d0;
+  
   --warning: #d97706;
-  --danger:  #dc2626;
+  --warning-bg: #fffbeb;
+  --warning-border: #fde68a;
+  
+  --danger: #dc2626;
+  --danger-bg: #fef2f2;
+  --danger-border: #fecaca;
+
+  /* 6. Claymorphic Shadow Tokens */
+  --shadow-raised: 
+    6px 6px 16px rgba(166, 180, 200, 0.35),
+    -4px -4px 12px rgba(255, 255, 255, 0.95),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.85);
+
+  --shadow-raised-hover: 
+    8px 10px 22px rgba(166, 180, 200, 0.45),
+    -5px -5px 14px rgba(255, 255, 255, 1),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.95);
+
+  --shadow-inset: 
+    inset 2px 2px 5px rgba(166, 180, 200, 0.28),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.90);
+
+  --shadow-inset-focus: 
+    inset 2px 2px 5px rgba(2, 82, 205, 0.15),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.90),
+    0 0 0 3px rgba(37, 99, 235, 0.15);
+
+  --shadow-btn-primary: 
+    4px 4px 12px rgba(2, 82, 205, 0.35),
+    -2px -2px 6px rgba(255, 255, 255, 0.8),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.35);
+
+  --shadow-btn-secondary: 
+    3px 3px 8px rgba(166, 180, 200, 0.35),
+    -2px -2px 6px rgba(255, 255, 255, 0.9),
+    inset 1px 1px 1.5px rgba(255, 255, 255, 0.9);
+
+  --shadow-modal: 
+    12px 16px 36px rgba(140, 160, 185, 0.45),
+    -8px -8px 24px rgba(255, 255, 255, 0.95),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.9);
+
+  --shadow-badge: 
+    2px 2px 5px rgba(166, 180, 200, 0.25),
+    -1.5px -1.5px 4px rgba(255, 255, 255, 0.85),
+    inset 1px 1px 1px rgba(255, 255, 255, 0.7);
 }
 
-/* ── Global Body Override ── */
+/* ── Global Body & Page Canvas in Light Mode ── */
 html.light body,
 html.light .bg-\[\#050505\],
 html.light .bg-\[\#080808\],
@@ -155,6 +224,7 @@ html.light .bg-\[\#050505\]\/90,
 html.light .bg-\[\#050505\]\/80,
 html.light .bg-\[\#050505\]\/60,
 html.light .bg-\[\#050505\]\/40,
+html.light .bg-\[\#e5e9f0\],
 html.light .bg-slate-950,
 html.light .bg-gray-900,
 html.light .bg-zinc-900,
@@ -164,29 +234,93 @@ html.light .bg-black {
   background-image: none !important;
 }
 
-/* ── Navbar & Sidebar ── */
-html.light header,
-html.light aside {
-  background: rgba(255, 255, 255, 0.92) !important;
+/* ── Top Header & Navbar (Soft Raised Clay Surface) ── */
+html.light header {
+  background: rgba(244, 247, 251, 0.92) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-color: rgba(26, 60, 143, 0.12) !important;
-  box-shadow: 0 1px 16px rgba(26, 60, 143, 0.08) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 0 4px 14px rgba(166, 180, 200, 0.25), inset 0 -1px 1px rgba(255, 255, 255, 0.8) !important;
 }
 
-/* ── Glass Cards ── */
+/* ── Sidebar (Soft Clay Navigation Surface) ── */
+html.light aside {
+  background: #f4f7fb !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 4px 0 16px rgba(166, 180, 200, 0.20), inset -1px 0 1px rgba(255, 255, 255, 0.8) !important;
+}
+
+/* ── Mobile Bottom Navigation Bar ── */
+html.light nav.md\:hidden {
+  background: rgba(244, 247, 251, 0.95) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 0 -4px 16px rgba(166, 180, 200, 0.25) !important;
+}
+
+/* ── Claymorphic Cards & Panels ── */
 html.light .glass-card,
-html.light .glass-surface,
+html.light .glass-surface {
+  background: #ffffff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+  box-shadow: var(--shadow-raised) !important;
+  color: var(--text-primary);
+  border-radius: 20px;
+  transition: all 180ms ease;
+}
+
+/* Hoverable Card Elevation */
+html.light .glass-card.hover\:-translate-y-1:hover,
+html.light .glass-card[class*="hover:"]:hover,
+html.light [class*="hover:border-accent-primary"]:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-raised-hover) !important;
+  border-color: rgba(2, 82, 205, 0.15) !important;
+}
+
+/* ── Modals & Dialogs (Deep Raised Clay Surface) ── */
 html.light [role="dialog"],
-html.light .rounded-dialog {
-  background: rgba(255, 255, 255, 0.80);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+html.light .rounded-dialog,
+html.light .fixed .glass-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: var(--shadow-modal) !important;
+  border-radius: 24px !important;
   color: var(--text-primary);
 }
 
-/* ── ALL-PANEL Text Overrides: white text → dark navy ── */
-/* IMPORTANT: exclude bg-clip-text elements (hero title) from this override */
+/* Modal backdrop overlay */
+html.light .fixed.inset-0 .bg-black\/80,
+html.light .fixed.inset-0 .bg-black\/85 {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Modal tab selectors & inner panels */
+html.light [role="dialog"] .bg-white\/5,
+html.light [role="dialog"] .bg-white\/10 {
+  background-color: #f0f4f9 !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: var(--shadow-inset) !important;
+}
+
+html.light [role="dialog"] button.bg-accent-primary {
+  background: linear-gradient(145deg, #1062e6, #0248b8) !important;
+  color: #ffffff !important;
+  box-shadow: var(--shadow-btn-primary) !important;
+}
+
+html.light [role="dialog"] .text-zinc-400,
+html.light [role="dialog"] .text-white\/40,
+html.light [role="dialog"] .text-white\/50 {
+  color: var(--text-secondary) !important;
+}
+
+/* ── Typography & Text Contrast Overrides in Light Mode ── */
 html.light h1.text-white:not(.bg-clip-text),
 html.light h2.text-white:not(.bg-clip-text),
 html.light h3.text-white:not(.bg-clip-text),
@@ -196,25 +330,20 @@ html.light h6.text-white:not(.bg-clip-text),
 html.light p.text-white,
 html.light span.text-white,
 html.light a.text-white,
-html.light button.text-white,
+html.light button.text-white:not(.bg-accent-primary):not([class*="bg-accent-primary"]):not(.bg-danger):not(.bg-success),
 html.light label.text-white,
 html.light li.text-white,
 html.light td.text-white,
 html.light th.text-white,
-html.light div.text-white:not(.bg-clip-text) {
+html.light div.text-white:not(.bg-clip-text):not(.bg-accent-primary):not([class*="bg-accent-primary"]):not(.bg-danger):not(.bg-success) {
   color: var(--text-primary) !important;
-}
-
-/* bg-clip-text gradient elements — let the CSS gradient variables handle color */
-html.light .bg-clip-text.text-transparent {
-  -webkit-text-fill-color: transparent;
 }
 
 html.light .text-text-primary {
   color: var(--text-primary) !important;
 }
 
-/* Secondary text (60-80% opacity white) → readable navy-grey */
+/* Secondary text */
 html.light .text-white\/80,
 html.light .text-white\/70,
 html.light .text-white\/60,
@@ -224,10 +353,10 @@ html.light .text-zinc-400,
 html.light .text-\[rgba\(255\,255\,255\,0\.65\)\],
 html.light .text-\[rgba\(255\,255\,255\,0\.6\)\],
 html.light .text-text-secondary {
-  color: #3d5080 !important;
+  color: var(--text-secondary) !important;
 }
 
-/* Muted text (under 50% opacity white) → mid navy */
+/* Muted text */
 html.light .text-white\/50,
 html.light .text-white\/40,
 html.light .text-white\/30,
@@ -237,29 +366,40 @@ html.light .text-\[rgba\(255\,255\,255\,0\.45\)\],
 html.light .text-\[rgba\(255\,255\,255\,0\.4\)\],
 html.light .text-\[rgba\(255\,255\,255\,0\.35\)\],
 html.light .text-\[rgba\(255\,255\,255\,0\.3\)\] {
-  color: #4a5e82 !important;
+  color: var(--text-muted) !important;
 }
 
+/* Placeholders */
 html.light ::placeholder,
 html.light input::placeholder,
 html.light textarea::placeholder,
 html.light .placeholder-white\/30::placeholder {
-  color: #9aabcc !important;
+  color: #94a3b8 !important;
 }
 
-/* ── NO CYAN anywhere in Light Mode: convert all cyan to navy ── */
-/* text-accent-primary = cyan in dark → navy in light (handled by CSS var) */
-/* Any hardcoded cyan text */
+/* Brand text colors */
 html.light [class*="text-[#00f3ff]"],
 html.light .text-cyan-400,
 html.light .text-cyan-300,
 html.light .text-cyan-500,
 html.light .text-sky-400,
 html.light .text-sky-300 {
-  color: #1a3c8f !important;
+  color: var(--accent-primary) !important;
 }
 
-/* ── Border Overrides ── */
+html.light [class*="text-accent-primary"] {
+  color: var(--accent-primary) !important;
+}
+
+html.light [class*="text-accent-secondary"] {
+  color: var(--accent-secondary) !important;
+}
+
+html.light [class*="text-accent-third"] {
+  color: var(--accent-third) !important;
+}
+
+/* ── Borders in Light Mode ── */
 html.light .border-white\/10,
 html.light .border-white\/5,
 html.light .border-white\/20,
@@ -270,227 +410,335 @@ html.light .border-\[rgba\(255\,255\,255\,0\.08\)\],
 html.light .border-\[rgba\(255\,255\,255\,0\.10\)\],
 html.light .border-\[rgba\(255\,255\,255\,0\.12\)\],
 html.light .border-\[rgba\(255\,255\,255\,0\.15\)\] {
-  border-color: rgba(26, 60, 143, 0.18) !important;
+  border-color: rgba(0, 0, 0, 0.07) !important;
 }
 
-/* ── Surface / BG Panel Overrides ── */
+/* ── Surface / BG Container Overrides (Raised Clay) ── */
 html.light .bg-white\/5,
 html.light .bg-white\/10,
+html.light .bg-white\/\[0\.01\],
 html.light .bg-white\/\[0\.02\],
 html.light .bg-white\/\[0\.03\],
+html.light .bg-white\/\[0\.04\],
 html.light .bg-white\/\[0\.05\],
-html.light .bg-white\/\[0\.01\],
 html.light .bg-\[rgba\(255\,255\,255\,0\.03\)\],
 html.light .bg-\[rgba\(255\,255\,255\,0\.05\)\],
 html.light .bg-\[rgba\(255\,255\,255\,0\.01\)\],
 html.light .bg-\[rgba\(255\,255\,255\,0\.02\)\] {
   background-color: #ffffff !important;
-  box-shadow: 0 2px 8px rgba(26, 60, 143, 0.08);
+  box-shadow: var(--shadow-raised);
+  border-color: rgba(0, 0, 0, 0.05) !important;
 }
 
-/* ── Particle Dots (Hero Background) ── */
-html.light .bg-white\/20 {
-  background-color: rgba(26, 60, 143, 0.25) !important;
-}
-
-/* ── Join Code Box & dark containers ── */
+/* Join Code Box & Inset containers */
 html.light .bg-black\/40,
-html.light .bg-black\/60 {
-  background-color: #f0f4ff !important;
-  border-color: rgba(26, 60, 143, 0.20) !important;
+html.light .bg-black\/60,
+html.light .bg-black\/80 {
+  background-color: #f0f4f9 !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: var(--shadow-inset) !important;
+  color: var(--text-primary) !important;
 }
 
-/* ── Hero Text Gradient (from-white → navy in light) ── */
-html.light .from-white {
-  --tw-gradient-from: #0f1c3f var(--tw-gradient-from-position) !important;
-  --tw-gradient-to: rgba(15, 28, 63, 0) var(--tw-gradient-to-position) !important;
-  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
-}
-html.light .via-white\/80 {
-  --tw-gradient-to: rgba(15, 28, 63, 0) var(--tw-gradient-to-position) !important;
-  --tw-gradient-stops: var(--tw-gradient-from), rgba(26, 60, 143, 0.80) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
-}
-html.light .to-white\/10 {
-  --tw-gradient-to: rgba(26, 60, 143, 0.15) var(--tw-gradient-to-position) !important;
-}
-
-/* ── Team Hero Banner gradient override ── */
-html.light .from-black\/80,
-html.light .from-black\/90,
-html.light .from-black {
-  --tw-gradient-from: #e8eef8 var(--tw-gradient-from-position) !important;
-  --tw-gradient-to: rgba(232, 238, 248, 0) var(--tw-gradient-to-position) !important;
-  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
-}
-html.light .to-accent-primary\/10,
-html.light .to-accent-primary\/20 {
-  --tw-gradient-to: #dbeafe var(--tw-gradient-to-position) !important;
+/* ── CLAYMORPHIC RECESSED INPUT FIELDS & SELECT DROPDOWNS ── */
+html.light input:not([type="checkbox"]):not([type="radio"]),
+html.light textarea,
+html.light select,
+html.light select.bg-white\/5,
+html.light select.text-white,
+html.light select.border-white\/10 {
+  background-color: #f0f4f9 !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  color: var(--text-primary) !important;
+  box-shadow: var(--shadow-inset) !important;
+  border-radius: 12px !important;
+  transition: all 180ms ease !important;
 }
 
-/* ── Badge Pill Colors ── */
-html.light .bg-\[rgba\(0\,243\,255\,0\.08\)\] {
-  background-color: rgba(26, 60, 143, 0.10) !important;
-  color: #1a3c8f !important;
-  border-color: rgba(26, 60, 143, 0.25) !important;
-}
-html.light .bg-\[rgba\(0\,255\,157\,0\.08\)\],
-html.light .bg-success\/10 {
-  background-color: #d1fae5 !important;
-  color: #047857 !important;
-  border-color: #6ee7b7 !important;
-}
-html.light .bg-\[rgba\(255\,200\,87\,0\.08\)\],
-html.light .bg-warning\/10 {
-  background-color: #fef3c7 !important;
-  color: #b45309 !important;
-  border-color: #fde047 !important;
+html.light input:focus:not([type="checkbox"]):not([type="radio"]),
+html.light textarea:focus,
+html.light select:focus {
+  border-color: var(--accent-primary) !important;
+  box-shadow: var(--shadow-inset-focus) !important;
+  outline: none !important;
+  background-color: #ffffff !important;
 }
 
-/* ── Buttons ── */
-html.light button.bg-white {
-  background: linear-gradient(135deg, #1a3c8f 0%, #2563eb 100%) !important;
-  color: #ffffff !important;
-  box-shadow: 0 4px 14px rgba(26, 60, 143, 0.30);
-}
-html.light button.text-\[\#050505\] {
-  color: #ffffff !important;
-}
-
-/* ── Accent Text — CSS var handles cyan→navy automatically ── */
-html.light [class*="text-accent-primary"] {
-  color: var(--accent-primary) !important;
-}
-html.light [class*="text-accent-secondary"] {
-  color: var(--accent-secondary) !important;
-}
-html.light [class*="text-accent-third"] {
-  color: var(--accent-third) !important;
-}
-
-/* ── Grid / Overlay ── */
-html.light .mix-blend-overlay {
-  mix-blend-mode: multiply !important;
-  opacity: 0.10 !important;
-}
-html.light .bg-\[url\(\'\/grid\.svg\'\)\] {
-  filter: invert(1) hue-rotate(180deg) opacity(0.08);
-}
-
-/* ── Glow Text Effects → Navy in Light ── */
-html.light .text-glow-cyan {
-  text-shadow: none !important;
-  color: var(--accent-secondary) !important;
-  font-weight: 800;
-}
-html.light .text-glow-magenta {
-  text-shadow: none !important;
-  color: var(--accent-primary) !important;
-  font-weight: 800;
-}
-
-/* ── Scrollbar ── */
-html.light ::-webkit-scrollbar-track {
-  background: #f0f4ff;
-}
-html.light ::-webkit-scrollbar-thumb {
-  background: rgba(26, 60, 143, 0.25);
-}
-html.light ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-primary);
-}
-
-/* ── Select Dropdowns ── */
 html.light select option {
   background-color: #ffffff !important;
   color: var(--text-primary) !important;
 }
 
-/* ── Input Fields ── */
-html.light input,
-html.light textarea,
-html.light select {
-  background-color: #f8faff !important;
-  border-color: rgba(26, 60, 143, 0.20) !important;
+/* Search bar input container */
+html.light .relative input[placeholder*="Search"] {
+  background-color: #f0f4f9 !important;
+  box-shadow: var(--shadow-inset) !important;
+  border-radius: 9999px !important;
+}
+
+/* ── CLAYMORPHIC BUTTONS ── */
+/* Primary Brand Clay Button */
+html.light button.bg-white,
+html.light button.bg-accent-primary,
+html.light a.bg-accent-primary,
+html.light button.bg-accent-primary\/100,
+html.light .clay-btn-primary {
+  background: linear-gradient(145deg, #1062e6, #0248b8) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: var(--shadow-btn-primary) !important;
+  border-radius: 14px;
+  font-weight: 700 !important;
+  transition: all 180ms ease !important;
+}
+
+html.light button.bg-white:hover,
+html.light button.bg-accent-primary:hover,
+html.light a.bg-accent-primary:hover {
+  background: linear-gradient(145deg, #1d6df2, #0a52c7) !important;
+  box-shadow: 5px 6px 16px rgba(2, 82, 205, 0.45), -3px -3px 8px rgba(255, 255, 255, 0.9), inset 1px 1px 2px rgba(255, 255, 255, 0.5) !important;
+  transform: translateY(-1px);
+}
+
+html.light button.bg-white:active,
+html.light button.bg-accent-primary:active,
+html.light a.bg-accent-primary:active {
+  box-shadow: inset 2px 2px 5px rgba(0, 30, 80, 0.45), inset -1px -1px 2px rgba(255, 255, 255, 0.3) !important;
+  transform: scale(0.98);
+}
+
+/* Secondary Raised Clay Button */
+html.light button.bg-\[rgba\(255\,255\,255\,0\.03\)\],
+html.light button.bg-white\/5,
+html.light button.bg-black\/5,
+html.light button:not(.bg-white):not(.bg-accent-primary):not([class*="bg-accent-primary"]):not(.bg-danger):not(.bg-success):not(.bg-transparent):not(.text-danger):not(.text-accent-primary) {
+  background: #ffffff !important;
+  color: var(--text-primary) !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: var(--shadow-btn-secondary) !important;
+  border-radius: 14px;
+  transition: all 180ms ease !important;
+}
+
+html.light button.bg-\[rgba\(255\,255\,255\,0\.03\)\]:hover,
+html.light button.bg-white\/5:hover,
+html.light button.bg-black\/5:hover {
+  background: #ffffff !important;
+  color: var(--accent-primary) !important;
+  border-color: rgba(2, 82, 205, 0.2) !important;
+  box-shadow: 4px 5px 12px rgba(166, 180, 200, 0.45), -3px -3px 8px rgba(255, 255, 255, 1), inset 1px 1px 2px rgba(255, 255, 255, 0.95) !important;
+  transform: translateY(-1px);
+}
+
+/* Success Button */
+html.light button.bg-success,
+html.light button.bg-success\/90 {
+  background: linear-gradient(145deg, #10b981, #047857) !important;
+  color: #ffffff !important;
+  box-shadow: 4px 4px 12px rgba(5, 150, 105, 0.35), -2px -2px 6px rgba(255, 255, 255, 0.8), inset 1px 1px 2px rgba(255, 255, 255, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Danger Button */
+html.light button.bg-danger,
+html.light button.bg-danger\/90 {
+  background: linear-gradient(145deg, #ef4444, #b91c1c) !important;
+  color: #ffffff !important;
+  box-shadow: 4px 4px 12px rgba(220, 38, 38, 0.35), -2px -2px 6px rgba(255, 255, 255, 0.8), inset 1px 1px 2px rgba(255, 255, 255, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Ghost / Transparent button */
+html.light button.bg-transparent {
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  box-shadow: none !important;
+}
+
+html.light button.bg-transparent:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
   color: var(--text-primary) !important;
 }
-html.light input:focus,
-html.light textarea:focus,
-html.light select:focus {
-  border-color: var(--accent-secondary) !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
-  outline: none;
-}
 
-/* ── Premium Navy CTA Gradient helper ── */
-html.light .bg-accent-gradient {
-  background: linear-gradient(135deg, #1a3c8f 0%, #2563eb 60%, #0ea5e9 100%);
-}
-
-/* ── All bg-accent-primary → Navy Blue in light mode ── */
-html.light .bg-accent-primary {
-  background-color: #1a3c8f !important;
-}
-html.light .hover\:bg-accent-primary:hover {
-  background-color: #1a3c8f !important;
-}
-html.light .bg-accent-primary\/10 {
-  background-color: rgba(26, 60, 143, 0.10) !important;
-}
-html.light .bg-accent-primary\/20 {
-  background-color: rgba(26, 60, 143, 0.20) !important;
-}
-html.light .bg-accent-primary\/30 {
-  background-color: rgba(26, 60, 143, 0.30) !important;
-}
-
-/* CONSOLE / CTA links & buttons */
-html.light a.bg-accent-primary,
-html.light button.bg-accent-primary {
-  background-color: #1a3c8f !important;
-  color: #ffffff !important;
-  box-shadow: 0 4px 14px rgba(26, 60, 143, 0.30) !important;
-}
-html.light a.bg-accent-primary:hover,
-html.light button.bg-accent-primary:hover {
-  background-color: #2563eb !important;
-  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.40) !important;
-}
-html.light .bg-accent-primary .text-black,
-html.light a.bg-accent-primary .text-black,
-html.light button.bg-accent-primary .text-black {
-  color: #ffffff !important;
-}
-
-/* Sidebar active item */
-html.light aside .bg-accent-primary,
+/* ── Sidebar Active Nav Item ── */
 html.light aside a.bg-accent-primary {
-  background-color: #1a3c8f !important;
+  background: linear-gradient(145deg, #1062e6, #0248b8) !important;
   color: #ffffff !important;
-  box-shadow: 0 2px 10px rgba(26, 60, 143, 0.25) !important;
+  box-shadow: var(--shadow-btn-primary) !important;
+  border-radius: 9999px;
 }
 
-/* Border accent variants */
-html.light .border-accent-primary {
-  border-color: #1a3c8f !important;
+html.light aside a:not(.bg-accent-primary):hover {
+  background: #ffffff !important;
+  color: var(--accent-primary) !important;
+  box-shadow: var(--shadow-btn-secondary) !important;
 }
-html.light .border-accent-primary\/30 {
-  border-color: rgba(26, 60, 143, 0.30) !important;
+
+/* ── CLAYMORPHIC BADGES & STATUS PILLS ── */
+html.light span.inline-flex.rounded-full,
+html.light .inline-flex.rounded-full {
+  box-shadow: var(--shadow-badge);
 }
-html.light .border-accent-primary\/50 {
-  border-color: rgba(26, 60, 143, 0.50) !important;
+
+/* Primary / Brand Badge */
+html.light .bg-\[rgba\(0\,243\,255\,0\.08\)\],
+html.light .bg-accent-primary\/10 {
+  background-color: #e0ecff !important;
+  color: #0252cd !important;
+  border: 1px solid #bfdbfe !important;
+}
+
+/* Success Badge */
+html.light .bg-\[rgba\(0\,255\,157\,0\.08\)\],
+html.light .bg-success\/10 {
+  background-color: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+}
+
+/* Warning Badge */
+html.light .bg-\[rgba\(255\,200\,87\,0\.08\)\],
+html.light .bg-warning\/10 {
+  background-color: #fffbeb !important;
+  color: #b45309 !important;
+  border: 1px solid #fde68a !important;
+}
+
+/* Danger Badge */
+html.light .bg-\[rgba\(255\,77\,109\,0\.08\)\],
+html.light .bg-danger\/10 {
+  background-color: #fef2f2 !important;
+  color: #b91c1c !important;
+  border: 1px solid #fecaca !important;
+}
+
+/* Secondary / Info Badge */
+html.light .bg-\[rgba\(255\,0\,193\,0\.08\)\],
+html.light .bg-\[rgba\(157\,0\,255\,0\.08\)\],
+html.light .bg-accent-secondary\/10,
+html.light .bg-accent-third\/10 {
+  background-color: #f5f3ff !important;
+  color: #6d28d9 !important;
+  border: 1px solid #ddd6fe !important;
+}
+
+/* ── CLAYMORPHIC TABLES ── */
+html.light .overflow-x-auto.rounded-\[24px\],
+html.light table {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: var(--shadow-raised) !important;
+  border-radius: 20px !important;
+}
+
+html.light th {
+  background-color: #edf2f8 !important;
+  color: #475569 !important;
+  font-weight: 700 !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+html.light tr.border-b {
+  border-bottom-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+html.light tbody tr:hover {
+  background-color: #f8fafc !important;
+}
+
+html.light td {
+  color: var(--text-primary) !important;
+}
+
+/* ── CLAYMORPHIC TOASTS ── */
+html.light .animate-slide-in-right.rounded-xl {
+  background: #ffffff !important;
+  color: var(--text-primary) !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 8px 12px 28px rgba(166, 180, 200, 0.40), -4px -4px 12px rgba(255, 255, 255, 0.9) !important;
+}
+
+/* ── HERO & BANNER GRADIENT OVERRIDES IN LIGHT MODE ── */
+html.light .from-white {
+  --tw-gradient-from: #0f172a var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(15, 23, 42, 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+html.light .via-white\/80 {
+  --tw-gradient-to: rgba(15, 23, 42, 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), rgba(2, 82, 205, 0.85) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+
+html.light .to-white\/10 {
+  --tw-gradient-to: rgba(2, 82, 205, 0.15) var(--tw-gradient-to-position) !important;
+}
+
+html.light .from-black\/80,
+html.light .from-black\/90,
+html.light .from-black {
+  --tw-gradient-from: #e2e8f0 var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(226, 232, 240, 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+html.light .to-accent-primary\/10,
+html.light .to-accent-primary\/20 {
+  --tw-gradient-to: #dbeafe var(--tw-gradient-to-position) !important;
+}
+
+/* ── GLOW TEXT EFFECTS IN LIGHT MODE (Crisp & High Contrast) ── */
+html.light .text-glow-cyan {
+  text-shadow: none !important;
+  color: var(--accent-primary) !important;
+  font-weight: 800;
+}
+
+html.light .text-glow-magenta {
+  text-shadow: none !important;
+  color: var(--accent-secondary) !important;
+  font-weight: 800;
+}
+
+/* ── LEADERBOARD PODIUM CARDS IN LIGHT MODE ── */
+html.light .grid.grid-cols-1.sm\:grid-cols-3 > div {
+  background: #ffffff !important;
+  box-shadow: var(--shadow-raised) !important;
+  border-radius: 24px;
+}
+
+/* ── Scrollbar in Light Mode ── */
+html.light ::-webkit-scrollbar-track {
+  background: #eef2f6;
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: rgba(166, 180, 200, 0.6);
+  border-radius: 999px;
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+}
+
+/* ── Overlay grid image filter in Light Mode ── */
+html.light .mix-blend-overlay {
+  mix-blend-mode: multiply !important;
+  opacity: 0.08 !important;
+}
+
+html.light .bg-\[url\(\'\/grid\.svg\'\)\] {
+  filter: invert(1) hue-rotate(180deg) opacity(0.06);
 }
 
 /* Card hover glow effects disabled in Light Mode */
 html.light .shadow-\[0_0_15px_rgba\(0\,243\,255\,0\.15\)\],
 html.light .shadow-\[0_0_25px_rgba\(0\,243\,255\,0\.25\)\],
 html.light .shadow-\[0_0_20px_rgba\(0\,243\,255\,0\.1\)\] {
-  box-shadow: 0 2px 8px rgba(26, 60, 143, 0.08) !important;
+  box-shadow: var(--shadow-raised) !important;
 }
 
-
 /* ─── Mobile Responsive Utilities ─────────────────────────── */
-
-/* Slide-in animation for mobile drawer */
 @keyframes slideInLeft {
   from { transform: translateX(-100%); opacity: 0; }
   to   { transform: translateX(0);      opacity: 1; }
@@ -531,7 +779,6 @@ img, video, canvas, svg { max-width: 100%; }
 
 /* ─── Mobile Font Size Overrides (< 640px) ─────────────────── */
 @media (max-width: 639px) {
-  /* Shrink huge display headings */
   .font-archivo.text-5xl,
   .font-archivo.text-6xl,
   .font-archivo.text-7xl,
@@ -540,13 +787,8 @@ img, video, canvas, svg { max-width: 100%; }
     line-height: 1.15 !important;
   }
 
-  /* Shrink page-level h2 headings */
   h2.font-archivo { font-size: 1.4rem !important; }
-
-  /* Prevent horizontal scroll from long mono text */
   .font-mono { word-break: break-all; }
-
-  /* Tighter letter spacing on small screens */
   .tracking-widest { letter-spacing: 0.1em !important; }
 }
 
@@ -561,6 +803,11 @@ img, video, canvas, svg { max-width: 100%; }
     padding: 12px;
     margin-bottom: 10px;
     background: rgba(255,255,255,0.02);
+  }
+  html.light .responsive-table tbody tr {
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: #ffffff;
+    box-shadow: var(--shadow-raised);
   }
   .responsive-table tbody td {
     display: flex;
@@ -580,5 +827,7 @@ img, video, canvas, svg { max-width: 100%; }
     flex-shrink: 0;
     margin-right: 8px;
   }
+  html.light .responsive-table tbody td::before {
+    color: #64748b;
+  }
 }
-
