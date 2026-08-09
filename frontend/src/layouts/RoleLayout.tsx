@@ -124,7 +124,7 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
 
   // Shared nav link renderer (Horizontal top bar)
   const NavLinks = ({ onNavigate }: { onNavigate?: () => void }) => (
-    <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 overflow-x-auto no-scrollbar max-w-full py-1">
+    <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 overflow-x-auto no-scrollbar max-w-full py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
       {menuItems.map((item) => {
         const Icon = item.icon;
         const active = isActive(item.path);
@@ -164,7 +164,7 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
         </Link>
 
         {/* Center: TOP MENU OPTIONS (Desktop Navigation) */}
-        <nav className="hidden md:flex items-center justify-center mx-4 flex-1 min-w-0">
+        <nav className="hidden md:flex items-center justify-center mx-4 flex-1 min-w-0 overflow-hidden no-scrollbar">
           <NavLinks />
         </nav>
 
