@@ -758,6 +758,7 @@ const LeaderboardView = () => {
                 let glowShadow = '';
                 let medalColor = 'text-white/40';
                 let rankSurface = 'bg-slate-900/70 dark:bg-slate-950/80';
+                let rankClass = 'podium-rank-default';
 
                 if (isFirst) {
                   cardHeight = 'h-88 md:-translate-y-4';
@@ -765,16 +766,19 @@ const LeaderboardView = () => {
                   glowShadow = 'shadow-[0_0_30px_rgba(255,215,0,0.15)]';
                   medalColor = 'text-[#FFD700]';
                   rankSurface = 'bg-[#5b4200]/30 dark:bg-[#3d2d00]/55';
+                  rankClass = 'podium-rank-gold';
                 } else if (isSecond) {
                   accentBorder = 'border-[#C0C0C0]';
                   medalColor = 'text-[#C0C0C0]';
                   glowShadow = 'shadow-[0_0_20px_rgba(192,192,192,0.1)]';
                   rankSurface = 'bg-slate-300/20 dark:bg-slate-400/15';
+                  rankClass = 'podium-rank-silver';
                 } else if (isThird) {
                   accentBorder = 'border-[#CD7F32]';
                   medalColor = 'text-[#CD7F32]';
                   glowShadow = 'shadow-[0_0_20px_rgba(205,127,50,0.1)]';
                   rankSurface = 'bg-[#78350f]/25 dark:bg-[#431407]/55';
+                  rankClass = 'podium-rank-bronze';
                 }
 
                 return (
@@ -790,7 +794,7 @@ const LeaderboardView = () => {
                         { id: 'u3', name: 'Charlie Davis', role: 'Backend Engineer', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80' }
                       ]
                     })}
-                    className={`glass-card ${rankSurface} rounded-xl md:rounded-[32px] border p-2.5 sm:p-4 md:p-8 flex flex-col justify-between items-center text-center relative ${accentBorder} ${glowShadow} ${cardHeight} hover:-translate-y-1 hover:bg-white/[0.08] cursor-pointer transition-all duration-300`}
+                    className={`glass-card ${rankClass} ${rankSurface} rounded-xl md:rounded-[32px] border p-2.5 sm:p-4 md:p-8 flex flex-col justify-between items-center text-center relative ${accentBorder} ${glowShadow} ${cardHeight} hover:-translate-y-1 hover:bg-white/[0.08] cursor-pointer transition-all duration-300`}
                   >
                     {/* Ranking Medals Badge */}
                     <div className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center font-archivo text-xs sm:text-sm md:text-lg font-black ${medalColor} mb-1`}>
