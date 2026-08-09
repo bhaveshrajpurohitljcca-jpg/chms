@@ -93,7 +93,7 @@ export const HackathonsListPage: React.FC = () => {
             <span>Internal Hackathon Directory</span>
           </div>
           <h2 className="font-archivo text-3xl md:text-4xl font-black text-[#0f172a] dark:text-white uppercase tracking-tight">
-            Explore College Hackathons
+            Explore HackZero Events
           </h2>
         </div>
         <LoadingState message="Fetching active hackathon directory..." />
@@ -106,7 +106,7 @@ export const HackathonsListPage: React.FC = () => {
       <div className="flex flex-col gap-8 max-w-7xl mx-auto w-full font-manrope">
         <div>
           <h2 className="font-archivo text-3xl md:text-4xl font-black text-[#0f172a] dark:text-white uppercase tracking-tight">
-            Explore College Hackathons
+            Explore HackZero Events
           </h2>
         </div>
         <ErrorState
@@ -129,7 +129,7 @@ export const HackathonsListPage: React.FC = () => {
             <span>Internal Hackathon Directory</span>
           </div>
           <h2 className="font-archivo text-3xl md:text-4xl font-black text-[#0f172a] dark:text-white uppercase tracking-tight">
-            Explore College Hackathons
+            Explore HackZero Events
           </h2>
           <p className="text-xs md:text-sm text-[#475569] dark:text-[rgba(255,255,255,0.65)] font-light mt-1">
             View active sprints, problem statements, registration deadlines.
@@ -189,15 +189,16 @@ export const HackathonsListPage: React.FC = () => {
           />
         )
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="flex gap-4 overflow-x-auto pb-4 -mx-3 px-3 snap-x snap-mandatory md:mx-0 md:grid md:grid-cols-2 md:gap-8 md:overflow-visible md:px-0 lg:grid-cols-3">
           {filteredHackathons.map((hackathon) => (
-            <HackathonCard
-              key={hackathon.id}
-              hackathon={hackathon}
-              isRegistered={isRegisteredFor(hackathon.id)}
-              onInspect={(h) => navigate(`/hackathons/${h.id}`)}
-              onRegister={(h) => navigate(`/student/registration?hackathonId=${h.id}`)}
-            />
+            <div key={hackathon.id} className="min-w-[292px] max-w-[292px] snap-start md:min-w-0 md:max-w-none">
+              <HackathonCard
+                hackathon={hackathon}
+                isRegistered={isRegisteredFor(hackathon.id)}
+                onInspect={(h) => navigate(`/hackathons/${h.id}`)}
+                onRegister={(h) => navigate(`/student/registration?hackathonId=${h.id}`)}
+              />
+            </div>
           ))}
         </div>
       )}

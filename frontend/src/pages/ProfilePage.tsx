@@ -21,13 +21,14 @@ import {
   Eye,
   EyeOff,
   ShieldAlert,
-  Check
+  Check,
+  LogOut
 } from 'lucide-react';
 import AvatarPickerModal from '@/components/ui/AvatarPickerModal';
 import { PasswordStrengthMeter } from '@/components/ui/PasswordStrengthMeter';
 
 export const ProfilePage: React.FC = () => {
-  const { user, updateProfile, changePassword, openAuthModal } = useAuth();
+  const { user, updateProfile, changePassword, openAuthModal, logout } = useAuth();
 
   const [isEditing, setIsEditing] = useState(false);
   const [fullName, setFullName] = useState(user?.full_name || '');
@@ -63,7 +64,7 @@ export const ProfilePage: React.FC = () => {
             Please log in or register an account to view your user profile dashboard, active hackathon teams, and certificates.
           </p>
           <Button variant="primary" onClick={() => openAuthModal('login')} className="mx-auto">
-            Sign In to CHMS
+            Sign In to HackZero
           </Button>
         </Card>
       </div>
@@ -228,6 +229,12 @@ export const ProfilePage: React.FC = () => {
                 <Save size={16} /> Save Changes
               </Button>
             )}
+            <button
+              onClick={logout}
+              className="h-10 px-4 rounded-xl border border-danger/40 bg-danger/10 text-danger text-xs font-bold uppercase tracking-wider hover:bg-danger hover:text-white transition-colors"
+            >
+              <span className="inline-flex items-center gap-2"><LogOut size={14} /> Log out</span>
+            </button>
           </div>
         </div>
       </div>

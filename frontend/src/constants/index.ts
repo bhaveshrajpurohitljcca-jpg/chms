@@ -1,5 +1,5 @@
-export const APP_NAME = "College Hackathon Management System";
-export const APP_SHORT_NAME = "CHMS";
+export const APP_NAME = "HackZero";
+export const APP_SHORT_NAME = "HackZero";
 
 export const USER_ROLES = {
   STUDENT: 'student',

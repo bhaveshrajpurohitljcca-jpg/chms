@@ -1,10 +1,8 @@
-import { useState } from 'react';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { 
   Zap, 
   User as UserIcon, 
-  LogOut, 
   LayoutDashboard, 
   Calendar, 
   Users, 
@@ -15,8 +13,6 @@ import {
   BookOpen,
   Shield,
   Loader2,
-  Menu,
-  X,
   Sun,
   Moon
 } from 'lucide-react';
@@ -31,11 +27,10 @@ interface SidebarItem {
 }
 
 export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] }) {
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // 1. Loading State
   if (isLoading) {
@@ -113,6 +108,7 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
           { label: 'Manage Users',       shortLabel: 'Users',   path: '/admin?tab=users',         icon: Users },
           { label: 'Manage Judges',      shortLabel: 'Judges',  path: '/admin?tab=judges',        icon: Cpu },
           { label: 'Manage Coordinators',shortLabel: 'Coords',  path: '/admin?tab=coordinators',  icon: Users },
+          { label: 'Profile Settings',   shortLabel: 'Profile', path: '/admin/profile',            icon: UserIcon },
         ];
       default:
         return [];
@@ -120,8 +116,8 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
   };
 
   const menuItems = getSidebarItems(user.role);
-  // Bottom nav shows max 5 items
-  const bottomNavItems = menuItems.slice(0, 5);
+  // Every role action stays available on mobile through a horizontal bottom bar.
+  const bottomNavItems = menuItems;
 
   const isActive = (path: string) =>
     location.pathname + location.search === path ||
@@ -158,22 +154,14 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
       {/* ── TOP HEADER ─────────────────────────────────────────── */}
       <header className="fixed top-0 left-0 right-0 h-14 md:h-16 z-30 px-3 md:px-6 flex items-center justify-between glass-surface backdrop-blur-md border-b border-[var(--border-color)]">
         
-        {/* Left: Hamburger (mobile) + Logo */}
+        {/* Left: Brand */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <button
-            onClick={() => setIsMobileMenuOpen(true)}
-            className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl border border-[var(--border-color)] bg-black/5 text-text-primary hover:border-accent-primary transition-all duration-300 flex-shrink-0"
-            aria-label="Open navigation menu"
-          >
-            <Menu size={18} />
-          </button>
-
           <div className="flex items-center gap-2 min-w-0">
             <Link to="/" className="w-8 h-8 rounded-lg bg-[#0252cd] dark:bg-accent-primary/10 border border-[#0252cd] dark:border-accent-primary/30 flex items-center justify-center text-white dark:text-accent-primary flex-shrink-0">
               <Zap size={14} />
             </Link>
             <span className="font-archivo text-sm md:text-md tracking-wider font-black text-[#0252cd] dark:text-accent-primary cursor-default">
-              CHMS
+              HackZero
             </span>
           </div>
           <span className="hidden sm:block w-1.5 h-1.5 rounded-full bg-[#64748b] dark:bg-text-secondary/40 flex-shrink-0" />
@@ -203,13 +191,6 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
               {theme === 'dark' ? <Sun size={13} /> : <Moon size={13} />}
             </button>
 
-            <button 
-              onClick={logout}
-              title="Logout"
-              className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-black/5 border border-[var(--border-color)] flex items-center justify-center text-text-secondary hover:text-danger hover:border-danger transition-all duration-300"
-            >
-              <LogOut size={13} />
-            </button>
           </div>
         </div>
       </header>
@@ -225,7 +206,7 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
         {/* MAIN CONTENT */}
         <main className="flex-grow md:pl-56 lg:pl-64 min-h-screen w-full overflow-x-hidden bg-[var(--bg-primary)]
           p-3 sm:p-4 md:p-6 lg:p-8
-          pb-20 md:pb-8
+          pb-24 md:pb-8
         ">
           <Outlet />
         </main>
@@ -233,7 +214,7 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
 
       {/* ── MOBILE BOTTOM NAV BAR ──────────────────────────────── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-[#080808]/95 backdrop-blur-md border-t border-[var(--border-color)] pb-safe">
-        <div className="flex items-center justify-around h-14">
+        <div className="flex items-center h-16 overflow-x-auto mobile-bottom-nav-scroll">
           {bottomNavItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
@@ -241,7 +222,7 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors duration-200 ${
+                className={`relative flex flex-col items-center justify-center flex-none min-w-[72px] h-full gap-0.5 transition-colors duration-200 ${
                   active ? 'text-accent-primary' : 'text-text-secondary active:text-text-primary'
                 }`}
               >
@@ -259,64 +240,6 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
       </nav>
 
       {/* ── MOBILE DRAWER OVERLAY ──────────────────────────────── */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 flex md:hidden">
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-
-          {/* Drawer Panel */}
-          <div className="relative w-72 max-w-[85vw] h-full glass-card flex flex-col z-50 border-r border-[var(--border-color)] shadow-2xl animate-slide-in-left">
-            {/* Drawer Header */}
-            <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--border-color)] flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <Link to="/" className="w-8 h-8 rounded-lg bg-accent-primary/10 border border-accent-primary/30 flex items-center justify-center text-accent-primary">
-                  <Zap size={14} />
-                </Link>
-                <div>
-                  <p className="font-archivo text-sm font-black tracking-wider text-text-primary">CHMS</p>
-                  <p className="text-[9px] font-mono uppercase tracking-widest text-text-secondary">
-                    {user.role} workspace
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="w-8 h-8 rounded-lg bg-black/5 border border-[var(--border-color)] flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors touch-target"
-              >
-                <X size={15} />
-              </button>
-            </div>
-
-            {/* Nav Items */}
-            <nav className="flex-1 overflow-y-auto p-3 flex flex-col gap-1">
-              <NavLinks onNavigate={() => setIsMobileMenuOpen(false)} />
-            </nav>
-
-            {/* User Info Footer */}
-            <div className="p-4 border-t border-[var(--border-color)] bg-black/5 flex-shrink-0 pb-safe">
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-black/5 border border-[var(--border-color)]">
-                <div className="w-9 h-9 rounded-full bg-accent-primary/10 border border-accent-primary/30 flex items-center justify-center text-accent-primary flex-shrink-0">
-                  <UserIcon size={15} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-text-primary truncate">{user.full_name || 'Operator'}</p>
-                  <p className="text-[10px] text-text-secondary truncate font-mono">{user.email}</p>
-                </div>
-                <button
-                  onClick={() => { logout(); setIsMobileMenuOpen(false); }}
-                  className="p-2 rounded-lg text-text-secondary hover:text-danger hover:bg-danger/10 transition-colors flex-shrink-0 touch-target"
-                  title="Logout"
-                >
-                  <LogOut size={14} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

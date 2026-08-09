@@ -139,7 +139,7 @@ function FileUploadWidget({ submissionId, existingFileUrl, existingFileName, onF
   const dropZoneClass = `
     relative border-2 border-dashed rounded-2xl p-8 transition-all duration-300 text-center cursor-pointer select-none
     ${isDragging ? 'border-accent-primary bg-accent-primary/5' : 'border-white/10 hover:border-white/25 bg-white/[0.02]'}
-    ${locked ? 'opacity-50 pointer-events-none' : ''}
+    ${locked ? 'opacity-80 pointer-events-none' : ''}
   `;
 
   if (fileUrl) {
@@ -907,6 +907,6 @@ function inputCls(hasError: boolean, disabled: boolean) {
     hasError
       ? 'border-red-500/50 focus:border-red-400'
       : 'border-white/[0.07] focus:border-accent-primary focus:shadow-[0_0_0_3px_rgba(0,243,255,0.06)]',
-    disabled ? 'opacity-50 cursor-not-allowed' : '',
+    disabled ? 'opacity-80 cursor-not-allowed' : '',
   ].join(' ');
 }

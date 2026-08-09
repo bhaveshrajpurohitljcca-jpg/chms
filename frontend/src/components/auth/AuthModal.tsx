@@ -99,10 +99,10 @@ export const AuthModal: React.FC = () => {
           </div>
           <div>
             <h2 className="font-archivo text-xl font-bold tracking-wide text-white">
-              CHMS Single Sign-On
+              HackZero Single Sign-On
             </h2>
             <p className="text-xs font-mono text-zinc-400">
-              College Hackathon Management Portal
+              HackZero Management Portal
             </p>
           </div>
         </div>

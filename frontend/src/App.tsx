@@ -20,7 +20,6 @@ import {
   Layers,
   Award,
   X,
-  Menu,
   Layers2,
   Clock,
   CheckCircle,
@@ -79,7 +78,7 @@ import Badge from '@/components/ui/badge';
 // ==========================================
 const GlobalLayout = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, openAuthModal, logout } = useAuth();
+  const { user, openAuthModal } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
 
@@ -87,6 +86,14 @@ const GlobalLayout = () => {
     { label: 'Explore Hackathons', path: '/hackathons' },
     { label: 'Explore Gallery', path: '/gallery' },
     { label: 'View Leader Board', path: '/leaderboard' }
+  ];
+
+  const mobileNavigationLinks = [
+    { label: 'Index', path: '/', icon: Layers },
+    { label: 'Explore', path: '/hackathons', icon: Search },
+    { label: 'Gallery', path: '/gallery', icon: Layers2 },
+    { label: 'Rankings', path: '/leaderboard', icon: Award },
+    { label: 'Console', path: user ? `/${user.role.toLowerCase()}` : '/', icon: Terminal },
   ];
 
   return (
@@ -103,7 +110,7 @@ const GlobalLayout = () => {
             <Zap size={16} className="dark:animate-pulse" />
           </Link>
           <span className="font-archivo text-base md:text-lg tracking-wider font-black text-[#0252cd] dark:text-white dark:text-glow-cyan cursor-default">
-            CHMS
+              HackZero
           </span>
         </div>
 
@@ -161,12 +168,6 @@ const GlobalLayout = () => {
                   {user.role}
                 </span>
               </Link>
-              <button
-                onClick={logout}
-                className="hidden sm:flex h-9 md:h-10 px-3 md:px-5 rounded-full bg-danger/10 border border-danger/40 text-danger hover:bg-danger hover:text-white text-xs font-bold uppercase tracking-wider transition-all duration-300 items-center justify-center"
-              >
-                Logout
-              </button>
             </div>
           ) : (
             <button
@@ -187,13 +188,6 @@ const GlobalLayout = () => {
           </button>
 
           {/* Mobile hamburger — opens full-screen drawer */}
-          <button
-            onClick={() => setIsMenuOpen(true)}
-            className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl border border-[#cbd5e1] dark:border-[rgba(255,255,255,0.15)] bg-white dark:bg-[rgba(255,255,255,0.05)] text-[#0f172a] dark:text-white hover:border-accent-primary/50 hover:text-accent-primary transition-all duration-300"
-            aria-label="Open menu"
-          >
-            <Menu size={18} />
-          </button>
         </div>
       </header>
 
@@ -288,9 +282,31 @@ const GlobalLayout = () => {
       )}
 
       {/* Central content outlet - responsive padding to clear top header height */}
-      <main className="relative z-10 flex-grow pt-16 md:pt-24">
+      <main className="relative z-10 flex-grow pt-16 pb-20 md:pt-24 md:pb-0">
         <Outlet />
       </main>
+
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-[#f8fafc]/95 dark:bg-[#080808]/95 backdrop-blur-md border-t border-[#cbd5e1] dark:border-white/10 pb-safe">
+        <div className="grid grid-cols-5 h-full">
+          {mobileNavigationLinks.map((link) => {
+            const Icon = link.icon;
+            const active = location.pathname === link.path;
+            const needsAuthentication = link.label === 'Console' && !user;
+            return needsAuthentication ? (
+              <button key={link.label} onClick={() => openAuthModal('login')} className="flex flex-col items-center justify-center gap-0.5 text-[#475569] dark:text-text-secondary">
+                <Icon size={18} />
+                <span className="text-[9px] font-semibold uppercase tracking-wide">{link.label}</span>
+              </button>
+            ) : (
+              <NavLink key={link.path} to={link.path} className={`relative flex flex-col items-center justify-center gap-0.5 ${active ? 'text-[#0252cd] dark:text-accent-primary' : 'text-[#475569] dark:text-text-secondary'}`}>
+                <Icon size={18} />
+                <span className="text-[9px] font-semibold uppercase tracking-wide">{link.label}</span>
+                {active && <span className="absolute bottom-0 h-0.5 w-6 rounded-full bg-accent-primary" />}
+              </NavLink>
+            );
+          })}
+        </div>
+      </nav>
 
       {/* Global Auth Modal */}
       <AuthModal />
@@ -344,10 +360,10 @@ const PublicLanding = () => {
 
       {/* Hero Section */}
       <section className="min-h-screen flex flex-col justify-center items-center px-4 sm:px-8 pt-24 pb-16 text-center max-w-7xl mx-auto w-full relative">
-        <StatusPulseBadge text="CHMS Core Module Active" className="mb-6 md:mb-8" />
+        <StatusPulseBadge text="HackZero Core Module Active" className="mb-6 md:mb-8" />
 
         <h2 className="font-archivo text-[clamp(2.5rem,10vw,8rem)] font-black tracking-tighter leading-[0.9] select-none mb-6 md:mb-10 bg-gradient-to-b from-white via-white/80 to-white/10 bg-clip-text text-transparent uppercase">
-          College Hackathon<br />Management System
+          HackZero
         </h2>
 
         <p className="max-w-xl text-xs sm:text-sm md:text-base text-text-secondary font-light leading-relaxed mb-8 md:mb-12 select-none px-2">
@@ -575,7 +591,7 @@ const GalleryView = () => {
   ];
 
   return (
-    <div className="flex flex-col gap-10 w-full max-w-6xl pl-4 md:pl-12">
+    <div className="flex flex-col gap-6 md:gap-10 w-full max-w-6xl px-4 md:pl-12 md:pr-4">
       <div>
         <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-glow-cyan text-white">
           Explore Gallery
@@ -583,23 +599,28 @@ const GalleryView = () => {
         <p className="text-xs text-text-secondary mt-1 font-light">Showcase of outstanding student deliverables and technical submissions.</p>
       </div>
 
-      <div className="flex flex-wrap gap-8">
+      <div className="flex flex-col gap-4">
         {showcaseProjects.map((proj) => (
           <div 
             key={proj.id}
             onClick={() => setSelectedProject(proj)}
-            className="w-full sm:w-[320px] h-[380px] glass-card rounded-[32px] p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-accent-primary/40 hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden"
+            className="w-full min-h-[156px] glass-card rounded-2xl border border-white/20 dark:border-white/15 p-4 sm:p-6 flex flex-row items-center gap-4 sm:gap-6 text-left cursor-pointer hover:border-accent-primary/50 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden"
           >
             {/* Subtle background glow */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-accent-primary/5 rounded-full blur-[30px] pointer-events-none group-hover:bg-accent-primary/10 transition-colors" />
             
-            <div className="w-16 h-16 rounded-2xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.1)] flex items-center justify-center mb-6 group-hover:scale-110 group-hover:border-accent-primary/30 transition-all duration-500">
+            <div className="w-24 h-24 sm:w-32 sm:h-28 rounded-xl bg-accent-primary/10 border border-accent-primary/30 flex items-center justify-center flex-shrink-0 group-hover:scale-105 group-hover:border-accent-primary/50 transition-all duration-300">
               <Layers2 size={28} className="text-white/60 group-hover:text-accent-primary transition-colors" />
             </div>
-            
-            <h3 className="font-archivo text-2xl font-black text-white uppercase tracking-tight group-hover:text-glow-cyan transition-colors">
-              {proj.title}
-            </h3>
+
+            <div className="relative min-w-0 flex-1">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-accent-primary font-bold mb-1">{proj.team.name}</p>
+              <h3 className="font-archivo text-lg sm:text-xl font-black text-white uppercase tracking-tight group-hover:text-glow-cyan transition-colors">
+                {proj.title}
+              </h3>
+              <p className="mt-2 text-xs sm:text-sm text-text-secondary leading-relaxed line-clamp-2">{proj.description}</p>
+              <p className="mt-2 text-[11px] text-white/50 truncate">{proj.techStack.join(' · ')}</p>
+            </div>
           </div>
         ))}
       </div>
@@ -726,30 +747,34 @@ const LeaderboardView = () => {
         <>
           {/* Top 3 Podium Cards */}
           {podiumWinners.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-8 items-end px-2 md:px-4 py-4 md:py-8">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-8 items-stretch md:items-end px-0 md:px-4 py-2 md:py-8">
               {reorderedPodium.map((winner) => {
                 const isFirst = winner.rank === 1;
                 const isSecond = winner.rank === 2;
                 const isThird = winner.rank === 3;
 
-                let cardHeight = 'h-72';
+                let cardHeight = 'h-52 md:h-72';
                 let accentBorder = 'border-[rgba(255,255,255,0.08)]';
                 let glowShadow = '';
                 let medalColor = 'text-white/40';
+                let rankSurface = 'bg-slate-900/70 dark:bg-slate-950/80';
 
                 if (isFirst) {
                   cardHeight = 'h-88 md:-translate-y-4';
                   accentBorder = 'border-[#FFD700]';
                   glowShadow = 'shadow-[0_0_30px_rgba(255,215,0,0.15)]';
                   medalColor = 'text-[#FFD700]';
+                  rankSurface = 'bg-[#5b4200]/30 dark:bg-[#3d2d00]/55';
                 } else if (isSecond) {
                   accentBorder = 'border-[#C0C0C0]';
                   medalColor = 'text-[#C0C0C0]';
                   glowShadow = 'shadow-[0_0_20px_rgba(192,192,192,0.1)]';
+                  rankSurface = 'bg-slate-300/20 dark:bg-slate-400/15';
                 } else if (isThird) {
                   accentBorder = 'border-[#CD7F32]';
                   medalColor = 'text-[#CD7F32]';
                   glowShadow = 'shadow-[0_0_20px_rgba(205,127,50,0.1)]';
+                  rankSurface = 'bg-[#78350f]/25 dark:bg-[#431407]/55';
                 }
 
                 return (
@@ -765,26 +790,26 @@ const LeaderboardView = () => {
                         { id: 'u3', name: 'Charlie Davis', role: 'Backend Engineer', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80' }
                       ]
                     })}
-                    className={`glass-card rounded-[24px] md:rounded-[40px] border p-5 md:p-8 flex flex-col justify-between items-center text-center relative ${accentBorder} ${glowShadow} min-h-[200px] md:${cardHeight} hover:-translate-y-2 hover:bg-white/[0.08] cursor-pointer transition-all duration-300`}
+                    className={`glass-card ${rankSurface} rounded-xl md:rounded-[32px] border p-2.5 sm:p-4 md:p-8 flex flex-col justify-between items-center text-center relative ${accentBorder} ${glowShadow} ${cardHeight} hover:-translate-y-1 hover:bg-white/[0.08] cursor-pointer transition-all duration-300`}
                   >
                     {/* Ranking Medals Badge */}
-                    <div className={`w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-archivo text-lg font-black ${medalColor} mb-2`}>
+                    <div className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center font-archivo text-xs sm:text-sm md:text-lg font-black ${medalColor} mb-1`}>
                       #{winner.rank}
                     </div>
 
                     <div className="flex flex-col gap-1 w-full">
-                      <h4 className="font-archivo text-xl font-black text-white truncate max-w-full">
+                      <h4 className="font-archivo text-xs sm:text-base md:text-xl font-black text-white truncate max-w-full">
                         {winner.team}
                       </h4>
-                      <p className="text-xs text-white/50 truncate max-w-full font-semibold">{winner.project}</p>
-                      <p className="text-[10px] text-white/30 uppercase tracking-widest font-mono mt-1">{winner.branch}</p>
+                      <p className="hidden sm:block text-xs text-white/50 truncate max-w-full font-semibold">{winner.project}</p>
+                      <p className="hidden md:block text-[10px] text-white/30 uppercase tracking-widest font-mono mt-1">{winner.branch}</p>
                     </div>
 
                     {/* Score badge */}
                     <div className="flex flex-col items-center">
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-white/40">Total Score</span>
-                      <span className="font-mono text-3xl font-black text-white mt-1">
-                        {winner.score}<span className="text-xs font-light text-white/40"> pts</span>
+                      <span className="hidden sm:block text-[10px] uppercase font-bold tracking-wider text-white/40">Score</span>
+                      <span className="font-mono text-lg sm:text-2xl md:text-3xl font-black text-white mt-1">
+                        {winner.score}<span className="hidden sm:inline text-xs font-light text-white/40"> pts</span>
                       </span>
                     </div>
 
