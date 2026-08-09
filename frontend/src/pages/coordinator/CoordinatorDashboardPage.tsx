@@ -34,7 +34,7 @@ function StatCard({ label, value, icon: Icon, color, detail }: {
     <div className="flex flex-col gap-3 p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-white/15 transition-all duration-300">
       <div className="flex items-center justify-between">
         <p className="text-[9px] uppercase tracking-widest font-bold text-white/40">{label}</p>
-        <div className={w-8 h-8 rounded-xl flex items-center justify-center +color}>
+        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${color}`}>
           <Icon size={14} />
         </div>
       </div>
@@ -52,7 +52,7 @@ function QuickLink({ to, icon: Icon, label, color }: {
       to={to}
       className="group flex items-center gap-3 p-3.5 rounded-xl border border-white/[0.06] bg-white/[0.01] hover:bg-white/[0.05] hover:border-white/20 transition-all duration-300"
     >
-      <div className={w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 +color}>
+      <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
         <Icon size={14} />
       </div>
       <span className="text-xs font-semibold text-white flex-1">{label}</span>
@@ -174,15 +174,19 @@ export function CoordinatorDashboardPage() {
                 const isSelected = selectedHackathon?.id === h.id;
                 return (
                   <button key={h.id} onClick={() => setSelectedHackathon(h)}
-                    className={	ext-left p-3 rounded-xl border transition-all duration-200 group }>
+                    className={`text-left p-3 rounded-xl border transition-all duration-200 group ${
+                      isSelected
+                        ? 'border-accent-primary/40 bg-accent-primary/5 shadow-[0_0_16px_rgba(0,243,255,0.05)]'
+                        : 'border-white/[0.06] bg-white/[0.01] hover:border-white/20 hover:bg-white/[0.03]'
+                    }`}>
                     <div className="flex items-start gap-2.5">
-                      <div className={mt-1.5 w-2 h-2 rounded-full flex-shrink-0 +(STATUS_DOT[h.status] || 'bg-white/20')} />
+                      <div className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${STATUS_DOT[h.status] || 'bg-white/20'}`} />
                       <div className="flex-1 min-w-0">
-                        <p className={	ext-xs font-semibold truncate +(isSelected ? 'text-white' : 'text-white/70 group-hover:text-white')}>
+                        <p className={`text-xs font-semibold truncate ${isSelected ? 'text-white' : 'text-white/70 group-hover:text-white'}`}>
                           {h.title}
                         </p>
                         <div className="flex items-center gap-1.5 mt-1">
-                          <span className={	ext-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border +(STATUS_BADGE[h.status] || '')}>
+                          <span className={`text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${STATUS_BADGE[h.status] || ''}`}>
                             {h.status}
                           </span>
                           <span className="text-[9px] font-mono text-white/25">{h.problem_statements?.length || 0} PS</span>
@@ -219,8 +223,8 @@ export function CoordinatorDashboardPage() {
                 <div className="relative z-10 flex flex-col md:flex-row md:items-start gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className={w-2 h-2 rounded-full +(STATUS_DOT[selectedHackathon.status])} />
-                      <span className={	ext-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border +(STATUS_BADGE[selectedHackathon.status])}>
+                      <div className={`w-2 h-2 rounded-full ${STATUS_DOT[selectedHackathon.status]}`} />
+                      <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${STATUS_BADGE[selectedHackathon.status]}`}>
                         {selectedHackathon.status}
                       </span>
                     </div>
@@ -230,11 +234,11 @@ export function CoordinatorDashboardPage() {
                     {selectedHackathon.tagline && <p className="text-xs text-white/40 mt-1">{selectedHackathon.tagline}</p>}
                   </div>
                   <div className="flex gap-2 flex-shrink-0 flex-wrap">
-                    <Link to={/coordinator/problem-statements?hackathonId=}
+                    <Link to={`/coordinator/problem-statements?hackathonId=${selectedHackathon.id}`}
                       className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 text-[10px] font-semibold hover:border-accent-secondary hover:text-accent-secondary transition-all">
                       <FileText size={11} /> Problem Statements
                     </Link>
-                    <Link to={/coordinator/registrations?hackathonId=}
+                    <Link to={`/coordinator/registrations?hackathonId=${selectedHackathon.id}`}
                       className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 text-[10px] font-semibold hover:border-accent-primary hover:text-accent-primary transition-all">
                       <Eye size={11} /> Registrations
                     </Link>
@@ -246,26 +250,30 @@ export function CoordinatorDashboardPage() {
               {(daysToDeadline !== null || daysToEnd !== null) && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {daysToDeadline !== null && (
-                    <div className={lex items-center gap-3 p-3.5 rounded-xl border +(
+                    <div className={`flex items-center gap-3 p-3.5 rounded-xl border ${
                       daysToDeadline <= 2 ? 'border-danger/30 bg-danger/5 text-danger' :
                       daysToDeadline <= 7 ? 'border-warning/30 bg-warning/5 text-warning' :
                       'border-white/10 bg-white/[0.02] text-white/50'
-                    )}>
+                    }`}>
                       <Clock size={14} className="flex-shrink-0" />
                       <p className="text-[11px] font-semibold">
-                        {daysToDeadline > 0 ? Registration closes in  day : 'Registration deadline passed'}
+                        {daysToDeadline > 0
+                          ? `Registration closes in ${daysToDeadline} day${daysToDeadline !== 1 ? 's' : ''}`
+                          : 'Registration deadline passed'}
                       </p>
                     </div>
                   )}
                   {daysToEnd !== null && (
-                    <div className={lex items-center gap-3 p-3.5 rounded-xl border +(
+                    <div className={`flex items-center gap-3 p-3.5 rounded-xl border ${
                       daysToEnd <= 1 ? 'border-danger/30 bg-danger/5 text-danger' :
                       daysToEnd <= 5 ? 'border-warning/30 bg-warning/5 text-warning' :
                       'border-white/10 bg-white/[0.02] text-white/50'
-                    )}>
+                    }`}>
                       <Calendar size={14} className="flex-shrink-0" />
                       <p className="text-[11px] font-semibold">
-                        {daysToEnd > 0 ? Hackathon ends in  day : 'Hackathon has ended'}
+                        {daysToEnd > 0
+                          ? `Hackathon ends in ${daysToEnd} day${daysToEnd !== 1 ? 's' : ''}`
+                          : 'Hackathon has ended'}
                       </p>
                     </div>
                   )}
@@ -280,14 +288,17 @@ export function CoordinatorDashboardPage() {
               ) : (
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   <StatCard label="Registered Teams" value={totalTeams} icon={Users}
-                    color="bg-accent-primary/10 text-accent-primary" detail={Max  members/team} />
+                    color="bg-accent-primary/10 text-accent-primary"
+                    detail={`Max ${selectedHackathon.max_team_size} members/team`} />
                   <StatCard label="Submissions" value={submittedCount} icon={BookOpen}
-                    color="bg-accent-secondary/10 text-accent-secondary" detail={${gradedCount} graded} />
+                    color="bg-accent-secondary/10 text-accent-secondary"
+                    detail={`${gradedCount} graded`} />
                   <StatCard label="Pending Review" value={pendingEval} icon={Activity}
                     color={pendingEval > 0 ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'}
                     detail={pendingEval === 0 ? 'All reviewed!' : 'Needs evaluation'} />
                   <StatCard label="Problem Statements" value={psCount} icon={FileText}
-                    color="bg-accent-third/10 text-accent-third" detail={${annCount} announcements} />
+                    color="bg-accent-third/10 text-accent-third"
+                    detail={`${annCount} announcements`} />
                 </div>
               )}
 
@@ -296,7 +307,7 @@ export function CoordinatorDashboardPage() {
                 <div className="md:col-span-3 flex flex-col gap-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-[9px] uppercase tracking-widest font-bold text-white/40">Recent Registrations</h3>
-                    <Link to={/coordinator/registrations?hackathonId=}
+                    <Link to={`/coordinator/registrations?hackathonId=${selectedHackathon.id}`}
                       className="text-[10px] text-accent-primary hover:text-white transition-colors flex items-center gap-1">
                       View all <ArrowRight size={10} />
                     </Link>
@@ -328,9 +339,9 @@ export function CoordinatorDashboardPage() {
                 <div className="md:col-span-2 flex flex-col gap-3">
                   <h3 className="text-[9px] uppercase tracking-widest font-bold text-white/40">Quick Actions</h3>
                   <div className="flex flex-col gap-2">
-                    <QuickLink to={/coordinator/problem-statements?hackathonId=}
+                    <QuickLink to={`/coordinator/problem-statements?hackathonId=${selectedHackathon.id}`}
                       icon={FileText} label="Manage Problem Statements" color="bg-accent-secondary/10 text-accent-secondary" />
-                    <QuickLink to={/coordinator/registrations?hackathonId=}
+                    <QuickLink to={`/coordinator/registrations?hackathonId=${selectedHackathon.id}`}
                       icon={Users} label="View Registrations" color="bg-accent-primary/10 text-accent-primary" />
                     <QuickLink to="/coordinator/announcements"
                       icon={Megaphone} label="Create Announcement" color="bg-success/10 text-success" />
@@ -364,7 +375,7 @@ export function CoordinatorDashboardPage() {
                         urgent: 'border-danger/20 bg-danger/5 text-danger',
                       };
                       return (
-                        <div key={ann.id} className={p-3.5 rounded-xl border +(ts[ann.announcement_type] || 'border-white/10 text-white')}>
+                        <div key={ann.id} className={`p-3.5 rounded-xl border ${ts[ann.announcement_type] || 'border-white/10 text-white'}`}>
                           <div className="flex items-start justify-between gap-2">
                             <p className="text-xs font-semibold">{ann.title}</p>
                             {!ann.is_published && <span className="text-[8px] uppercase bg-white/10 text-white/40 px-1.5 py-0.5 rounded-full flex-shrink-0">Draft</span>}
