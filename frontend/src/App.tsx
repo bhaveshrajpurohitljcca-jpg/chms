@@ -483,20 +483,20 @@ const PublicLanding = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 bg-[#050505]/95 dark:bg-[#050505]/95 backdrop-blur-md pt-16 pb-10 px-8 w-full">
+      <footer className="border-t border-white/10 bg-black pt-16 pb-10 px-8 w-full">
         <div className="max-w-7xl mx-auto w-full flex flex-col gap-12">
           
           {/* Centered WhatsApp Invite Block */}
           <div className="flex flex-col items-center justify-center text-center py-6 gap-5 w-full max-w-xl mx-auto">
-            <div className="w-14 h-14 rounded-full bg-[#0252cd]/10 dark:bg-accent-primary/10 border border-[#0252cd]/30 dark:border-accent-primary/30 flex items-center justify-center text-[#93c5fd] dark:text-accent-primary">
+            <div className="w-14 h-14 rounded-full bg-accent-primary/10 border border-accent-primary/30 flex items-center justify-center text-accent-primary">
               <MessageCircle size={28} />
             </div>
             
             <div className="flex flex-col gap-2">
-              <h4 className="font-archivo text-2xl md:text-3xl uppercase font-black tracking-tight text-white dark:text-white">
+              <h4 className="font-archivo text-2xl md:text-3xl uppercase font-black tracking-tight text-white">
                 Join the Community
               </h4>
-              <p className="text-xs text-white/70 dark:text-white/50 leading-relaxed font-light">
+              <p className="text-xs text-white/60 leading-relaxed font-light">
                 Connect with developers, innovators, and analysts inside the Advance Innovation Research & Analysis Lab.
               </p>
             </div>
@@ -505,26 +505,26 @@ const PublicLanding = () => {
               href="https://whatsapp.com/channel/0029VbClQzuDzgT2mJ7z1o2v" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="px-8 h-12 rounded-full bg-[#0252cd] dark:bg-accent-primary hover:bg-[#0341a8] dark:hover:bg-[#00d4df] text-white dark:text-black font-archivo text-xs uppercase font-black tracking-wider flex items-center gap-3 transition-all duration-300 shadow-lg dark:shadow-[0_0_25px_rgba(0,243,255,0.25)] hover:scale-105"
+              className="px-8 h-12 rounded-full bg-accent-primary hover:bg-[#00d4df] text-black font-archivo text-xs uppercase font-black tracking-wider flex items-center gap-3 transition-all duration-300 shadow-[0_0_25px_rgba(0,243,255,0.25)] hover:scale-105"
             >
               <span>Join AiRA Lab Community</span>
               <ExternalLink size={14} />
             </a>
           </div>
 
-          <div className="border-t border-[#cbd5e1] dark:border-[rgba(255,255,255,0.05)] pt-8 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="border-t border-white/10 pt-8 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex flex-col gap-1.5 text-center sm:text-left">
-              <span className="text-[9px] uppercase tracking-[0.3em] text-[#475569] dark:text-[rgba(255,255,255,0.35)] font-semibold select-none">
+              <span className="text-[9px] uppercase tracking-[0.3em] text-white/40 font-semibold select-none">
                 © 2026 AiRA LAB. ALL RIGHTS RESERVED.
               </span>
-              <span className="text-[9px] uppercase tracking-[0.1em] text-[#0252cd] dark:text-accent-primary font-mono font-bold select-none">
+              <span className="text-[9px] uppercase tracking-[0.1em] text-accent-primary font-mono font-bold select-none">
                 Developed By Team Zero ( Yash Chaudary , Dhyey Trivedi , Bhavesh Rajpurohit )
               </span>
             </div>
             
-            <div className="flex gap-6 text-[9px] uppercase tracking-wider text-[#475569] dark:text-[rgba(255,255,255,0.35)] font-bold">
-              <a href="#" className="hover:text-[#0252cd] dark:hover:text-accent-primary transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-[#0252cd] dark:hover:text-accent-primary transition-colors">Terms of Use</a>
+            <div className="flex gap-6 text-[9px] uppercase tracking-wider text-white/40 font-bold">
+              <a href="#" className="hover:text-accent-primary transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-accent-primary transition-colors">Terms of Use</a>
             </div>
           </div>
 
