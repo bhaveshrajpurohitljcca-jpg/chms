@@ -123,9 +123,9 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
     location.pathname + location.search === path ||
     (location.pathname === path && path === '/admin' && !location.search);
 
-  // Shared nav link renderer
+  // Shared nav link renderer (Horizontal top bar & drawer)
   const NavLinks = ({ onNavigate }: { onNavigate?: () => void }) => (
-    <>
+    <div className="flex items-center gap-1 md:gap-1.5 overflow-x-auto no-scrollbar max-w-full py-1">
       {menuItems.map((item) => {
         const Icon = item.icon;
         const active = isActive(item.path);
@@ -134,33 +134,33 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
             key={item.path}
             to={item.path}
             onClick={onNavigate}
-            className={`flex items-center gap-3 px-4 h-11 rounded-full text-xs font-semibold uppercase tracking-wider transition-all duration-300 touch-target ${
+            className={`flex items-center gap-2 px-3 xl:px-4 h-9 xl:h-10 rounded-full text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-300 touch-target ${
               active
-                ? 'bg-accent-primary text-white shadow-md'
-                : 'text-text-secondary hover:text-text-primary hover:bg-black/5'
+                ? 'bg-[#0252cd] dark:bg-accent-primary text-white shadow-md shadow-[#0252cd]/20 dark:shadow-accent-primary/20 scale-[1.02]'
+                : 'text-[#475569] dark:text-text-secondary hover:text-[#0f172a] dark:hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/5'
             }`}
           >
-            <Icon size={14} className={active ? 'text-white' : 'text-text-secondary'} />
+            <Icon size={14} className={active ? 'text-white' : 'text-[#64748b] dark:text-text-secondary'} />
             <span>{item.label}</span>
           </Link>
         );
       })}
-    </>
+    </div>
   );
 
   return (
     <div className="relative min-h-screen bg-[var(--bg-primary)] text-text-primary flex flex-col font-manrope selection:bg-accent-primary selection:text-white overflow-x-hidden">
 
-      {/* ── TOP HEADER ─────────────────────────────────────────── */}
-      <header className="fixed top-0 left-0 right-0 h-14 md:h-16 z-30 px-3 md:px-6 flex items-center justify-between glass-surface backdrop-blur-md border-b border-[var(--border-color)]">
+      {/* ── TOP HEADER WITH INTEGRATED TOP NAVIGATION BAR ─────── */}
+      <header className="fixed top-0 left-0 right-0 h-16 md:h-20 z-30 px-3 md:px-6 flex items-center justify-between glass-surface backdrop-blur-md border-b border-[var(--border-color)]">
         
         {/* Left: Brand */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <Link to="/" className="w-8 h-8 rounded-lg bg-[#0252cd] dark:bg-accent-primary/10 border border-[#0252cd] dark:border-accent-primary/30 flex items-center justify-center text-white dark:text-accent-primary flex-shrink-0">
-              <Zap size={14} />
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <Link to="/" className="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-[#0252cd] dark:bg-accent-primary/10 border border-[#0252cd] dark:border-accent-primary/30 flex items-center justify-center text-white dark:text-accent-primary flex-shrink-0">
+              <Zap size={16} />
             </Link>
-            <span className="font-archivo text-sm md:text-md tracking-wider font-black text-[#0252cd] dark:text-accent-primary cursor-default">
+            <span className="font-archivo text-sm md:text-lg tracking-wider font-black text-[#0252cd] dark:text-accent-primary cursor-default">
               HackZero
             </span>
           </div>
@@ -170,16 +170,21 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
           </span>
         </div>
 
+        {/* Center: TOP MENU OPTIONS (Desktop Navigation) */}
+        <nav className="hidden md:flex items-center justify-center mx-3 flex-1 min-w-0">
+          <NavLinks />
+        </nav>
+
         {/* Right: Badge + user + actions */}
-        <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
-          <div className="hidden lg:block">
+        <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+          <div className="hidden xl:block">
             <StatusPulseBadge text="NODE SECURED" />
           </div>
 
-          <div className="flex items-center gap-2 md:gap-3 pl-2 md:pl-4 border-l border-[#cbd5e1] dark:border-[var(--border-color)]">
-            <div className="hidden md:flex flex-col text-right">
+          <div className="flex items-center gap-2 md:gap-3 pl-2 md:pl-3 border-l border-[#cbd5e1] dark:border-[var(--border-color)]">
+            <div className="hidden sm:flex flex-col text-right">
               <span className="text-xs font-bold text-[#0f172a] dark:text-white leading-tight">{user.full_name || 'Operator'}</span>
-              <span className="text-[9px] font-mono text-[#475569] dark:text-text-secondary truncate max-w-[140px] font-semibold">{user.email}</span>
+              <span className="text-[9px] font-mono text-[#475569] dark:text-text-secondary truncate max-w-[130px] font-semibold">{user.email}</span>
             </div>
             
             <button 
@@ -196,17 +201,12 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
       </header>
 
       {/* ── WORKSPACE BODY ─────────────────────────────────────── */}
-      <div className="relative z-10 flex flex-row flex-grow pt-14 md:pt-16 w-full">
+      <div className="relative z-10 flex flex-col flex-grow pt-16 md:pt-20 w-full">
         
-        {/* DESKTOP SIDEBAR */}
-        <aside className="w-56 lg:w-64 fixed left-0 top-14 md:top-16 bottom-0 bg-[var(--bg-primary)] border-r border-[var(--border-color)] p-3 lg:p-4 flex flex-col gap-2 overflow-y-auto hidden md:flex select-none">
-          <NavLinks />
-        </aside>
-
-        {/* MAIN CONTENT */}
-        <main className="flex-grow md:pl-56 lg:pl-64 min-h-screen w-full overflow-x-hidden bg-[var(--bg-primary)]
+        {/* MAIN CONTENT (FULL WIDTH) */}
+        <main className="flex-grow w-full min-h-screen bg-[var(--bg-primary)]
           p-3 sm:p-4 md:p-6 lg:p-8
-          pb-24 md:pb-8
+          pb-24 md:pb-12 max-w-7xl mx-auto
         ">
           <Outlet />
         </main>
@@ -238,8 +238,6 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
           })}
         </div>
       </nav>
-
-      {/* ── MOBILE DRAWER OVERLAY ──────────────────────────────── */}
     </div>
   );
 }
