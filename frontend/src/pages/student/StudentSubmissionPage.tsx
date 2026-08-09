@@ -8,7 +8,6 @@ import {
   RefreshCw, Send, Loader2, Trash2, Award, ExternalLink
 } from 'lucide-react';
 import { apiService, type SubmissionRecord, STATIC_BASE } from '@/services/api';
-import { useAuth } from '@/context/AuthContext';
 
 // ─── Validation Schema ──────────────────────────────────────
 const GITHUB_REGEX = /^https:\/\/github\.com\/[\w\-\.]+\/[\w\-\.]+\/?$/;
