@@ -140,6 +140,43 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
               </div>
             </div>
 
+            {(profile.github_url || profile.linkedin_url) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {profile.github_url && (
+                  <a
+                    href={profile.github_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 hover:border-accent-primary/50 transition-all flex items-center gap-3 group"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center text-accent-primary group-hover:scale-105 transition-transform">
+                      <Code size={20} />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-white/40">GitHub Profile</span>
+                      <span className="text-xs font-semibold text-white truncate">{profile.github_url}</span>
+                    </div>
+                  </a>
+                )}
+                {profile.linkedin_url && (
+                  <a
+                    href={profile.linkedin_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 hover:border-accent-primary/50 transition-all flex items-center gap-3 group"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center text-accent-primary group-hover:scale-105 transition-transform">
+                      <Globe size={20} />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-white/40">LinkedIn Profile</span>
+                      <span className="text-xs font-semibold text-white truncate">{profile.linkedin_url}</span>
+                    </div>
+                  </a>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 flex flex-col gap-1">
                 <span className="text-[10px] uppercase font-semibold text-white/40">Status</span>

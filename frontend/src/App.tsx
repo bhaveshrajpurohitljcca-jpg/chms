@@ -65,6 +65,9 @@ import { RegistrationPage } from '@/pages/student/RegistrationPage';
 import StudentSubmissionPage from '@/pages/student/StudentSubmissionPage';
 import JudgeDashboardPage from '@/pages/judge/JudgeDashboardPage';
 import JudgeAssignmentPage from '@/pages/admin/JudgeAssignmentPage';
+import { CoordinatorDashboardPage } from '@/pages/coordinator/CoordinatorDashboardPage';
+import { CoordinatorProblemStatementsPage } from '@/pages/coordinator/CoordinatorProblemStatementsPage';
+import { CoordinatorHackathonsPage } from '@/pages/coordinator/CoordinatorHackathonsPage';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { ProfilePage } from '@/pages/ProfilePage';
@@ -557,7 +560,8 @@ const GalleryView = () => {
               const subRes = await apiService.getLeaderboard(h.id);
               if (subRes.data && subRes.data.length > 0) {
                 subRes.data.forEach((item: any, idx: number) => {
-                  projects.push({
+                  if (item.score > 75) {
+                    projects.push({
                     id: `${h.id}-${idx}`,
                     title: item.project_title || 'Project Submission',
                     description: item.description || item.feedback || 'Completed project submission.',
@@ -576,6 +580,7 @@ const GalleryView = () => {
                       })) : []
                     }
                   });
+                  }
                 });
               }
             } catch {
@@ -2311,7 +2316,7 @@ const HackathonAnalyticsView: React.FC<HackathonAnalyticsProps> = ({ hackathonId
 
 
 // 10. COORDINATOR HUB
-const CoordinatorView = () => {
+export const CoordinatorView = () => {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -6427,10 +6432,10 @@ function App() {
 
           {/* Coordinator Protected Portal */}
           <Route path="/coordinator" element={<RoleLayout allowedRoles={['coordinator']} />}>
-            <Route index element={<CoordinatorView />} />
-            <Route path="hackathons" element={<CoordinatorView />} />
-            <Route path="problem-statements" element={<CoordinatorView />} />
-            <Route path="registrations" element={<CoordinatorView />} />
+            <Route index element={<CoordinatorDashboardPage />} />
+            <Route path="hackathons" element={<CoordinatorHackathonsPage />} />
+            <Route path="problem-statements" element={<CoordinatorProblemStatementsPage />} />
+            <Route path="registrations" element={<CoordinatorDashboardPage />} />
             <Route path="submissions" element={<SubmissionsView />} />
             <Route path="assignments" element={<JudgeAssignmentPage />} />
             <Route path="announcements" element={<AnnouncementsView />} />

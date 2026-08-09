@@ -8,6 +8,7 @@ import {
   RefreshCw, Send, Loader2, Trash2, Award, ExternalLink, Code
 } from 'lucide-react';
 import { apiService, type SubmissionRecord, STATIC_BASE } from '@/services/api';
+import { EvaluationScorecardModal } from '@/components/student/EvaluationScorecardModal';
 
 // ─── Validation Schema ──────────────────────────────────────
 const GITHUB_REGEX = /^https:\/\/github\.com\/[\w\-\.]+\/[\w\-\.]+\/?$/;
@@ -252,6 +253,7 @@ export default function StudentSubmissionPage() {
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [selectedHackathonId, setSelectedHackathonId] = useState<string>('');
+  const [isScorecardOpen, setIsScorecardOpen] = useState(false);
   const [activeTeam, setActiveTeam] = useState<any | null>(null);
   const [submission, setSubmission] = useState<SubmissionRecord | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -583,8 +585,17 @@ export default function StudentSubmissionPage() {
         </div>
 
         {submission && (
-          <div className="flex-shrink-0">
+          <div className="flex flex-col items-end gap-2 flex-shrink-0">
             <StatusBadge status={submission.status} />
+            {submission.evaluations && submission.evaluations.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsScorecardOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-accent-primary text-black font-bold text-xs hover:bg-accent-primary/80 transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(0,243,255,0.3)]"
+              >
+                <Award size={13} /> View Evaluation Scorecard
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -844,6 +855,13 @@ export default function StudentSubmissionPage() {
           </div>
         </div>
       )}
+
+      <EvaluationScorecardModal
+        isOpen={isScorecardOpen}
+        onClose={() => setIsScorecardOpen(false)}
+        evaluations={submission?.evaluations || []}
+        projectTitle={submission?.title}
+      />
     </div>
   );
 }

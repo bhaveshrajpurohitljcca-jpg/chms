@@ -325,10 +325,6 @@ export const ProfilePage: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 font-mono text-sm">
               <div>
-                <span className="text-xs text-zinc-500 uppercase block mb-1">User Identifier</span>
-                <span className="text-zinc-300">{user.id}</span>
-              </div>
-              <div>
                 <span className="text-xs text-zinc-500 uppercase block mb-1">Account Role</span>
                 <span className="text-accent-primary font-bold capitalize">{user.role}</span>
               </div>
