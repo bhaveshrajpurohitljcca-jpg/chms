@@ -60,7 +60,12 @@ export default function JudgeAssignmentPage() {
 
     setAssigning(true);
     try {
-      const res = await apiService.assignJudge(selectedSubmissionId, selectedJudgeId);
+      const selectedSubmission = submissions.find((submission) => submission.id === selectedSubmissionId);
+      const res = await apiService.assignJudge(
+        selectedSubmissionId,
+        selectedJudgeId,
+        selectedSubmission?.hackathon_id
+      );
       if (res.success) {
         showToast('Judge assigned successfully!');
         setSelectedJudgeId('');
@@ -76,9 +81,13 @@ export default function JudgeAssignmentPage() {
   };
 
   // Handle Remove Assignment
-  const handleRemove = async (assignmentId: string) => {
+  const handleRemove = async (assignment: JudgeAssignmentRecord) => {
     try {
-      await apiService.removeAssignment(assignmentId);
+      await apiService.deleteJudgeAssignment(
+        assignment.judge_id,
+        assignment.hackathon_id || '',
+        assignment.submission_id
+      );
       showToast('Assignment removed.');
       loadData();
     } catch (err: any) {
@@ -241,7 +250,7 @@ export default function JudgeAssignmentPage() {
                               <Users size={12} />
                               {getAssignmentJudgeLabel(asg)}
                               <button
-                                onClick={() => handleRemove(asg.id)}
+                                onClick={() => handleRemove(asg)}
                                 className="ml-1 text-white/40 hover:text-red-400 transition-colors"
                                 title="Remove Assignment"
                               >

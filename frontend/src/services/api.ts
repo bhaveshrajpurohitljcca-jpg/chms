@@ -42,6 +42,7 @@ export interface BackendProblemStatement {
   hackathon_id: string;
   title: string;
   description: string;
+  technical_deliverable?: string;
   category: string;
   difficulty: string;
   max_teams: number;
@@ -431,6 +432,7 @@ export const apiService = {
   async addProblemStatement(hackathonId: string, payload: {
     title: string;
     description: string;
+    technical_deliverable?: string;
     category?: string;
     difficulty?: string;
     max_teams?: number;
@@ -503,6 +505,7 @@ export const apiService = {
   async createProblemStatement(hackathonId: string, payload: {
     title: string;
     description: string;
+    technical_deliverable?: string;
     category?: string;
     difficulty?: string;
     max_teams?: number;
@@ -513,6 +516,7 @@ export const apiService = {
   async updateProblemStatement(hackathonId: string, problemId: string, payload: {
     title: string;
     description: string;
+    technical_deliverable?: string;
     category?: string;
     difficulty?: string;
     max_teams?: number;
@@ -746,14 +750,8 @@ export const apiService = {
   async assignJudge(submissionId: string, judgeId: string, hackathonId?: string) {
     let hId = hackathonId;
     if (!hId) {
-      try {
-        const subRes = await request<SubmissionRecord>(`/submissions/${submissionId}`);
-        if (subRes.data && subRes.data.hackathon_id) {
-          hId = subRes.data.hackathon_id;
-        }
-      } catch (err) {
-        console.warn('Could not auto-fetch hackathon_id for submission', err);
-      }
+      const submissionsRes = await request<SubmissionRecord[]>('/submissions');
+      hId = submissionsRes.data?.find((submission) => submission.id === submissionId)?.hackathon_id;
     }
     return request<JudgeAssignmentRecord>('/assignments/judges', {
       method: 'POST',
@@ -768,18 +766,23 @@ export const apiService = {
 
   /** Remove a judge assignment (Admin/Coordinator) */
   async removeAssignment(assignmentId: string) {
-    return request<Record<string, unknown>>(`/evaluations/assign/${assignmentId}`, {
+    return request<Record<string, unknown>>(`/assignments/judges/${assignmentId}`, {
       method: 'DELETE',
     });
   },
 
   /** List judge assignments (Admin/Coordinator) */
   async listAssignments(submissionId?: string, judgeId?: string) {
-    const params = new URLSearchParams();
-    if (submissionId) params.append('submission_id', submissionId);
-    if (judgeId) params.append('judge_id', judgeId);
-    const query = params.toString() ? `?${params.toString()}` : '';
-    return request<JudgeAssignmentRecord[]>(`/evaluations/assignments${query}`);
+    const response = await request<JudgeAssignmentRecord[]>('/assignments/judges');
+    const filtered = (response.data || []).filter((assignment) => {
+      if (submissionId && assignment.submission_id !== submissionId) return false;
+      if (judgeId && assignment.judge_id !== judgeId) return false;
+      return true;
+    });
+    return {
+      ...response,
+      data: filtered,
+    };
   },
 
   /** Get submissions assigned to the logged-in judge */

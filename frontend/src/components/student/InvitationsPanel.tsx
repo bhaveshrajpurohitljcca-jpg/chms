@@ -19,7 +19,6 @@ export const InvitationsPanel: React.FC<InvitationsPanelProps> = ({
   const [actionErrors, setActionErrors] = useState<Record<string, string>>({});
 
   const pendingInvitations = invitations.filter(inv => inv.status === 'pending');
-  const pastInvitations = invitations.filter(inv => inv.status !== 'pending');
 
   const handleAccept = async (invitationId: string) => {
     setActionLoading(invitationId);
@@ -132,28 +131,6 @@ export const InvitationsPanel: React.FC<InvitationsPanelProps> = ({
         </div>
       )}
 
-      {/* Past Invitations */}
-      {pastInvitations.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <p className="text-[10px] uppercase tracking-wider text-white/30 font-semibold">Past Invitations</p>
-          {pastInvitations.map((inv) => (
-            <div
-              key={inv.id}
-              className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between text-xs"
-            >
-              <span className="text-white/50 truncate">
-                From <span className="text-white/70 font-semibold">{inv.invited_by?.full_name || 'Unknown'}</span>
-              </span>
-              <Badge
-                variant={inv.status === 'accepted' ? 'success' : 'danger'}
-                className="text-[9px] capitalize"
-              >
-                {inv.status}
-              </Badge>
-            </div>
-          ))}
-        </div>
-      )}
     </Card>
   );
 };

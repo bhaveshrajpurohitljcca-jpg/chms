@@ -248,7 +248,6 @@ function saveDemoSubmission(sub: SubmissionRecord) {
 
 // ─── Main Page ──────────────────────────────────────────────
 export default function StudentSubmissionPage() {
-  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [registrations, setRegistrations] = useState<any[]>([]);
@@ -261,7 +260,6 @@ export default function StudentSubmissionPage() {
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
 
-  const isLeader = activeTeam ? activeTeam.leader_id === user?.id : false;
   const currentMemberCount = activeTeam?.members?.length || 0;
   const hackathonContext = activeTeam?.hackathon;
   const isStrictSize = hackathonContext?.is_strict_team_size || (hackathonContext?.min_team_size && hackathonContext?.min_team_size === hackathonContext?.max_team_size);
@@ -273,8 +271,8 @@ export default function StudentSubmissionPage() {
     : currentMemberCount < minRequired;
 
   const isLocked = (submission
-    ? ['graded', 'accepted'].includes(submission.status) || !isLeader
-    : !isLeader) || isTeamSizeUnfulfilled;
+    ? ['graded', 'accepted'].includes(submission.status)
+    : false) || isTeamSizeUnfulfilled;
 
   const {
     register,
@@ -619,7 +617,7 @@ export default function StudentSubmissionPage() {
       </div>
 
       {/* ── Alert: Read-Only Check for non-leaders ────────── */}
-      {!isLeader && (
+      {false && (
         <div className="flex items-start gap-3 p-4 rounded-xl border border-yellow-500/20 bg-yellow-500/5">
           <AlertCircle size={16} className="text-yellow-400 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-yellow-300/80 font-light">
@@ -629,7 +627,7 @@ export default function StudentSubmissionPage() {
       )}
 
       {/* ── Alert: Team Size Criteria Unfulfilled ──────────── */}
-      {isLeader && isTeamSizeUnfulfilled && (
+      {isTeamSizeUnfulfilled && (
         <div className="flex items-start gap-3 p-4 rounded-xl border border-red-500/30 bg-red-500/10">
           <AlertCircle size={18} className="text-red-400 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-red-300 font-light">
@@ -639,7 +637,7 @@ export default function StudentSubmissionPage() {
       )}
 
       {/* ── Alert: locked submission ───────────────────────── */}
-      {isLeader && !isTeamSizeUnfulfilled && isLocked && (
+      {!isTeamSizeUnfulfilled && isLocked && (
         <div className="flex items-start gap-3 p-4 rounded-xl border border-yellow-500/20 bg-yellow-500/5">
           <AlertCircle size={16} className="text-yellow-400 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-yellow-300/80 font-light">

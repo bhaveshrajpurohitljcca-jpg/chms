@@ -53,7 +53,7 @@ function ConfirmDialog({ title, message, onConfirm, onCancel, confirmLabel = 'Co
 
 const EMPTY_FORM = {
   title: '', slug: '', tagline: '', description: '', status: 'upcoming' as HackathonStatus,
-  start_date: '', end_date: '', registration_deadline: '', max_team_size: 4, min_team_size: 1,
+  start_date: '', end_date: '', registration_deadline: '', max_team_size: 3, min_team_size: 1,
   is_strict_team_size: false, strict_team_size: 3, banner_url: ''
 };
 

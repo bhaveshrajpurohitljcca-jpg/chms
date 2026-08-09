@@ -136,8 +136,8 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
       // Update eligible list
       setEligibleUsers(prev => prev.filter(u => u.email !== inviteeEmail));
       
-      // Notify parent to refresh team data in background
-      onInviteSent();
+      // Notify parent to refresh team data in background (deferred to let button release first)
+      setTimeout(() => onInviteSent(), 0);
     } catch (err: any) {
       setError(err.message || 'Failed to send invitation. Please try again.');
     } finally {

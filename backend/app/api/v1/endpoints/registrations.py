@@ -234,7 +234,7 @@ def select_problem_statement(
     db: Session = Depends(get_db)
 ):
     """
-    Allows the team leader to select or change their problem statement choice.
+    Allows any team member to select or change their problem statement choice.
     Used particularly for hackathons that release problem statements on the event day.
     """
     registration = db.query(Registration).filter(Registration.id == registration_id).first()
@@ -245,11 +245,14 @@ def select_problem_statement(
     if not team:
         raise HTTPException(status_code=404, detail="Associated team not found.")
 
-    # Only the team leader can select the problem statement
-    if team.leader_id != current_user.id:
+    membership = db.query(TeamMember).filter(
+        TeamMember.team_id == team.id,
+        TeamMember.user_id == current_user.id
+    ).first()
+    if not membership:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the team leader can select or modify the problem statement choice."
+            detail="Only team members can select or modify the problem statement choice."
         )
 
     ps_id = payload.get("problem_statement_id")

@@ -169,18 +169,12 @@ def create_submission(
     - Validates hackathon exists and is active.
     - Prevents duplicate submissions for the same team/hackathon.
     """
-    # 1. Validate team membership and require leader role
+    # 1. Validate team membership
     team = db.query(Team).filter(Team.id == payload.team_id).first()
     if not team:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found.")
     
     _ensure_team_membership(db, payload.team_id, current_user.id)
-
-    if team.leader_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the team leader can submit the project."
-        )
 
     # 2. Validate hackathon
     hackathon = db.query(Hackathon).filter(Hackathon.id == payload.hackathon_id).first()
@@ -279,14 +273,8 @@ def update_submission(
     if not submission:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found.")
 
-    # Authorization: user must be the team leader
+    # Authorization: user must be a team member
     _ensure_team_membership(db, submission.team_id, current_user.id)
-
-    if submission.team.leader_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the team leader can modify the project submission."
-        )
 
     # Lock graded/accepted submissions
     if submission.status in (SubmissionStatus.GRADED, SubmissionStatus.ACCEPTED):
@@ -366,11 +354,6 @@ async def upload_submission_file(
         submission = db.query(Submission).filter(Submission.id == submission_id).first()
         if submission:
             _ensure_team_membership(db, submission.team_id, current_user.id)
-            if submission.team.leader_id != current_user.id:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Only the team leader can upload/attach files to the submission."
-                )
             # Delete old file if present
             if submission.file_url:
                 old_path = submission.file_url.lstrip("/")

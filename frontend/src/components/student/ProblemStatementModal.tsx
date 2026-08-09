@@ -95,8 +95,8 @@ export const ProblemStatementModal: React.FC<ProblemStatementModalProps> = ({
             <span>Technical Deliverable Requirements</span>
           </div>
           <p className="text-xs text-white/60 leading-relaxed">
-            Detailed technical requirements and evaluation criteria will be shared by coordinators closer to the hackathon start date.
-            Refer to the official problem statement document when available.
+            {problem.technical_deliverable?.trim()
+              || 'Detailed technical requirements and evaluation criteria will be shared by coordinators closer to the hackathon start date. Refer to the official problem statement document when available.'}
           </p>
         </div>
 

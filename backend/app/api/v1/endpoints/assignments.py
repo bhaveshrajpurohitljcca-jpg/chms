@@ -5,11 +5,39 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User, UserRole
 from app.models.submission import Submission, JudgeAssignment, SubmissionStatus
-from app.models.hackathon import Hackathon, CoordinatorAssignment
+from app.models.hackathon import Hackathon, CoordinatorAssignment, HackathonStatus
 from app.api.deps import get_current_active_user, RoleChecker
 from app.schemas.response import StandardResponse
 
 router = APIRouter(prefix="/assignments", tags=["Assignments"])
+
+
+def _sync_assignment_account_statuses(db: Session) -> None:
+    active_hackathon_ids = {
+        hackathon_id
+        for (hackathon_id,) in db.query(Hackathon.id).filter(
+            Hackathon.status.in_([HackathonStatus.DRAFT, HackathonStatus.UPCOMING, HackathonStatus.ACTIVE])
+        ).all()
+    }
+
+    coordinator_ids = {
+        assignment.coordinator_id
+        for assignment in db.query(CoordinatorAssignment).all()
+        if assignment.hackathon_id in active_hackathon_ids
+    }
+    judge_ids = {
+        assignment.judge_id
+        for assignment in db.query(JudgeAssignment).all()
+        if assignment.hackathon_id in active_hackathon_ids
+    }
+
+    for user in db.query(User).filter(User.role == UserRole.COORDINATOR).all():
+        user.is_active = user.id in coordinator_ids
+
+    for user in db.query(User).filter(User.role == UserRole.JUDGE).all():
+        user.is_active = user.id in judge_ids
+
+    db.commit()
 
 # ─────────────────────────────────────────────────────────────
 # PYDANTIC SCHEMAS
@@ -130,6 +158,7 @@ def assign_coordinator(
     db.add(new_assign)
     db.commit()
     db.refresh(new_assign)
+    _sync_assignment_account_statuses(db)
 
     return StandardResponse(
         success=True,
@@ -161,6 +190,7 @@ def revoke_coordinator_assignment(
     
     db.delete(assign)
     db.commit()
+    _sync_assignment_account_statuses(db)
     return StandardResponse(
         success=True,
         message="Coordinator scope revoked.",
@@ -257,11 +287,13 @@ def assign_judge(
     new_assign = JudgeAssignment(
         judge_id=payload.judge_id,
         hackathon_id=payload.hackathon_id,
-        submission_id=payload.submission_id
+        submission_id=payload.submission_id,
+        assigned_by_id=admin_user.id,
     )
     db.add(new_assign)
     db.commit()
     db.refresh(new_assign)
+    _sync_assignment_account_statuses(db)
 
     return StandardResponse(
         success=True,
@@ -308,6 +340,7 @@ def revoke_judge_hackathon_assignment(
         db.delete(hack_assign)
         
     db.commit()
+    _sync_assignment_account_statuses(db)
     return StandardResponse(
         success=True,
         message="Judge hackathon assignments revoked.",
@@ -335,6 +368,7 @@ def revoke_judge_submission_assignment(
     
     db.delete(assign)
     db.commit()
+    _sync_assignment_account_statuses(db)
     return StandardResponse(
         success=True,
         message="Judge submission assignment revoked.",

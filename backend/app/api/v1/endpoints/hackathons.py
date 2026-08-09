@@ -3,8 +3,14 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models.hackathon import Hackathon, ProblemStatement, HackathonStatus
+from app.models.hackathon import (
+    Hackathon,
+    ProblemStatement,
+    HackathonStatus,
+    CoordinatorAssignment,
+)
 from app.models.user import User, UserRole
+from app.models.submission import JudgeAssignment
 from app.schemas.hackathon import (
     HackathonCreate, HackathonResponse,
     ProblemStatementCreate, ProblemStatementResponse
@@ -41,7 +47,36 @@ def sync_hackathon_statuses(db: Session):
         Hackathon.end_date != None,
         Hackathon.end_date <= now
     ).update({Hackathon.status: HackathonStatus.ENDED}, synchronize_session=False)
-    
+
+    db.commit()
+    _sync_assignment_account_statuses(db)
+
+
+def _sync_assignment_account_statuses(db: Session) -> None:
+    active_hackathon_ids = {
+        hackathon_id
+        for (hackathon_id,) in db.query(Hackathon.id).filter(
+            Hackathon.status.in_([HackathonStatus.DRAFT, HackathonStatus.UPCOMING, HackathonStatus.ACTIVE])
+        ).all()
+    }
+
+    coordinator_ids = {
+        assignment.coordinator_id
+        for assignment in db.query(CoordinatorAssignment).all()
+        if assignment.hackathon_id in active_hackathon_ids
+    }
+    judge_ids = {
+        assignment.judge_id
+        for assignment in db.query(JudgeAssignment).all()
+        if assignment.hackathon_id in active_hackathon_ids
+    }
+
+    for user in db.query(User).filter(User.role == UserRole.COORDINATOR).all():
+        user.is_active = user.id in coordinator_ids
+
+    for user in db.query(User).filter(User.role == UserRole.JUDGE).all():
+        user.is_active = user.id in judge_ids
+
     db.commit()
 
 
@@ -141,7 +176,7 @@ def create_hackathon(
     strict_size = payload.strict_team_size if is_strict else None
 
     min_size = strict_size if is_strict and strict_size else (payload.min_team_size or 1)
-    max_size = strict_size if is_strict and strict_size else (payload.max_team_size or 4)
+    max_size = strict_size if is_strict and strict_size else (payload.max_team_size or 3)
 
     hackathon = Hackathon(
         title=payload.title,
@@ -264,6 +299,7 @@ def update_problem_statement(
 
     ps.title = payload.title
     ps.description = payload.description
+    ps.technical_deliverable = payload.technical_deliverable
     ps.category = payload.category
     ps.difficulty = payload.difficulty or "Medium"
     ps.max_teams = payload.max_teams or 10
@@ -322,6 +358,7 @@ def create_problem_statement(
         hackathon_id=hackathon.id,
         title=payload.title,
         description=payload.description,
+        technical_deliverable=payload.technical_deliverable,
         category=payload.category,
         difficulty=payload.difficulty or "Medium",
         max_teams=payload.max_teams or 10

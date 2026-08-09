@@ -53,6 +53,7 @@ async def lifespan(app: FastAPI):
             # Hackathon columns
             _add_col("hackathon", "is_strict_team_size", "BOOLEAN DEFAULT FALSE")
             _add_col("hackathon", "strict_team_size", "INTEGER")
+            _add_col("problem_statement", "technical_deliverable", "TEXT")
 
             # Submission columns
             _add_col("submission", "problem_statement_id", "VARCHAR(36)")

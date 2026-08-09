@@ -111,10 +111,10 @@ def assign_judge(
         raise HTTPException(status_code=404, detail="Submission not found.")
     _assert_submission_scope(db, current_user, submission)
 
+    # Allow any user with JUDGE role - active or not (assignment will activate them)
     judge = db.query(User).filter(
         User.id == payload.judge_id,
         User.is_deleted == False,
-        User.is_active == True
     ).first()
     if not judge:
         raise HTTPException(status_code=404, detail="User not found.")
@@ -127,10 +127,30 @@ def assign_judge(
     ).first():
         raise HTTPException(status_code=409, detail=f"'{judge.full_name}' is already assigned to this submission.")
 
+    hackathon_id = payload.hackathon_id or submission.hackathon_id
+
+    # Auto-create hackathon-level assignment if missing (needed to activate judge)
+    hackathon_level = db.query(JudgeAssignment).filter(
+        JudgeAssignment.hackathon_id == hackathon_id,
+        JudgeAssignment.judge_id == payload.judge_id,
+        JudgeAssignment.submission_id.is_(None)
+    ).first()
+    if not hackathon_level:
+        db.add(JudgeAssignment(
+            hackathon_id=hackathon_id,
+            judge_id=payload.judge_id,
+            submission_id=None,
+            assigned_by_id=current_user.id
+        ))
+
+    # Activate judge account if not already active
+    if not judge.is_active:
+        judge.is_active = True
+
     assignment = JudgeAssignment(
         submission_id=payload.submission_id,
         judge_id=payload.judge_id,
-        hackathon_id=payload.hackathon_id or submission.hackathon_id,
+        hackathon_id=hackathon_id,
         assigned_by_id=current_user.id
     )
 
@@ -231,16 +251,15 @@ def list_judges(
     current_user: User = Depends(RoleChecker([UserRole.COORDINATOR, UserRole.ADMIN])),
     db: Session = Depends(get_db)
 ):
-    """Get all active judge-role users for the assignment dropdown."""
+    """Get all judge-role users for the assignment dropdown (active and inactive)."""
     judges = db.query(User).filter(
         User.role == UserRole.JUDGE,
-        User.is_active == True,
         User.is_deleted == False
     ).order_by(User.full_name).all()
 
     return StandardResponse(
         success=True, message="Judges retrieved.",
-        data=[{"id": j.id, "full_name": j.full_name, "email": j.email, "department": j.department} for j in judges]
+        data=[{"id": j.id, "full_name": j.full_name, "email": j.email, "department": j.department, "is_active": j.is_active} for j in judges]
     )
 
 

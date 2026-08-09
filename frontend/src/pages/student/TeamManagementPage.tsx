@@ -21,10 +21,9 @@ import {
   ArrowRightLeft,
 } from 'lucide-react';
 import { apiService } from '@/services/api';
-import type { BackendTeam, BackendInvitation } from '@/services/api';
+import type { BackendTeam } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { InviteMemberModal } from '@/components/student/InviteMemberModal';
-import { InvitationsPanel } from '@/components/student/InvitationsPanel';
 import { StudentProfileModal } from '@/components/student/StudentProfileModal';
 import { EmptyState, LoadingState, ErrorState } from '@/components/student/StateContainer';
 
@@ -37,8 +36,6 @@ export const TeamManagementPage: React.FC = () => {
   const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   const [activeTeam, setActiveTeam] = useState<BackendTeam | null>(null);
   const [allHackathons, setAllHackathons] = useState<any[]>([]);
-  const [invitations, setInvitations] = useState<BackendInvitation[]>([]);
-  const [sentInvitations, setSentInvitations] = useState<BackendInvitation[]>([]);
 
   // UI state
   const [isLoading, setIsLoading] = useState(true);
@@ -60,7 +57,7 @@ export const TeamManagementPage: React.FC = () => {
 
   const isLeader = activeTeam ? activeTeam.leader_id === user?.id : false;
   const memberCount = activeTeam?.members.length || 0;
-  const maxTeamSize = activeTeam?.hackathon?.max_team_size || 4;
+  const maxTeamSize = activeTeam?.hackathon?.max_team_size || 3;
 
   const loadData = useCallback(async (selectTeamIdAfterLoad?: string, isSilent = false) => {
     try {
@@ -91,21 +88,10 @@ export const TeamManagementPage: React.FC = () => {
       setActiveTeam(primary);
       if (primary) {
         setSelectedTeamId(primary.id);
-        // Load sent invitations if leader
-        if (primary.leader_id === user?.id) {
-          const sentRes = await apiService.getSentInvitations(primary.id);
-          setSentInvitations(sentRes.data || []);
-        } else {
-          setSentInvitations([]);
-        }
       } else {
         setSelectedTeamId('');
-        setSentInvitations([]);
       }
 
-      // Load received invitations (for non-team members to see invites)
-      const invRes = await apiService.getReceivedInvitations();
-      setInvitations(invRes.data || []);
     } catch (err: any) {
       if (!isSilent) setError(err.message || 'Failed to load team data.');
     } finally {
@@ -137,18 +123,6 @@ export const TeamManagementPage: React.FC = () => {
     setSelectedTeamId(teamId);
     const targetTeam = myTeamsList.find(t => t.id === teamId) || null;
     setActiveTeam(targetTeam);
-    if (targetTeam) {
-      if (targetTeam.leader_id === user?.id) {
-        try {
-          const sentRes = await apiService.getSentInvitations(targetTeam.id);
-          setSentInvitations(sentRes.data || []);
-        } catch {
-          setSentInvitations([]);
-        }
-      } else {
-        setSentInvitations([]);
-      }
-    }
   };
 
   const handleWizardSubmit = async (e: React.FormEvent) => {
@@ -206,11 +180,6 @@ export const TeamManagementPage: React.FC = () => {
     if (!confirm('Are you sure you want to remove this member?')) return;
     setRemoveError('Remove member functionality requires backend support. (Sprint 3)');
     setTimeout(() => setRemoveError(''), 3000);
-  };
-
-  const handleInvitationActioned = () => {
-    // Refresh all data after invitation accept/reject
-    loadData();
   };
 
   if (isLoading) {
@@ -314,13 +283,6 @@ export const TeamManagementPage: React.FC = () => {
       {!activeTeam ? (
         /* No team — Show invitations + empty state */
         <div className="flex flex-col gap-6">
-          {/* Show pending invitations if any */}
-          {invitations.length > 0 && (
-            <InvitationsPanel
-              invitations={invitations}
-              onInvitationActioned={handleInvitationActioned}
-            />
-          )}
 
           <EmptyState
             title="You Are Not In A Team"
@@ -491,37 +453,8 @@ export const TeamManagementPage: React.FC = () => {
                 })}
               </div>
 
-              {/* Sent Invitations (visible to leader) */}
-              {isLeader && sentInvitations.length > 0 && (
-                <div className="mt-2 border-t border-white/10 pt-4">
-                  <p className="text-[10px] uppercase tracking-wider text-white/30 font-semibold mb-3">
-                    Pending Invitations Sent
-                  </p>
-                  <div className="flex flex-col gap-2">
-                    {sentInvitations.filter(i => i.status === 'pending').map(inv => (
-                      <div
-                        key={inv.id}
-                        className="p-3 rounded-xl bg-warning/5 border border-warning/15 flex items-center justify-between text-xs"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Mail size={12} className="text-warning" />
-                          <span className="text-white/70 font-mono">{inv.invitee_email}</span>
-                        </div>
-                        <Badge variant="warning" className="text-[9px]">Pending</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </Card>
 
-            {/* Show received invitations if the user also has invitations to other teams */}
-            {invitations.length > 0 && (
-              <InvitationsPanel
-                invitations={invitations}
-                onInvitationActioned={handleInvitationActioned}
-              />
-            )}
 
           </div>
 

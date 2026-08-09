@@ -42,7 +42,7 @@ function ConfirmDialog({ title, message, onConfirm, onCancel }: {
   );
 }
 
-const EMPTY_PS = { title: '', description: '', category: 'Open Innovation', difficulty: 'Medium', max_teams: 10 };
+const EMPTY_PS = { title: '', description: '', technical_deliverable: '', category: 'Open Innovation', difficulty: 'Medium', max_teams: 10 };
 
 export function CoordinatorProblemStatementsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -128,6 +128,7 @@ export function CoordinatorProblemStatementsPage() {
     setForm({
       title: ps.title,
       description: ps.description,
+      technical_deliverable: (ps as any).technical_deliverable || '',
       category: ps.category,
       difficulty: ps.difficulty,
       max_teams: ps.max_teams,
@@ -148,6 +149,7 @@ export function CoordinatorProblemStatementsPage() {
         await apiService.updateProblemStatement(selectedHackathon.id, editingPS.id, {
           title: form.title,
           description: form.description,
+          technical_deliverable: (form as any).technical_deliverable || null,
           category: form.category,
           difficulty: form.difficulty,
           max_teams: Number(form.max_teams),
@@ -157,6 +159,7 @@ export function CoordinatorProblemStatementsPage() {
         await apiService.createProblemStatement(selectedHackathon.id, {
           title: form.title,
           description: form.description,
+          technical_deliverable: (form as any).technical_deliverable || null,
           category: form.category,
           difficulty: form.difficulty,
           max_teams: Number(form.max_teams),
@@ -325,6 +328,17 @@ export function CoordinatorProblemStatementsPage() {
               <div>
                 <label className={labelCls}>Description *</label>
                 <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Detailed description of the problem..." rows={4} className={`${inputCls} resize-none`} required />
+              </div>
+              <div>
+                <label className={labelCls}>Technical Deliverable</label>
+                <textarea
+                  value={(form as any).technical_deliverable || ''}
+                  onChange={e => setForm(p => ({ ...p, technical_deliverable: e.target.value }))}
+                  placeholder="Expected output, deliverables or technical requirements (e.g. working web app with source code, demo video)..."
+                  rows={3}
+                  className={`${inputCls} resize-none`}
+                />
+                <p className="text-[10px] text-white/30 mt-1">This will be shown to students as the expected deliverable for this problem.</p>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>

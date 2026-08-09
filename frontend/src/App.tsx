@@ -2286,7 +2286,7 @@ const HackathonAnalyticsView: React.FC<HackathonAnalyticsProps> = ({ hackathonId
               <Table headers={['Team Name', 'Project Title', 'Status', 'Submitted']}>
                 {submissions.map((sub) => (
                   <TableRow key={sub.id}>
-                    <TableCell className="font-bold text-white text-xs">{sub.team_name || 'Team'}</TableCell>
+                    <TableCell className="font-bold text-white text-xs">{sub.team?.name || sub.team_name || 'Team'}</TableCell>
                     <TableCell className="text-xs text-white/60 max-w-[180px] truncate">{sub.title}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider font-mono ${

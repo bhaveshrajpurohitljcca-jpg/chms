@@ -94,9 +94,6 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
       case 'coordinator':
         return [
           { label: 'Dashboard',          shortLabel: 'Home',    path: '/coordinator',                    icon: LayoutDashboard },
-          { label: 'Hackathons',         shortLabel: 'Events',  path: '/coordinator/hackathons',         icon: Calendar },
-          { label: 'Problem Statements', shortLabel: 'Problems',path: '/coordinator/problem-statements', icon: Code },
-          { label: 'Registrations',      shortLabel: 'Regs',    path: '/coordinator/registrations',      icon: Users },
           { label: 'Announcements',      shortLabel: 'News',    path: '/coordinator/announcements',      icon: Bell },
           { label: 'Profile Settings',   shortLabel: 'Profile', path: '/coordinator/profile',            icon: UserIcon },
         ];
@@ -135,7 +132,7 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
             onClick={onNavigate}
             className={`flex items-center gap-2 px-3 sm:px-4 h-9 sm:h-10 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-300 touch-target ${
               active
-                ? 'bg-[#0252cd] dark:bg-accent-primary text-white shadow-md shadow-[#0252cd]/20 dark:shadow-accent-primary/20 scale-[1.02]'
+                ? 'bg-[#0252cd]/15 dark:bg-accent-primary text-[#0252cd] dark:text-black border border-[#0252cd]/25 dark:border-transparent shadow-sm scale-[1.02]'
                 : 'text-[#475569] dark:text-text-secondary hover:text-[#0f172a] dark:hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/10'
             }`}
           >

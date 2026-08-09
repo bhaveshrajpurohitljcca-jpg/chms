@@ -6,6 +6,7 @@ from app.models.hackathon import HackathonStatus, ProblemCategory
 class ProblemStatementCreate(BaseModel):
     title: str
     description: str
+    technical_deliverable: Optional[str] = None
     category: Optional[ProblemCategory] = ProblemCategory.OPEN_INNOVATION
     difficulty: Optional[str] = "Medium"
     max_teams: Optional[int] = 10
@@ -13,6 +14,7 @@ class ProblemStatementCreate(BaseModel):
 class ProblemStatementUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
+    technical_deliverable: Optional[str] = None
     category: Optional[ProblemCategory] = None
     difficulty: Optional[str] = None
     max_teams: Optional[int] = None
@@ -22,6 +24,7 @@ class ProblemStatementResponse(BaseModel):
     hackathon_id: str
     title: str
     description: str
+    technical_deliverable: Optional[str] = None
     category: ProblemCategory
     difficulty: str
     max_teams: int
@@ -39,7 +42,7 @@ class HackathonCreate(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     registration_deadline: Optional[datetime] = None
-    max_team_size: Optional[int] = 4
+    max_team_size: Optional[int] = 3
     min_team_size: Optional[int] = 1
     is_strict_team_size: Optional[bool] = False
     strict_team_size: Optional[int] = None
