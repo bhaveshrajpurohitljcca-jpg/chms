@@ -31,14 +31,15 @@ async def lifespan(app: FastAPI):
         
         db = SessionLocal()
         try:
-            from sqlalchemy import text
+            from sqlalchemy import text, inspect
             def _add_col(table_name, col_name, col_spec):
                 try:
-                    res = db.execute(text(f'PRAGMA table_info("{table_name}")')).fetchall()
-                    existing_cols = [r[1] for r in res]
+                    inspector = inspect(engine)
+                    existing_cols = [c['name'] for c in inspector.get_columns(table_name)]
                     if col_name not in existing_cols:
                         db.execute(text(f'ALTER TABLE "{table_name}" ADD COLUMN {col_name} {col_spec};'))
                         db.commit()
+                        logger.info(f"Successfully added column {col_name} to {table_name}")
                 except Exception as ex:
                     db.rollback()
                     logger.warning(f"Failed adding column {col_name} to {table_name}: {ex}")
@@ -50,7 +51,7 @@ async def lifespan(app: FastAPI):
             _add_col("user", "phone", "VARCHAR(20)")
             _add_col("user", "semester", "VARCHAR(10)")
 
-            # Hackathon columns
+            # Hackathon & Problem Statement columns
             _add_col("hackathon", "is_strict_team_size", "BOOLEAN DEFAULT FALSE")
             _add_col("hackathon", "strict_team_size", "INTEGER")
             _add_col("problem_statement", "technical_deliverable", "TEXT")
@@ -82,7 +83,6 @@ async def lifespan(app: FastAPI):
             _add_col("judge_assignment", "judge_id", "VARCHAR(36)")
             _add_col("judge_assignment", "assigned_by_id", "VARCHAR(36)")
             _add_col("judge_assignment", "assigned_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-            logger.info("Database schema migrations verified and executed successfully.")
             logger.info("Database schema migrations verified and executed successfully.")
         except Exception as e:
             logger.error(f"Migration error (non-fatal): {e}")
@@ -128,9 +128,6 @@ app.add_middleware(
 
 app.include_router(api_router, prefix="/api/v1")
 
-from fastapi.staticfiles import StaticFiles
-import os
-
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -138,12 +135,9 @@ os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.get("/", tags=["health"])
-async def root_health_check():
+def health_check():
     return {
-        "success": True,
-        "message": f"Welcome to {settings.PROJECT_NAME} API.",
-        "data": {
-            "environment": settings.ENVIRONMENT,
-            "version": "1.0.0"
-        }
+        "status": "healthy",
+        "app": settings.PROJECT_NAME,
+        "version": "1.0.0"
     }
