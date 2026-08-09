@@ -38,7 +38,8 @@ import {
   User,
   Sparkles,
   Sun,
-  Moon
+  Moon,
+  Loader2
 } from 'lucide-react';
 import { apiService, STATIC_BASE } from '@/services/api';
 import type { UserProfile } from '@/services/api';
@@ -541,54 +542,51 @@ const PublicLanding = () => {
 // 3. EXPLORE GALLERY (Completed Submissions Showcase)
 const GalleryView = () => {
   const [selectedProject, setSelectedProject] = useState<MockProjectData | null>(null);
+  const [showcaseProjects, setShowcaseProjects] = useState<MockProjectData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const showcaseProjects: MockProjectData[] = [
-    {
-      id: '1',
-      title: 'ZeroG LLM Quantizer',
-      description: 'Advanced local quantization pipeline reducing large model footprint by 70%. Built with highly optimized C++ extensions and Python bindings.',
-      techStack: ['Python', 'C++', 'PyTorch', 'CUDA'],
-      team: {
-        id: 't1',
-        name: 'Team Zero_Gravity',
-        projectTitle: 'ZeroG LLM Quantizer',
-        members: [
-          { id: 'u1', name: 'Alice Chen', role: 'ML Engineer' },
-          { id: 'u2', name: 'Bob Smith', role: 'Systems Developer' }
-        ]
-      }
-    },
-    {
-      id: '2',
-      title: 'Eco-Glow Controller',
-      description: 'Wearable display dashboard tracking carbon offsets in real-time. Interfaces with IoT sensors to provide immediate environmental feedback.',
-      techStack: ['React Native', 'Node.js', 'MQTT', 'ESP32'],
-      team: {
-        id: 't2',
-        name: 'Team Volt_Tech',
-        projectTitle: 'Eco-Glow Controller',
-        members: [
-          { id: 'u3', name: 'Charlie Davis', role: 'Hardware Lead' },
-          { id: 'u4', name: 'Diana Prince', role: 'Mobile Dev' }
-        ]
-      }
-    },
-    {
-      id: '3',
-      title: 'Synthetix Routing Node',
-      description: 'FastAPI routing architecture mapping database indices with ultra-low latency. Handles 10k+ RPS with minimal resource footprint.',
-      techStack: ['FastAPI', 'Redis', 'PostgreSQL', 'Docker'],
-      team: {
-        id: 't3',
-        name: 'Team Neural_Knights',
-        projectTitle: 'Synthetix Routing Node',
-        members: [
-          { id: 'u5', name: 'Eve Carter', role: 'Backend Dev' },
-          { id: 'u6', name: 'Frank Lee', role: 'DevOps' }
-        ]
+  useEffect(() => {
+    async function loadGallery() {
+      try {
+        setIsLoading(true);
+        const res = await apiService.listHackathons();
+        if (res && res.data && res.data.length > 0) {
+          const projects: MockProjectData[] = [];
+          await Promise.all(res.data.map(async (h: any) => {
+            try {
+              const subRes = await apiService.getLeaderboard(h.id);
+              if (subRes.data && subRes.data.length > 0) {
+                subRes.data.forEach((item: any, idx: number) => {
+                  projects.push({
+                    id: `${h.id}-${idx}`,
+                    title: item.project_title || 'Project Submission',
+                    description: item.feedback || 'Completed project submission.',
+                    techStack: ['Python', 'FastAPI', 'React'],
+                    team: {
+                      id: `team-${idx}`,
+                      name: item.team_name || 'Project Squad',
+                      projectTitle: item.project_title || 'Project Submission',
+                      members: []
+                    }
+                  });
+                });
+              }
+            } catch {
+              // No submissions for this hackathon
+            }
+          }));
+          setShowcaseProjects(projects);
+        } else {
+          setShowcaseProjects([]);
+        }
+      } catch {
+        setShowcaseProjects([]);
+      } finally {
+        setIsLoading(false);
       }
     }
-  ];
+    loadGallery();
+  }, []);
 
   return (
     <div className="flex flex-col gap-6 md:gap-10 w-full max-w-6xl px-4 md:pl-12 md:pr-4">
@@ -599,31 +597,42 @@ const GalleryView = () => {
         <p className="text-xs text-text-secondary mt-1 font-light">Showcase of outstanding student deliverables and technical submissions.</p>
       </div>
 
-      <div className="flex flex-col gap-4">
-        {showcaseProjects.map((proj) => (
-          <div 
-            key={proj.id}
-            onClick={() => setSelectedProject(proj)}
-            className="w-full min-h-[156px] glass-card rounded-2xl border border-white/20 dark:border-white/15 p-4 sm:p-6 flex flex-row items-center gap-4 sm:gap-6 text-left cursor-pointer hover:border-accent-primary/50 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden"
-          >
-            {/* Subtle background glow */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-accent-primary/5 rounded-full blur-[30px] pointer-events-none group-hover:bg-accent-primary/10 transition-colors" />
-            
-            <div className="w-24 h-24 sm:w-32 sm:h-28 rounded-xl bg-accent-primary/10 border border-accent-primary/30 flex items-center justify-center flex-shrink-0 group-hover:scale-105 group-hover:border-accent-primary/50 transition-all duration-300">
-              <Layers2 size={28} className="text-white/60 group-hover:text-accent-primary transition-colors" />
-            </div>
+      {isLoading ? (
+        <div className="py-12 flex justify-center">
+          <Loader2 className="animate-spin text-accent-primary" size={32} />
+        </div>
+      ) : showcaseProjects.length === 0 ? (
+        <div className="glass-card rounded-2xl p-12 text-center flex flex-col items-center gap-3 border border-white/10">
+          <Layers2 size={40} className="text-white/30" />
+          <h3 className="font-archivo text-lg font-bold uppercase tracking-wider text-white">No Showcase Projects Yet</h3>
+          <p className="text-xs text-white/50 max-w-md">When teams complete hackathon submissions, their featured projects will appear here in the gallery.</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {showcaseProjects.map((proj) => (
+            <div 
+              key={proj.id}
+              onClick={() => setSelectedProject(proj)}
+              className="w-full min-h-[156px] glass-card rounded-2xl border border-white/20 dark:border-white/15 p-4 sm:p-6 flex flex-row items-center gap-4 sm:gap-6 text-left cursor-pointer hover:border-accent-primary/50 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-accent-primary/5 rounded-full blur-[30px] pointer-events-none group-hover:bg-accent-primary/10 transition-colors" />
+              
+              <div className="w-24 h-24 sm:w-32 sm:h-28 rounded-xl bg-accent-primary/10 border border-accent-primary/30 flex items-center justify-center flex-shrink-0 group-hover:scale-105 group-hover:border-accent-primary/50 transition-all duration-300">
+                <Layers2 size={28} className="text-white/60 group-hover:text-accent-primary transition-colors" />
+              </div>
 
-            <div className="relative min-w-0 flex-1">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-accent-primary font-bold mb-1">{proj.team.name}</p>
-              <h3 className="font-archivo text-lg sm:text-xl font-black text-white uppercase tracking-tight group-hover:text-glow-cyan transition-colors">
-                {proj.title}
-              </h3>
-              <p className="mt-2 text-xs sm:text-sm text-text-secondary leading-relaxed line-clamp-2">{proj.description}</p>
-              <p className="mt-2 text-[11px] text-white/50 truncate">{proj.techStack.join(' · ')}</p>
+              <div className="relative min-w-0 flex-1">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-accent-primary font-bold mb-1">{proj.team.name}</p>
+                <h3 className="font-archivo text-lg sm:text-xl font-black text-white uppercase tracking-tight group-hover:text-glow-cyan transition-colors">
+                  {proj.title}
+                </h3>
+                <p className="mt-2 text-xs sm:text-sm text-text-secondary leading-relaxed line-clamp-2">{proj.description}</p>
+                <p className="mt-2 text-[11px] text-white/50 truncate">{proj.techStack.join(' · ')}</p>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       <ProjectDetailModal 
         isOpen={!!selectedProject}
@@ -677,13 +686,7 @@ const LeaderboardView = () => {
           }));
           setActiveLeaderboard(mapped);
         } else {
-          setActiveLeaderboard([
-            { rank: 1, team: 'Neural Knights', project: 'Eco-Glow Controller', branch: 'Computer Science', problemStatement: 'IoT Integration', score: 98.5, feedback: 'Excellent execution.' },
-            { rank: 2, team: 'Code Breakers', project: 'Smart Traffic AI', branch: 'Electronics', problemStatement: 'AI Optimization', score: 94.2, feedback: 'Great algorithmic approach.' },
-            { rank: 3, team: 'Byte Me', project: 'Campus Nav App', branch: 'IT', problemStatement: 'Campus Life', score: 89.0, feedback: 'Very useful utility.' },
-            { rank: 4, team: 'Debuggers', project: 'Library System', branch: 'Computer Science', problemStatement: 'Resource Mgmt', score: 85.5, feedback: 'Solid architecture.' },
-            { rank: 5, team: 'Syntax Errors', project: 'Cafeteria Pass', branch: 'IT', problemStatement: 'Campus Life', score: 82.0, feedback: 'Good UI/UX.' }
-          ]);
+          setActiveLeaderboard([]);
         }
       } catch (err: any) {
         console.warn("Failed to load leaderboard", err.message);
@@ -934,90 +937,61 @@ const LeaderboardView = () => {
 
 // 6. SUBMISSIONS CONSOLE
 const SubmissionsView = () => {
-  // Mock submissions database
-  const initialSubmissions = [
-    {
-      id: 'sub-01',
-      title: 'ZeroG LLM Quantizer',
-      team: 'Zero_Gravity',
-      hackathon: 'AI Genesis 2026',
-      problemStatement: 'PS-01: Generative LLM Interface',
-      githubUrl: 'https://github.com/zerogravity/quantizer',
-      demoUrl: 'https://zerog-live.vercel.app',
-      submittedAt: '2026-07-26 14:05',
-      status: 'under_review',
-      description: 'An advanced model quantization pipeline designed to compress high-dimensional neural weights down to 4-bit levels directly on client hardware with less than 2% perplexity loss.',
-      files: [
-        { name: 'architecture_specification.pdf', size: '2.4 MB' },
-        { name: 'quantization_benchmarks.xlsx', size: '1.1 MB' }
-      ]
-    },
-    {
-      id: 'sub-02',
-      title: 'Eco-Glow Controller',
-      team: 'Volt_Tech',
-      hackathon: 'AI Genesis 2026',
-      problemStatement: 'PS-03: College Carbon Offsets',
-      githubUrl: 'https://github.com/volttech/ecoglow',
-      demoUrl: 'https://ecoglow.vercel.app',
-      submittedAt: '2026-07-25 18:22',
-      status: 'graded',
-      description: 'Integrated IoT wearable sensor tracking student body temperature metrics to automate room ventilation speeds and offset college carbon indices.',
-      files: [
-        { name: 'iot_schematics_rev2.pdf', size: '4.8 MB' },
-        { name: 'presentation_slides.pptx', size: '8.2 MB' }
-      ]
-    },
-    {
-      id: 'sub-03',
-      title: 'Synthetix Routing Node',
-      team: 'Neural_Knights',
-      hackathon: 'AI Genesis 2026',
-      problemStatement: 'PS-04: Dynamic Database Indices',
-      githubUrl: 'https://github.com/neuralknights/routing',
-      demoUrl: 'https://synthetix.vercel.app',
-      submittedAt: '2026-07-25 15:40',
-      status: 'graded',
-      description: 'A multi-threaded cache-efficient router mapping dynamic database indices with sub-millisecond route calculations and structured exception envelopes.',
-      files: [
-        { name: 'benchmarking_report.pdf', size: '1.5 MB' }
-      ]
-    },
-    {
-      id: 'sub-04',
-      title: 'Hydro-Net Sensor',
-      team: 'Aqua_Tech',
-      hackathon: 'Green-Tech Innovations',
-      problemStatement: 'PS-05: Water Quality Telemetry',
-      githubUrl: 'https://github.com/aquatech/hydronet',
-      demoUrl: 'https://hydronet.vercel.app',
-      submittedAt: '2026-07-26 11:15',
-      status: 'submitted',
-      description: 'Distributed floating telemetry pods measuring water pH and mineral content around college ponds, streaming live alerts directly over LoRaWAN.',
-      files: [
-        { name: 'lora_network_topology.pdf', size: '3.1 MB' }
-      ]
-    },
-    {
-      id: 'sub-05',
-      title: 'Cyber-Mesh Auth',
-      team: 'Crypt_Keepers',
-      hackathon: 'Cybersecurity Sprint',
-      problemStatement: 'PS-06: WebAuthn Passwordless',
-      githubUrl: 'https://github.com/cryptkeepers/auth',
-      demoUrl: 'https://cybermesh.vercel.app',
-      submittedAt: '2026-07-26 09:30',
-      status: 'draft',
-      description: 'A passwordless biometric validation template substituting standard login forms with WebAuthn browser calls.',
-      files: []
-    }
-  ];
-
-  const [submissions] = useState(initialSubmissions);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [availableHackathons, setAvailableHackathons] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [hackathonFilter, setHackathonFilter] = useState('all');
   const [selectedSub, setSelectedSub] = useState<any | null>(null);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setIsLoading(true);
+        const [hackRes, regsRes] = await Promise.allSettled([
+          apiService.listHackathons(),
+          apiService.getMyRegistrations()
+        ]);
+
+        if (hackRes.status === 'fulfilled' && hackRes.value.data) {
+          setAvailableHackathons(hackRes.value.data);
+        }
+
+        if (regsRes.status === 'fulfilled' && regsRes.value.data) {
+          const subs: any[] = [];
+          await Promise.all(regsRes.value.data.map(async (reg: any) => {
+            try {
+              const subRes = await apiService.getMySubmission(reg.hackathon_id);
+              if (subRes.success && subRes.data) {
+                subs.push({
+                  id: subRes.data.id,
+                  title: subRes.data.title,
+                  team: reg.team?.name || 'My Squad',
+                  hackathon: reg.hackathon?.title || 'Hackathon Event',
+                  problemStatement: reg.problem_statement?.title || 'Selected Track',
+                  githubUrl: subRes.data.repo_url || '',
+                  demoUrl: subRes.data.demo_url || '',
+                  submittedAt: subRes.data.submitted_at || '',
+                  status: subRes.data.status || 'submitted',
+                  description: subRes.data.description || '',
+                  files: []
+                });
+              }
+            } catch {
+              // No submission for this registration
+            }
+          }));
+          setSubmissions(subs);
+        }
+      } catch {
+        setSubmissions([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
   // Filter logic
   const filteredSubmissions = submissions.filter(sub => {
@@ -1068,9 +1042,9 @@ const SubmissionsView = () => {
               className="w-full md:w-48 h-11 px-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent-primary cursor-pointer appearance-none"
             >
               <option value="all" className="bg-[#050505] text-white">All Hackathons</option>
-              <option value="AI Genesis 2026" className="bg-[#050505] text-white">AI Genesis 2026</option>
-              <option value="Green-Tech Innovations" className="bg-[#050505] text-white">Green-Tech Innovations</option>
-              <option value="Cybersecurity Sprint" className="bg-[#050505] text-white">Cybersecurity Sprint</option>
+              {availableHackathons.map((h) => (
+                <option key={h.id} value={h.title} className="bg-[#050505] text-white">{h.title}</option>
+              ))}
             </select>
           </div>
 
@@ -1093,7 +1067,11 @@ const SubmissionsView = () => {
       {/* Results grid */}
       <Card className="p-8">
         <div className="overflow-x-auto">
-          {filteredSubmissions.length > 0 ? (
+          {isLoading ? (
+            <div className="py-12 flex justify-center">
+              <Loader2 className="animate-spin text-accent-primary" size={32} />
+            </div>
+          ) : filteredSubmissions.length > 0 ? (
             <Table headers={['Project & Team', 'Hackathon Context', 'Problem Statement', 'Submitted At', 'Status', 'Actions']}>
               {filteredSubmissions.map((sub) => (
                 <TableRow key={sub.id} className="hover:bg-white/[0.01] transition-all">
@@ -1349,32 +1327,67 @@ const SubmissionsView = () => {
 
 // 7. CERTIFICATES VAULT
 const CertificatesView = () => {
+  const [registrations, setRegistrations] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadCerts() {
+      try {
+        setIsLoading(true);
+        const res = await apiService.getMyRegistrations();
+        if (res.data) {
+          setRegistrations(res.data);
+        }
+      } catch {
+        setRegistrations([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadCerts();
+  }, []);
+
   return (
-    <div className="flex flex-col gap-8 w-full max-w-5xl">
+    <div className="flex flex-col gap-6 md:gap-10 w-full max-w-6xl px-4 md:pl-12 md:pr-4">
       <div>
         <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-white">
           Certificates Vault
         </h2>
         <p className="text-xs text-text-secondary mt-1 font-light">Download verified, signed participation and finalist awards certificates.</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card hoverable className="bg-white/[0.02]">
-          <div className="flex flex-col justify-between h-full gap-4">
-            <div className="flex gap-4">
-              <div className="p-3 rounded-lg bg-accent-primary/10 border border-accent-primary/20 text-accent-primary">
-                <Award size={24} />
+
+      {isLoading ? (
+        <div className="py-12 flex justify-center">
+          <Loader2 className="animate-spin text-accent-primary" size={32} />
+        </div>
+      ) : registrations.length === 0 ? (
+        <div className="glass-card rounded-2xl p-12 text-center flex flex-col items-center gap-3 border border-white/10">
+          <Award size={40} className="text-white/30" />
+          <h3 className="font-archivo text-lg font-bold uppercase tracking-wider text-white">No Verified Certificates Yet</h3>
+          <p className="text-xs text-white/50 max-w-md">Certificates are automatically issued upon completion and grading of hackathon events.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {registrations.map((reg) => (
+            <Card key={reg.id} hoverable className="bg-white/[0.02]">
+              <div className="flex flex-col justify-between h-full gap-4">
+                <div className="flex gap-4">
+                  <div className="p-3 rounded-lg bg-accent-primary/10 border border-accent-primary/20 text-accent-primary">
+                    <Award size={24} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">{reg.hackathon?.title || 'Hackathon Event'} Participation</h4>
+                    <p className="text-[10px] text-white/40 mt-1">Status: Verified Official Ledger</p>
+                  </div>
+                </div>
+                <Button variant="primary" className="h-9 px-4 text-xs mt-2 self-start" onClick={() => alert(`Downloading PDF for ${reg.hackathon?.title || 'Certificate'}...`)}>
+                  Download PDF
+                </Button>
               </div>
-              <div>
-                <h4 className="text-sm font-bold text-white">AI Genesis 2026 Participation</h4>
-                <p className="text-[10px] text-white/40 mt-1">Issued: 2026-08-18</p>
-              </div>
-            </div>
-            <Button variant="primary" className="h-9 px-4 text-xs mt-2 self-start" onClick={() => alert('Downloading PDF...')}>
-              Download PDF
-            </Button>
-          </div>
-        </Card>
-      </div>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -1705,42 +1718,21 @@ const AnnouncementsView = () => {
 
 // 9. JUDGE PANEL (Legacy UI preserved for reference)
 export const JudgeView = () => {
-  // Assigned submissions mock state
-  const [submissions, setSubmissions] = useState([
-    {
-      id: 'sub-01',
-      title: 'ZeroG LLM Quantizer',
-      team: 'Zero_Gravity',
-      problemStatement: 'PS-01: Generative LLM Interface',
-      status: 'under_review',
-      deadline: '2026-08-18 18:00',
-      scores: { innovation: 0, execution: 0, design: 0, impact: 0 },
-      feedback: '',
-      score: null as number | null
-    },
-    {
-      id: 'sub-02',
-      title: 'Eco-Glow Controller',
-      team: 'Volt_Tech',
-      problemStatement: 'PS-03: College Carbon Offsets',
-      status: 'graded',
-      deadline: '2026-08-18 18:00',
-      scores: { innovation: 9, execution: 8, design: 8, impact: 9 },
-      feedback: 'Excellent integration of wearable bio-sensors with an elegant low-energy dashboard.',
-      score: 85
-    },
-    {
-      id: 'sub-03',
-      title: 'Synthetix Routing Node',
-      team: 'Neural_Knights',
-      problemStatement: 'PS-04: Dynamic Database Indices',
-      status: 'graded',
-      deadline: '2026-08-18 18:00',
-      scores: { innovation: 10, execution: 9, design: 9, impact: 9 },
-      feedback: 'Very solid backend routing tables. Exception middleware structured cleanly.',
-      score: 92
+  const [submissions, setSubmissions] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadAssignments() {
+      try {
+        const res = await apiService.getMyAssignments();
+        if (res.success && res.data) {
+          setSubmissions(res.data);
+        }
+      } catch {
+        setSubmissions([]);
+      }
     }
-  ]);
+    loadAssignments();
+  }, []);
 
   const [selectedSub, setSelectedSub] = useState<any | null>(null);
   const [evalScores, setEvalScores] = useState({ innovation: 8, execution: 8, design: 8, impact: 8 });

@@ -39,21 +39,8 @@ export default function JudgeAssignmentPage() {
       if (judgeRes.success && judgeRes.data) setJudges(judgeRes.data);
       if (assignRes.success && assignRes.data) setAssignments(assignRes.data);
     } catch {
-      // Fallback demo data
-      setSubmissions([
-        {
-          id: 'sub-01', team_id: 't-01', hackathon_id: 'h-01', title: 'ZeroG LLM Quantizer',
-          repo_url: 'https://github.com/zerog/llm-quantizer', status: 'under_review', submitted_at: new Date().toISOString()
-        },
-        {
-          id: 'sub-02', team_id: 't-02', hackathon_id: 'h-01', title: 'Eco-Glow Controller',
-          repo_url: 'https://github.com/volttech/ecoglow', status: 'submitted', submitted_at: new Date().toISOString()
-        }
-      ]);
-      setJudges([
-        { id: 'j-1', full_name: 'Dr. Sarah Connor', email: 'sarah@college.edu', department: 'Computer Science' },
-        { id: 'j-2', full_name: 'Prof. Alan Turing', email: 'turing@college.edu', department: 'AI & Data Science' }
-      ]);
+      setSubmissions([]);
+      setJudges([]);
     } finally {
       setLoading(false);
     }

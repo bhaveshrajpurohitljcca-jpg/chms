@@ -240,29 +240,7 @@ function FileUploadWidget({ submissionId, existingFileUrl, existingFileName, onF
 }
 
 // ─── Demo Fallback Helpers ──────────────────────────────────
-const DEMO_TEAM = {
-  id: 'demo-team-id',
-  hackathon_id: 'demo-hackathon-id',
-  name: 'Zero_Gravity',
-  join_code: 'DEMO01',
-  leader_id: 'demo-student-id',
-  status: 'approved',
-  members: [
-    { id: 'm1', team_id: 'demo-team-id', user_id: 'demo-student-id', role_in_team: 'leader', user: { full_name: 'Alex Rivera', email: 'student@college.edu' } },
-    { id: 'm2', team_id: 'demo-team-id', user_id: 'demo-member-2',   role_in_team: 'member', user: { full_name: 'Priya Nair',   email: 'priya@college.edu'   } },
-    { id: 'm3', team_id: 'demo-team-id', user_id: 'demo-member-3',   role_in_team: 'member', user: { full_name: 'Arjun Mehta',  email: 'arjun@college.edu'   } },
-  ],
-  created_at: new Date().toISOString(),
-};
-
 const DEMO_SUB_KEY = 'chms_demo_submission';
-
-function loadDemoSubmission(): SubmissionRecord | null {
-  try {
-    const raw = localStorage.getItem(DEMO_SUB_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
 
 function saveDemoSubmission(sub: SubmissionRecord) {
   localStorage.setItem(DEMO_SUB_KEY, JSON.stringify(sub));
@@ -423,23 +401,9 @@ export default function StudentSubmissionPage() {
       }
 
       if (usedDemoMode) {
-        setIsDemoMode(true);
-        setActiveTeam(DEMO_TEAM);
-        // Restore any previous demo submission from localStorage
-        const saved = loadDemoSubmission();
-        if (saved) {
-          setSubmission(saved);
-          reset({
-            title: saved.title,
-            description: saved.description ?? '',
-            repo_url: saved.repo_url,
-            demo_url: saved.demo_url ?? '',
-            video_url: saved.video_url ?? '',
-            additional_notes: saved.additional_notes ?? '',
-          });
-          setFileUrl(saved.file_url ?? null);
-          setFileName(saved.file_name ?? null);
-        }
+        setIsDemoMode(false);
+        setActiveTeam(null);
+        setSubmission(null);
       }
 
       setLoading(false);

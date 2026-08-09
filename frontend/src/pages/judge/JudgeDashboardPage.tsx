@@ -30,49 +30,7 @@ function Badge({ children, variant = 'default' }: { children: React.ReactNode; v
 }
 
 // Demo fallback state if no API or unauthenticated
-const DEMO_ASSIGNMENTS: SubmissionRecord[] = [
-  {
-    id: 'sub-demo-01',
-    team_id: 't-01',
-    hackathon_id: 'h-01',
-    title: 'ZeroG LLM Quantizer',
-    description: 'High-speed model quantization engine reducing LLM memory footprint by 75% with zero accuracy loss.',
-    repo_url: 'https://github.com/zerog/llm-quantizer',
-    demo_url: 'https://zerog-quantizer.vercel.app',
-    status: 'under_review',
-    submitted_at: '2026-08-17T14:30:00Z',
-    team: {
-      id: 't-01', hackathon_id: 'h-01', name: 'Zero_Gravity', join_code: 'ZG01', leader_id: 'u-1', status: 'approved', created_at: '',
-      members: [
-        { id: 'm1', team_id: 't-01', user_id: 'u-1', role_in_team: 'leader', user: { id: 'u-1', email: 'alex@college.edu', full_name: 'Alex Rivera', role: 'student', is_active: true } }
-      ]
-    },
-    evaluations: []
-  },
-  {
-    id: 'sub-demo-02',
-    team_id: 't-02',
-    hackathon_id: 'h-01',
-    title: 'Eco-Glow Controller',
-    description: 'Wearable bio-sensor dashboard with carbon offset tracking for smart campus buildings.',
-    repo_url: 'https://github.com/volttech/ecoglow',
-    demo_url: 'https://ecoglow-demo.vercel.app',
-    status: 'graded',
-    submitted_at: '2026-08-17T16:00:00Z',
-    team: {
-      id: 't-02', hackathon_id: 'h-01', name: 'Volt_Tech', join_code: 'VT02', leader_id: 'u-2', status: 'approved', created_at: '',
-      members: []
-    },
-    evaluations: [
-      {
-        id: 'ev-demo-02', submission_id: 'sub-demo-02', judge_id: 'demo-judge',
-        score_innovation: 9, score_technical: 8, score_uiux: 9, score_impact: 8, score_presentation: 9,
-        total_score: 86, feedback: 'Excellent integration of wearable bio-sensors with an elegant dashboard.',
-        recommendation: 'shortlist', is_draft: false, submitted_at: '2026-08-18T10:00:00Z'
-      }
-    ]
-  }
-];
+const DEMO_ASSIGNMENTS: SubmissionRecord[] = [];
 
 export default function JudgeDashboardPage() {
   const [loading, setLoading] = useState(true);

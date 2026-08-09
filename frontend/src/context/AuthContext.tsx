@@ -36,7 +36,7 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const DEMO_AUTH_ENABLED = import.meta.env.DEV;
+const DEMO_AUTH_ENABLED = false;
 
 // Default fallback mock user if API is offline
 const MOCK_DEMO_USERS: Record<string, UserProfile> = {
