@@ -66,8 +66,6 @@ import StudentSubmissionPage from '@/pages/student/StudentSubmissionPage';
 import JudgeDashboardPage from '@/pages/judge/JudgeDashboardPage';
 import JudgeAssignmentPage from '@/pages/admin/JudgeAssignmentPage';
 import { CoordinatorDashboardPage } from '@/pages/coordinator/CoordinatorDashboardPage';
-import { CoordinatorProblemStatementsPage } from '@/pages/coordinator/CoordinatorProblemStatementsPage';
-import { CoordinatorHackathonsPage } from '@/pages/coordinator/CoordinatorHackathonsPage';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { ProfilePage } from '@/pages/ProfilePage';
@@ -2404,10 +2402,21 @@ export const CoordinatorView = () => {
       return;
     }
 
+    // If a specific hackathonId was passed via query params (e.g. from Dashboard quick actions), pre-select it
+    const params = new URLSearchParams(location.search);
+    const qsHackathonId = params.get('hackathonId');
+    if (qsHackathonId && assignedHackathons.length > 0) {
+      const match = assignedHackathons.find((h: any) => h.id === qsHackathonId);
+      if (match && (!selectedHackathon || selectedHackathon.id !== qsHackathonId)) {
+        setSelectedHackathon(match);
+        return;
+      }
+    }
+
     if (!selectedHackathon && assignedHackathons.length > 0) {
       setSelectedHackathon(assignedHackathons[0]);
     }
-  }, [location.pathname, assignedHackathons, selectedHackathon]);
+  }, [location.pathname, location.search, assignedHackathons, selectedHackathon]);
 
   // When a hackathon is selected, fetch registrations, teams, submissions, judge assignments
   useEffect(() => {
@@ -6433,9 +6442,9 @@ function App() {
           {/* Coordinator Protected Portal */}
           <Route path="/coordinator" element={<RoleLayout allowedRoles={['coordinator']} />}>
             <Route index element={<CoordinatorDashboardPage />} />
-            <Route path="hackathons" element={<CoordinatorHackathonsPage />} />
-            <Route path="problem-statements" element={<CoordinatorProblemStatementsPage />} />
-            <Route path="registrations" element={<CoordinatorDashboardPage />} />
+            <Route path="hackathons" element={<CoordinatorView />} />
+            <Route path="problem-statements" element={<CoordinatorView />} />
+            <Route path="registrations" element={<CoordinatorView />} />
             <Route path="submissions" element={<SubmissionsView />} />
             <Route path="assignments" element={<JudgeAssignmentPage />} />
             <Route path="announcements" element={<AnnouncementsView />} />
