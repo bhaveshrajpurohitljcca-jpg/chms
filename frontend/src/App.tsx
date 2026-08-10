@@ -66,6 +66,7 @@ import StudentSubmissionPage from '@/pages/student/StudentSubmissionPage';
 import JudgeDashboardPage from '@/pages/judge/JudgeDashboardPage';
 import JudgeAssignmentPage from '@/pages/admin/JudgeAssignmentPage';
 import { CoordinatorDashboardPage } from '@/pages/coordinator/CoordinatorDashboardPage';
+import { CoordinatorHackathonsPage } from '@/pages/coordinator/CoordinatorHackathonsPage';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { ProfilePage } from '@/pages/ProfilePage';
@@ -6427,7 +6428,7 @@ function App() {
           {/* Coordinator Protected Portal */}
           <Route path="/coordinator" element={<RoleLayout allowedRoles={['coordinator']} />}>
             <Route index element={<CoordinatorDashboardPage />} />
-            <Route path="hackathons" element={<CoordinatorView />} />
+            <Route path="hackathons" element={<CoordinatorHackathonsPage />} />
             <Route path="problem-statements" element={<CoordinatorView />} />
             <Route path="registrations" element={<CoordinatorView />} />
             <Route path="submissions" element={<SubmissionsView />} />

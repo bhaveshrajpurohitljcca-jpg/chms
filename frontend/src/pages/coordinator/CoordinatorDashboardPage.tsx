@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import Modal from '@/components/ui/modal';
 import {
   Calendar, FileText, Users,
   ArrowRight, Clock, AlertCircle, RefreshCw,
   Zap, CheckCircle2, BookOpen, ChevronRight, Activity,
-  Inbox, Eye, Settings
+  Inbox, Eye, Settings, Edit2
 } from 'lucide-react';
 import { apiService, type BackendHackathon, type BackendRegistration } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
@@ -72,6 +73,72 @@ export function CoordinatorDashboardPage() {
   const [loadingMain, setLoadingMain] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [error, setError] = useState('');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editForm, setEditForm] = useState<any>({
+    title: '', tagline: '', description: '', status: 'active',
+    start_date: '', end_date: '', registration_deadline: '',
+    max_team_size: 3, min_team_size: 1, is_strict_team_size: false, strict_team_size: 3
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editSuccess, setEditSuccess] = useState('');
+  const [editError, setEditError] = useState('');
+
+  const openEditModal = () => {
+    if (!selectedHackathon) return;
+    setEditForm({
+      title: selectedHackathon.title || '',
+      tagline: selectedHackathon.tagline || '',
+      description: selectedHackathon.description || '',
+      status: selectedHackathon.status || 'active',
+      start_date: selectedHackathon.start_date ? selectedHackathon.start_date.slice(0, 16) : '',
+      end_date: selectedHackathon.end_date ? selectedHackathon.end_date.slice(0, 16) : '',
+      registration_deadline: selectedHackathon.registration_deadline ? selectedHackathon.registration_deadline.slice(0, 16) : '',
+      max_team_size: selectedHackathon.max_team_size || 3,
+      min_team_size: selectedHackathon.min_team_size || 1,
+      is_strict_team_size: selectedHackathon.is_strict_team_size || false,
+      strict_team_size: selectedHackathon.strict_team_size || 3,
+    });
+    setEditSuccess('');
+    setEditError('');
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveHackathonSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedHackathon) return;
+    setSavingEdit(true);
+    setEditError('');
+    setEditSuccess('');
+    try {
+      const payload = {
+        title: editForm.title,
+        slug: selectedHackathon.slug || editForm.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        tagline: editForm.tagline || undefined,
+        description: editForm.description || undefined,
+        status: editForm.status,
+        start_date: editForm.start_date ? new Date(editForm.start_date).toISOString() : undefined,
+        end_date: editForm.end_date ? new Date(editForm.end_date).toISOString() : undefined,
+        registration_deadline: editForm.registration_deadline ? new Date(editForm.registration_deadline).toISOString() : undefined,
+        max_team_size: editForm.is_strict_team_size ? (editForm.strict_team_size || 3) : editForm.max_team_size,
+        min_team_size: editForm.is_strict_team_size ? (editForm.strict_team_size || 3) : editForm.min_team_size,
+        is_strict_team_size: editForm.is_strict_team_size,
+        strict_team_size: editForm.is_strict_team_size ? (editForm.strict_team_size || 3) : undefined,
+      };
+      const res = await apiService.updateHackathon(selectedHackathon.id, payload);
+      if (res.data) {
+        setSelectedHackathon(res.data);
+      }
+      setEditSuccess('Hackathon settings updated successfully!');
+      setTimeout(() => {
+        setIsEditModalOpen(false);
+        loadAssignedHackathons();
+      }, 1000);
+    } catch (err: any) {
+      setEditError(err.message || 'Failed to update hackathon settings');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   const loadAssignedHackathons = useCallback(async () => {
     setLoadingMain(true);
@@ -238,6 +305,12 @@ export function CoordinatorDashboardPage() {
                       className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 text-[10px] font-semibold hover:border-accent-primary hover:text-accent-primary transition-all">
                       <Eye size={11} /> Registrations
                     </Link>
+                    <button
+                      type="button"
+                      onClick={openEditModal}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-accent-third/10 border border-accent-third/30 text-accent-third text-[10px] font-semibold hover:bg-accent-third/20 transition-all cursor-pointer">
+                      <Edit2 size={11} /> Edit Settings
+                    </button>
                   </div>
                 </div>
               </div>
@@ -339,8 +412,17 @@ export function CoordinatorDashboardPage() {
                       icon={FileText} label="Manage Problem Statements" color="bg-accent-secondary/10 text-accent-secondary" />
                     <QuickLink to={`/coordinator/registrations?hackathonId=${selectedHackathon.id}`}
                       icon={Users} label="View Registrations" color="bg-accent-primary/10 text-accent-primary" />
-                    <QuickLink to={`/coordinator/hackathons?editId=${selectedHackathon.id}`}
-                      icon={Settings} label="Edit Hackathon Settings" color="bg-accent-third/10 text-accent-third" />
+                    <button
+                      type="button"
+                      onClick={openEditModal}
+                      className="group flex items-center gap-3 p-3.5 rounded-xl border border-white/[0.06] bg-white/[0.01] hover:bg-white/[0.05] hover:border-accent-third/40 transition-all duration-300 text-left w-full cursor-pointer"
+                    >
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 bg-accent-third/10 text-accent-third">
+                        <Settings size={14} />
+                      </div>
+                      <span className="text-xs font-semibold text-white flex-1">Hackathon Settings & Edit</span>
+                      <ChevronRight size={12} className="text-white/20 group-hover:text-white/60 group-hover:translate-x-0.5 transition-all" />
+                    </button>
                     {selectedHackathon.status === 'active' && (
                       <div className="flex items-center gap-2 p-3 rounded-xl bg-success/5 border border-success/20">
                         <Zap size={12} className="text-success" />
@@ -356,6 +438,171 @@ export function CoordinatorDashboardPage() {
           )}
         </div>
       </div>
+
+      {/* ── Edit Hackathon Settings Modal ── */}
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Hackathon Settings" size="lg">
+        <form onSubmit={handleSaveHackathonSettings} className="font-manrope flex flex-col gap-5 select-none">
+          {editSuccess && (
+            <div className="p-3.5 rounded-xl bg-success/10 border border-success/30 text-success text-xs font-semibold">
+              {editSuccess}
+            </div>
+          )}
+          {editError && (
+            <div className="p-3.5 rounded-xl bg-danger/10 border border-danger/30 text-danger text-xs font-semibold">
+              {editError}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">Hackathon Title *</label>
+              <input
+                type="text"
+                required
+                value={editForm.title}
+                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder-white/20 focus:outline-none focus:border-accent-primary"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">Tagline / Brief Subtitle</label>
+              <input
+                type="text"
+                value={editForm.tagline}
+                onChange={(e) => setEditForm({ ...editForm, tagline: e.target.value })}
+                placeholder="e.g. Build the Future of AI"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder-white/20 focus:outline-none focus:border-accent-primary"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">Description</label>
+              <textarea
+                rows={3}
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                placeholder="Detailed event rules and overview..."
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder-white/20 focus:outline-none focus:border-accent-primary resize-none"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">Status</label>
+              <select
+                value={editForm.status}
+                onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-black border border-white/10 text-white text-xs outline-none focus:border-accent-primary"
+              >
+                <option value="draft">Draft</option>
+                <option value="upcoming">Upcoming</option>
+                <option value="active">Active (LIVE)</option>
+                <option value="ended">Ended</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">Registration Deadline</label>
+              <input
+                type="datetime-local"
+                value={editForm.registration_deadline}
+                onChange={(e) => setEditForm({ ...editForm, registration_deadline: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs outline-none focus:border-accent-primary"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">Start Date</label>
+              <input
+                type="datetime-local"
+                value={editForm.start_date}
+                onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs outline-none focus:border-accent-primary"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">End Date</label>
+              <input
+                type="datetime-local"
+                value={editForm.end_date}
+                onChange={(e) => setEditForm({ ...editForm, end_date: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs outline-none focus:border-accent-primary"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2 sm:col-span-2 p-3.5 rounded-xl bg-white/[0.02] border border-white/10">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white">Strict Team Size Constraint</span>
+                <button
+                  type="button"
+                  onClick={() => setEditForm({ ...editForm, is_strict_team_size: !editForm.is_strict_team_size })}
+                  className={`w-12 h-6 rounded-full p-1 transition-colors ${editForm.is_strict_team_size ? 'bg-accent-primary' : 'bg-white/10'}`}
+                >
+                  <div className={`w-4 h-4 rounded-full bg-black transition-transform ${editForm.is_strict_team_size ? 'translate-x-6' : 'translate-x-0'}`} />
+                </button>
+              </div>
+
+              {editForm.is_strict_team_size ? (
+                <div className="flex flex-col gap-1 mt-1">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">Strict Team Member Count</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={editForm.strict_team_size}
+                    onChange={(e) => setEditForm({ ...editForm, strict_team_size: parseInt(e.target.value) || 3 })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs"
+                  />
+                  <p className="text-[10px] text-white/40">Teams must have EXACTLY this number of members to submit.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 mt-1">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">Min Members</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={editForm.min_team_size}
+                      onChange={(e) => setEditForm({ ...editForm, min_team_size: parseInt(e.target.value) || 1 })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">Max Members</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={editForm.max_team_size}
+                      onChange={(e) => setEditForm({ ...editForm, max_team_size: parseInt(e.target.value) || 3 })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 border-t border-white/10 pt-4 mt-2">
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(false)}
+              className="px-4 py-2 rounded-xl border border-white/10 text-xs font-semibold text-white/60 hover:text-white hover:border-white/20 transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={savingEdit}
+              className="px-5 py-2 rounded-xl bg-accent-primary text-black font-bold text-xs hover:bg-accent-primary/80 transition-all shadow-[0_0_15px_rgba(0,243,255,0.2)] disabled:opacity-50"
+            >
+              {savingEdit ? 'Saving Changes...' : 'Save Settings'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
