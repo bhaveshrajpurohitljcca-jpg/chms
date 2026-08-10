@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
-  Calendar, FileText, Users, Megaphone,
+  Calendar, FileText, Users,
   ArrowRight, Clock, AlertCircle, RefreshCw,
   Zap, CheckCircle2, BookOpen, ChevronRight, Activity,
-  BarChart2, Inbox, PlusCircle, Eye
+  Inbox, Eye, Settings
 } from 'lucide-react';
 import { apiService, type BackendHackathon, type BackendRegistration } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
@@ -63,11 +63,12 @@ function QuickLink({ to, icon: Icon, label, color }: {
 
 export function CoordinatorDashboardPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [assignedHackathons, setAssignedHackathons] = useState<BackendHackathon[]>([]);
   const [selectedHackathon, setSelectedHackathon] = useState<BackendHackathon | null>(null);
   const [registrations, setRegistrations] = useState<BackendRegistration[]>([]);
   const [submissions, setSubmissions] = useState<any[]>([]);
-  const [announcements, setAnnouncements] = useState<any[]>([]);
+  
   const [loadingMain, setLoadingMain] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [error, setError] = useState('');
@@ -105,14 +106,14 @@ export function CoordinatorDashboardPage() {
   const loadHackathonDetail = useCallback(async (hackathon: BackendHackathon) => {
     setLoadingDetail(true);
     try {
-      const [regRes, subRes, annRes] = await Promise.allSettled([
+      const [regRes, subRes] = await Promise.allSettled([
         apiService.listRegistrations(hackathon.id),
         apiService.listSubmissions(hackathon.id),
-        apiService.getAnnouncements(hackathon.id, false),
+
       ]);
       setRegistrations(regRes.status === 'fulfilled' ? (regRes.value.data || []) : []);
       setSubmissions(subRes.status === 'fulfilled' ? (subRes.value.data || []) : []);
-      setAnnouncements(annRes.status === 'fulfilled' ? (annRes.value.data || []) : []);
+
     } finally {
       setLoadingDetail(false);
     }
@@ -126,7 +127,7 @@ export function CoordinatorDashboardPage() {
   const pendingEval = submissions.filter(s => s.status === 'submitted' || s.status === 'under_review').length;
   const gradedCount = submissions.filter(s => s.status === 'graded').length;
   const psCount = selectedHackathon?.problem_statements?.length || 0;
-  const annCount = announcements.filter(a => a.is_published).length;
+
   const now = new Date();
   const regDeadline = selectedHackathon?.registration_deadline ? new Date(selectedHackathon.registration_deadline) : null;
   const endDate = selectedHackathon?.end_date ? new Date(selectedHackathon.end_date) : null;
@@ -153,15 +154,15 @@ export function CoordinatorDashboardPage() {
         </div>
       )}
 
-      <div className="flex gap-6 min-h-[600px]">
+      <div className="flex flex-col md:flex-row gap-6 min-h-[400px] md:min-h-[600px]">
         {/* LEFT: Hackathon Scroll Panel */}
-        <div className="w-60 flex-shrink-0 flex flex-col gap-3">
+        <div className="w-full md:w-60 flex-shrink-0 flex flex-col gap-3">
           <div className="flex items-center justify-between mb-1">
             <h3 className="text-[9px] uppercase tracking-widest font-bold text-white/40">Assigned Hackathons</h3>
             <span className="text-[9px] font-mono text-white/20">{assignedHackathons.length}</span>
           </div>
 
-          <div className="flex flex-col gap-2 overflow-y-auto pr-0.5 max-h-[calc(100vh-300px)] custom-scrollbar">
+          <div className="flex flex-col gap-2 overflow-y-auto pr-0.5 max-h-[200px] md:max-h-[calc(100vh-300px)] custom-scrollbar">
             {loadingMain ? (
               [1,2,3].map(i => <div key={i} className="h-16 bg-white/[0.02] rounded-xl animate-pulse" />)
             ) : assignedHackathons.length === 0 ? (
@@ -173,7 +174,7 @@ export function CoordinatorDashboardPage() {
               assignedHackathons.map(h => {
                 const isSelected = selectedHackathon?.id === h.id;
                 return (
-                  <button key={h.id} onClick={() => setSelectedHackathon(h)}
+                  <button key={h.id} onClick={() => navigate(`/coordinator/problem-statements?hackathonId=${h.id}`)}
                     className={`text-left p-3 rounded-xl border transition-all duration-200 group ${
                       isSelected
                         ? 'border-accent-primary/40 bg-accent-primary/5 shadow-[0_0_16px_rgba(0,243,255,0.05)]'
@@ -200,12 +201,7 @@ export function CoordinatorDashboardPage() {
             )}
           </div>
 
-          <Link to="/coordinator/hackathons"
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-white/10 text-white/30 text-[10px] hover:border-accent-primary/40 hover:text-accent-primary transition-all group">
-            <PlusCircle size={12} />
-            <span>Manage Hackathons</span>
-            <ArrowRight size={10} className="ml-auto group-hover:translate-x-0.5 transition-transform" />
-          </Link>
+
         </div>
 
         {/* RIGHT: Content Panel */}
@@ -298,7 +294,7 @@ export function CoordinatorDashboardPage() {
                     detail={pendingEval === 0 ? 'All reviewed!' : 'Needs evaluation'} />
                   <StatCard label="Problem Statements" value={psCount} icon={FileText}
                     color="bg-accent-third/10 text-accent-third"
-                    detail={`${annCount} announcements`} />
+                    detail={`${psCount} total`} />
                 </div>
               )}
 
@@ -343,10 +339,8 @@ export function CoordinatorDashboardPage() {
                       icon={FileText} label="Manage Problem Statements" color="bg-accent-secondary/10 text-accent-secondary" />
                     <QuickLink to={`/coordinator/registrations?hackathonId=${selectedHackathon.id}`}
                       icon={Users} label="View Registrations" color="bg-accent-primary/10 text-accent-primary" />
-                    <QuickLink to="/coordinator/announcements"
-                      icon={Megaphone} label="Create Announcement" color="bg-success/10 text-success" />
-                    <QuickLink to="/coordinator/hackathons"
-                      icon={BarChart2} label="Hackathon Settings" color="bg-accent-third/10 text-accent-third" />
+                    <QuickLink to={`/coordinator/hackathons?editId=${selectedHackathon.id}`}
+                      icon={Settings} label="Edit Hackathon Settings" color="bg-accent-third/10 text-accent-third" />
                     {selectedHackathon.status === 'active' && (
                       <div className="flex items-center gap-2 p-3 rounded-xl bg-success/5 border border-success/20">
                         <Zap size={12} className="text-success" />
@@ -357,36 +351,7 @@ export function CoordinatorDashboardPage() {
                 </div>
               </div>
 
-              {/* Announcements */}
-              {announcements.length > 0 && (
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-[9px] uppercase tracking-widest font-bold text-white/40">Announcements</h3>
-                    <Link to="/coordinator/announcements" className="text-[10px] text-accent-primary hover:text-white transition-colors flex items-center gap-1">
-                      Manage all <ArrowRight size={10} />
-                    </Link>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {announcements.slice(0, 4).map((ann: any) => {
-                      const ts: Record<string, string> = {
-                        info: 'border-accent-primary/20 bg-accent-primary/5 text-accent-primary',
-                        warning: 'border-warning/20 bg-warning/5 text-warning',
-                        success: 'border-success/20 bg-success/5 text-success',
-                        urgent: 'border-danger/20 bg-danger/5 text-danger',
-                      };
-                      return (
-                        <div key={ann.id} className={`p-3.5 rounded-xl border ${ts[ann.announcement_type] || 'border-white/10 text-white'}`}>
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="text-xs font-semibold">{ann.title}</p>
-                            {!ann.is_published && <span className="text-[8px] uppercase bg-white/10 text-white/40 px-1.5 py-0.5 rounded-full flex-shrink-0">Draft</span>}
-                          </div>
-                          <p className="text-[10px] opacity-60 mt-1 line-clamp-2">{ann.content}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+
             </>
           )}
         </div>

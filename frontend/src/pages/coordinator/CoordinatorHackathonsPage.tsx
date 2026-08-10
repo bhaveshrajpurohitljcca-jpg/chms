@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Plus, Edit2, Trash2, Search, AlertCircle, CheckCircle,
+  Edit2, Trash2, Search, AlertCircle, CheckCircle,
   Calendar, RefreshCw, X, ChevronDown, Filter
 } from 'lucide-react';
 import { apiService, type BackendHackathon } from '@/services/api';
@@ -103,13 +103,6 @@ export function CoordinatorHackathonsPage() {
     }, 6000);
     return () => clearInterval(interval);
   }, []);
-
-  const openCreate = () => {
-    setEditingId(null);
-    setForm({ ...EMPTY_FORM });
-    setFormError('');
-    setShowForm(true);
-  };
 
   const openEdit = (h: BackendHackathon) => {
     setEditingId(h.id);
@@ -235,12 +228,7 @@ export function CoordinatorHackathonsPage() {
           <span className="text-[10px] uppercase tracking-[0.25em] text-accent-primary font-bold font-archivo">Coordinator Panel</span>
           <h1 className="font-archivo text-3xl uppercase tracking-wider font-black text-white mt-1">Hackathon Management</h1>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent-primary text-black text-xs font-bold uppercase tracking-wider hover:shadow-[0_0_20px_rgba(0,243,255,0.3)] transition-all"
-        >
-          <Plus size={14} /> Create Hackathon
-        </button>
+
       </div>
 
       {/* Filters */}
@@ -288,7 +276,7 @@ export function CoordinatorHackathonsPage() {
           <Calendar size={36} className="text-white/20" />
           <p className="text-white/40 text-sm">{search || statusFilter ? 'No hackathons match your filters.' : 'No hackathons yet. Create your first one!'}</p>
           {!search && !statusFilter && (
-            <button onClick={openCreate} className="text-sm text-accent-primary hover:text-white transition-colors">Create Hackathon →</button>
+            <p className="text-xs text-white/30">Contact admin to create new hackathons.</p>
           )}
         </div>
       ) : (
@@ -351,7 +339,7 @@ export function CoordinatorHackathonsPage() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
               <div>
                 <span className="text-[10px] uppercase tracking-widest text-accent-primary font-bold">
-                  {editingId ? 'Edit Hackathon' : 'Create Hackathon'}
+                  'Edit Hackathon'
                 </span>
               </div>
               <button disabled={formLoading} onClick={() => setShowForm(false)} className="p-1.5 rounded-lg text-white/40 hover:text-white transition-colors">
@@ -464,7 +452,7 @@ export function CoordinatorHackathonsPage() {
                   Cancel
                 </button>
                 <button type="submit" disabled={formLoading} className="flex-1 h-10 rounded-xl bg-accent-primary text-black text-sm font-bold hover:shadow-[0_0_20px_rgba(0,243,255,0.3)] transition-all disabled:opacity-50">
-                  {formLoading ? (editingId ? 'Saving...' : 'Creating...') : (editingId ? 'Save Changes' : 'Create Hackathon')}
+                  {formLoading ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>

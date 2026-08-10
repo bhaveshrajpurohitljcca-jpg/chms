@@ -2606,11 +2606,11 @@ export const CoordinatorView = () => {
               setSelectedHackathon(null);
               setActiveTab('problems');
               setSelectedPSTeam(null);
-              navigate('/coordinator/hackathons');
+              navigate('/coordinator');
             }}
-            className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold uppercase tracking-wider transition-all"
+            className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-1.5"
           >
-            ← Back
+            ← Back to Dashboard
           </button>
           <div>
             <h2 className="font-archivo text-xl font-black text-white uppercase tracking-wider">{selectedHackathon.title}</h2>
@@ -2620,7 +2620,7 @@ export const CoordinatorView = () => {
           </div>
         </div>
         {/* Tab Switcher */}
-        <div className="flex p-1 bg-white/5 rounded-xl border border-white/10">
+        <div className="flex flex-wrap p-1 bg-white/5 rounded-xl border border-white/10 gap-1">
           <button
             onClick={() => {
               setActiveTab('problems');
@@ -2653,22 +2653,7 @@ export const CoordinatorView = () => {
           >
             Registered Teams
           </button>
-          <button
-            onClick={() => {
-              setActiveTab('announcements');
-              setSelectedPS(null);
-              setSelectedPSTeam(null);
-              setSelectedTeam(null);
-              navigate('/coordinator/announcements');
-            }}
-            className={`px-5 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${
-              activeTab === 'announcements'
-                ? 'bg-accent-primary text-black shadow-[0_0_12px_rgba(0,243,255,0.3)]'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            Announcements
-          </button>
+
           <button
             onClick={() => { setActiveTab('analytics'); setSelectedPS(null); setSelectedPSTeam(null); setSelectedTeam(null); }}
             className={`px-5 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${
