@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel
 from app.models.invitation import InvitationStatus
 from app.schemas.user import UserResponse
+from app.schemas.team import TeamResponse
 
 
 class InvitationCreate(BaseModel):
@@ -16,6 +17,7 @@ class InvitationResponse(BaseModel):
     invitee_email: str
     status: InvitationStatus
     invited_by: Optional[UserResponse] = None
+    team: Optional[TeamResponse] = None
     created_at: datetime
 
     class Config:

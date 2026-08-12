@@ -521,7 +521,7 @@ def accept_invitation(
         raise HTTPException(status_code=404, detail="Invitation not found.")
 
     # Verify this invitation belongs to the current user
-    if invitation.invitee_email.lower() != current_user.email.lower():
+    if invitation.invitee_email.strip().lower() != current_user.email.strip().lower():
         raise HTTPException(status_code=403, detail="This invitation is not addressed to you.")
 
     if invitation.status != InvitationStatus.PENDING:
@@ -542,11 +542,18 @@ def accept_invitation(
             Team.id.in_(team_ids),
             Team.hackathon_id == team.hackathon_id
         ).first()
-        if already_joined:
-            raise HTTPException(
-                status_code=400,
-                detail="You are already participating in a team for this hackathon."
-            )
+        if already_joined and already_joined.id != team.id:
+            # Check if student is in a solo team (only member) — auto-delete it so they can join the invited team
+            solo_member_count = db.query(TeamMember).filter(TeamMember.team_id == already_joined.id).count()
+            if solo_member_count == 1 and already_joined.leader_id == current_user.id:
+                db.query(TeamMember).filter(TeamMember.team_id == already_joined.id).delete()
+                db.delete(already_joined)
+                db.commit()
+            else:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"You are already participating in team '{already_joined.name}' for this hackathon."
+                )
 
     # Check capacity again at acceptance time
     current_member_count = db.query(TeamMember).filter(TeamMember.team_id == team.id).count()

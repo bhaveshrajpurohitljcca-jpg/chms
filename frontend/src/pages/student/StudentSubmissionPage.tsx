@@ -828,31 +828,122 @@ export default function StudentSubmissionPage() {
         )}
       </form>
 
-      {/* ── Evaluation Summary (if graded) ─────────────────── */}
+      {/* ── Comprehensive Judge Review & Evaluation Overview ── */}
       {submission && submission.evaluations && submission.evaluations.length > 0 && (
-        <div className="flex flex-col gap-4 pt-6 border-t border-white/5">
-          <h3 className="font-archivo text-xs uppercase tracking-[0.25em] font-bold text-accent-primary">
-            Evaluation Results
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {submission.evaluations.map((ev: any, i: number) => (
-              <div key={i} className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-4 flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-white/40">Judge {i + 1}</span>
-                  <span className="text-sm font-black text-accent-primary">{ev.total_score?.toFixed(1)}</span>
-                </div>
-                <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-accent-primary"
-                    style={{ width: `${Math.min((ev.total_score / 10) * 100, 100)}%` }}
-                  />
-                </div>
-                {ev.feedback && (
-                  <p className="text-xs text-white/50 font-light italic">"{ev.feedback}"</p>
-                )}
-              </div>
-            ))}
+        <div className="flex flex-col gap-6 pt-8 border-t border-white/10">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <span className="text-[10px] uppercase tracking-[0.25em] text-accent-primary font-bold font-archivo">
+                Official Judge Feedback
+              </span>
+              <h3 className="font-archivo text-xl sm:text-2xl uppercase tracking-wider font-black text-white mt-1">
+                Evaluation & Review Overview
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsScorecardOpen(true)}
+              className="px-4 py-2 rounded-xl bg-accent-primary text-black font-bold text-xs hover:bg-accent-primary/80 transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(0,243,255,0.3)] self-start sm:self-auto"
+            >
+              <Award size={14} /> View Full Scorecard Modal
+            </button>
           </div>
+
+          {submission.evaluations.map((ev: any, i: number) => (
+            <div key={i} className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 flex flex-col gap-6 backdrop-blur-xl">
+              {/* Header: Score & Recommendation */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-accent-primary/10 border border-accent-primary/30 text-accent-primary flex items-center justify-center font-black">
+                    #{i + 1}
+                  </div>
+                  <div>
+                    <p className="text-xs font-mono text-white/70">Evaluated by <strong className="text-white">{ev.judge?.full_name || `Judge ${i + 1}`}</strong></p>
+                    <p className="text-xs text-white/30">{ev.submitted_at ? new Date(ev.submitted_at).toLocaleString() : 'Final Review Submitted'}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                    ev.recommendation === 'shortlist' || ev.recommendation === 'accepted' ? 'bg-success/20 text-success border border-success/30' :
+                    ev.recommendation === 'rejected' ? 'bg-danger/20 text-danger border border-danger/30' :
+                    'bg-accent-primary/20 text-accent-primary border border-accent-primary/30'
+                  }`}>
+                    {ev.recommendation || 'Evaluated'}
+                  </span>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase font-mono text-white/40">Total Score</p>
+                    <p className="font-archivo text-2xl font-black text-accent-primary">{ev.total_score?.toFixed(1)} <span className="text-xs font-normal text-white/40">/ 100</span></p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 5-Criteria Score Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex flex-col">
+                  <span className="text-[9px] uppercase font-bold text-white/40">Innovation</span>
+                  <span className="text-base font-black text-white mt-1">{ev.score_innovation?.toFixed(1)} <span className="text-[10px] text-white/30">/ 10</span></span>
+                </div>
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex flex-col">
+                  <span className="text-[9px] uppercase font-bold text-white/40">Technical</span>
+                  <span className="text-base font-black text-white mt-1">{ev.score_technical?.toFixed(1)} <span className="text-[10px] text-white/30">/ 10</span></span>
+                </div>
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex flex-col">
+                  <span className="text-[9px] uppercase font-bold text-white/40">UI / UX</span>
+                  <span className="text-base font-black text-white mt-1">{ev.score_uiux?.toFixed(1)} <span className="text-[10px] text-white/30">/ 10</span></span>
+                </div>
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex flex-col">
+                  <span className="text-[9px] uppercase font-bold text-white/40">Impact</span>
+                  <span className="text-base font-black text-white mt-1">{ev.score_impact?.toFixed(1)} <span className="text-[10px] text-white/30">/ 10</span></span>
+                </div>
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex flex-col col-span-2 sm:col-span-1">
+                  <span className="text-[9px] uppercase font-bold text-white/40">Presentation</span>
+                  <span className="text-base font-black text-white mt-1">{ev.score_presentation?.toFixed(1)} <span className="text-[10px] text-white/30">/ 10</span></span>
+                </div>
+              </div>
+
+              {/* Written Review Breakdown */}
+              <div className="flex flex-col gap-4 pt-2">
+                {ev.feedback && (
+                  <div className="p-4 rounded-xl bg-accent-primary/5 border border-accent-primary/20">
+                    <span className="text-[10px] uppercase tracking-widest font-bold text-accent-primary block mb-1">
+                      Overall Judge Overview & Feedback
+                    </span>
+                    <p className="text-xs text-white/90 leading-relaxed font-light">{ev.feedback}</p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {ev.strengths && (
+                    <div className="p-3.5 rounded-xl bg-success/5 border border-success/20">
+                      <span className="text-[10px] uppercase tracking-widest font-bold text-success block mb-1">
+                        Key Strengths
+                      </span>
+                      <p className="text-xs text-white/80 leading-relaxed font-light">{ev.strengths}</p>
+                    </div>
+                  )}
+
+                  {ev.weaknesses && (
+                    <div className="p-3.5 rounded-xl bg-warning/5 border border-warning/20">
+                      <span className="text-[10px] uppercase tracking-widest font-bold text-warning block mb-1">
+                        Areas Needing Improvement
+                      </span>
+                      <p className="text-xs text-white/80 leading-relaxed font-light">{ev.weaknesses}</p>
+                    </div>
+                  )}
+
+                  {ev.suggestions && (
+                    <div className="p-3.5 rounded-xl bg-accent-secondary/5 border border-accent-secondary/20">
+                      <span className="text-[10px] uppercase tracking-widest font-bold text-accent-secondary block mb-1">
+                        Actionable Suggestions
+                      </span>
+                      <p className="text-xs text-white/80 leading-relaxed font-light">{ev.suggestions}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

@@ -99,6 +99,7 @@ export interface BackendInvitation {
   invitee_email: string;
   status: 'pending' | 'accepted' | 'rejected';
   invited_by?: UserProfile;
+  team?: BackendTeam;
   created_at: string;
 }
 

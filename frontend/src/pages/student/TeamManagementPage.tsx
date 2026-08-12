@@ -21,7 +21,7 @@ import {
   ArrowRightLeft,
 } from 'lucide-react';
 import { apiService } from '@/services/api';
-import type { BackendTeam } from '@/services/api';
+import type { BackendTeam, BackendInvitation } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { InviteMemberModal } from '@/components/student/InviteMemberModal';
 import { StudentProfileModal } from '@/components/student/StudentProfileModal';
@@ -36,6 +36,9 @@ export const TeamManagementPage: React.FC = () => {
   const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   const [activeTeam, setActiveTeam] = useState<BackendTeam | null>(null);
   const [allHackathons, setAllHackathons] = useState<any[]>([]);
+  const [receivedInvitations, setReceivedInvitations] = useState<BackendInvitation[]>([]);
+  const [invitationLoading, setInvitationLoading] = useState(false);
+  const [invitationActionMsg, setInvitationActionMsg] = useState('');
 
   // UI state
   const [isLoading, setIsLoading] = useState(true);
@@ -72,6 +75,15 @@ export const TeamManagementPage: React.FC = () => {
       // Load all hackathons
       const hacksRes = await apiService.listHackathons();
       setAllHackathons(hacksRes.data || []);
+
+      // Load pending team invitations received
+      try {
+        const invRes = await apiService.getReceivedInvitations();
+        const pendingInvs = (invRes.data || []).filter((i: any) => i.status === 'pending');
+        setReceivedInvitations(pendingInvs);
+      } catch (invErr) {
+        console.error('Failed to fetch invitations:', invErr);
+      }
 
       // Select active team
       let primary: BackendTeam | null = null;
@@ -111,6 +123,32 @@ export const TeamManagementPage: React.FC = () => {
     }, 10000);
     return () => clearInterval(interval);
   }, [user?.id, loadData]);
+
+  const handleAcceptInvitation = async (invitationId: string) => {
+    setInvitationLoading(true);
+    setInvitationActionMsg('');
+    try {
+      const res = await apiService.acceptInvitation(invitationId);
+      setInvitationActionMsg(res.message || 'Invitation accepted! You have joined the team.');
+      await loadData();
+    } catch (err: any) {
+      setError(err.message || 'Failed to accept invitation.');
+    } finally {
+      setInvitationLoading(false);
+    }
+  };
+
+  const handleRejectInvitation = async (invitationId: string) => {
+    setInvitationLoading(true);
+    try {
+      await apiService.rejectInvitation(invitationId);
+      await loadData();
+    } catch (err: any) {
+      setError(err.message || 'Failed to reject invitation.');
+    } finally {
+      setInvitationLoading(false);
+    }
+  };
 
   const handleCopyCode = () => {
     if (!activeTeam) return;
@@ -259,6 +297,70 @@ export const TeamManagementPage: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {/* ── Pending Team Invitations Card ──────────────── */}
+      {receivedInvitations.length > 0 && (
+        <div className="p-6 rounded-3xl border border-accent-primary/40 bg-accent-primary/10 backdrop-blur-xl flex flex-col gap-4 shadow-[0_0_30px_rgba(0,243,255,0.15)]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-accent-primary text-black flex items-center justify-center font-bold">
+              <Mail size={20} />
+            </div>
+            <div>
+              <h3 className="font-archivo text-lg font-black text-white uppercase tracking-wide">
+                Pending Team Invitations ({receivedInvitations.length})
+              </h3>
+              <p className="text-xs text-white/70">
+                A team leader has invited you to join their hackathon team. Accept to join immediately.
+              </p>
+            </div>
+          </div>
+
+          {invitationActionMsg && (
+            <div className="p-3 rounded-xl bg-success/20 border border-success/40 text-success text-xs font-bold">
+              {invitationActionMsg}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3">
+            {receivedInvitations.map((inv) => (
+              <div key={inv.id} className="p-4 rounded-2xl bg-black/60 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-archivo text-base font-bold text-white">
+                      {inv.team?.name || 'Hackathon Team'}
+                    </span>
+                    <Badge variant="primary" className="text-[9px] uppercase">
+                      {getHackathonName(inv.team?.hackathon_id || '')}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-white/60">
+                    Invited by <strong className="text-white">{inv.invited_by?.full_name || inv.invited_by?.email || 'Team Leader'}</strong> on {new Date(inv.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  <Button
+                    variant="secondary"
+                    onClick={() => handleRejectInvitation(inv.id)}
+                    disabled={invitationLoading}
+                    className="h-9 px-4 text-xs hover:border-red-500/50 hover:text-red-400"
+                  >
+                    Decline
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={() => handleAcceptInvitation(inv.id)}
+                    disabled={invitationLoading}
+                    className="h-9 px-5 text-xs font-bold"
+                  >
+                    Accept & Join Team
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Team Dropdown Selector */}
       {myTeamsList.length > 0 && (
