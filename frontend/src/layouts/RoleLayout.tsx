@@ -1,7 +1,7 @@
+import { useState, useEffect } from 'react';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { 
-  Zap, 
   User as UserIcon, 
   LayoutDashboard, 
   Calendar, 
@@ -14,9 +14,11 @@ import {
   Shield,
   Loader2,
   Sun,
-  Moon
+  Moon,
+  Play
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
+import { IntroVideoModal } from '@/components/common/IntroVideoModal';
 
 interface SidebarItem {
   label: string;
@@ -28,6 +30,21 @@ interface SidebarItem {
 export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] }) {
   const { user, isLoading } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const [showIntroVideo, setShowIntroVideo] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      const hasPlayed = sessionStorage.getItem('hexathon_intro_played');
+      if (!hasPlayed) {
+        setShowIntroVideo(true);
+      }
+    }
+  }, [user]);
+
+  const handleCloseIntro = () => {
+    sessionStorage.setItem('hexathon_intro_played', 'true');
+    setShowIntroVideo(false);
+  };
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -150,13 +167,17 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
       {/* ── TOP HEADER WITH INTEGRATED TOP NAVIGATION BAR ─────── */}
       <header className="fixed top-0 left-0 right-0 h-16 md:h-18 z-30 px-4 md:px-8 flex items-center justify-between glass-surface backdrop-blur-md border-b border-[var(--border-color)]">
         
-        {/* Left: HackZero Home Link */}
-        <Link to="/" className="flex items-center gap-2.5 flex-shrink-0 group hover:opacity-90 transition-opacity" title="Home">
-          <div className="w-9 h-9 rounded-xl bg-[#0252cd] dark:bg-accent-primary/10 border border-[#0252cd] dark:border-accent-primary/30 flex items-center justify-center text-white dark:text-accent-primary flex-shrink-0 group-hover:scale-105 transition-transform">
-            <Zap size={18} />
+        {/* Left: Hexathon Brand Link with Glowing Logo */}
+        <Link to="/" className="flex items-center gap-3 flex-shrink-0 group hover:opacity-90 transition-opacity" title="Hexathon Home">
+          <div className="relative w-10 h-10 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+            <img
+              src="/hexathon_logo.jpeg"
+              alt="Hexathon Logo"
+              className="w-10 h-10 object-contain rounded-lg mix-blend-screen drop-shadow-[0_0_14px_rgba(0,243,255,0.95)] filter brightness-110 contrast-125"
+            />
           </div>
-          <span className="font-archivo text-base md:text-lg tracking-wider font-black text-[#0252cd] dark:text-accent-primary">
-            HackZero
+          <span className="font-archivo text-lg md:text-xl tracking-wider font-black text-white text-glow-cyan">
+            Hexathon
           </span>
         </Link>
 
@@ -165,8 +186,18 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
           <NavLinks />
         </nav>
 
-        {/* Right: Actions (Theme Toggle & Profile Link) */}
+        {/* Right: Actions (Theme Toggle, Watch Intro & Profile Link) */}
         <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+          {user && (
+            <button
+              onClick={() => setShowIntroVideo(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-primary/10 border border-accent-primary/30 text-accent-primary text-xs font-bold hover:bg-accent-primary/20 transition-all"
+              title="Watch Hexathon Intro Animation"
+            >
+              <Play size={12} className="fill-accent-primary" />
+              <span className="hidden sm:inline">Intro</span>
+            </button>
+          )}
           <button 
             onClick={toggleTheme}
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
@@ -224,6 +255,11 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
           })}
         </div>
       </nav>
+
+      <IntroVideoModal
+        isOpen={showIntroVideo}
+        onClose={handleCloseIntro}
+      />
     </div>
   );
 }

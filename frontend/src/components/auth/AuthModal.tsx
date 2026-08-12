@@ -99,10 +99,10 @@ export const AuthModal: React.FC = () => {
           </div>
           <div>
             <h2 className="font-archivo text-xl font-bold tracking-wide text-white">
-              HackZero Single Sign-On
+              Hexathon Single Sign-On
             </h2>
             <p className="text-xs font-mono text-zinc-400">
-              HackZero Management Portal
+              Hexathon Management Portal
             </p>
           </div>
         </div>

@@ -64,7 +64,7 @@ export const ProfilePage: React.FC = () => {
             Please log in or register an account to view your user profile dashboard, active hackathon teams, and certificates.
           </p>
           <Button variant="primary" onClick={() => openAuthModal('login')} className="mx-auto">
-            Sign In to HackZero
+            Sign In to Hexathon
           </Button>
         </Card>
       </div>

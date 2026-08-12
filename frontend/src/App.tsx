@@ -108,13 +108,17 @@ const GlobalLayout = () => {
 
       {/* FIXED TOPBAR NAVIGATION */}
       <header className="fixed top-0 left-0 right-0 h-16 md:h-24 z-40 px-4 md:px-8 py-4 md:py-6 flex items-center justify-between bg-[#050505]/95 dark:bg-[#050505]/95 backdrop-blur-md border-b border-[rgba(255,255,255,0.1)] pointer-events-auto">
-        {/* Left Brand Logo — only icon redirects */}
-        <div className="flex items-center gap-2 md:gap-3 select-none">
-          <Link to="/" className="w-9 h-9 md:w-10 md:h-10 rounded-[12px] bg-accent-primary/10 border border-accent-primary/30 flex items-center justify-center text-accent-primary hover:border-accent-primary transition-all duration-300">
-            <Zap size={16} className="text-accent-primary" />
+        {/* Left Brand Logo with Shining Glowing Logo */}
+        <div className="flex items-center gap-3 select-none">
+          <Link to="/" className="w-10 h-10 flex items-center justify-center flex-shrink-0 group hover:scale-105 transition-transform" title="Hexathon Home">
+            <img
+              src="/hexathon_logo.jpeg"
+              alt="Hexathon Logo"
+              className="w-10 h-10 object-contain rounded-lg mix-blend-screen drop-shadow-[0_0_14px_rgba(0,243,255,0.95)] filter brightness-110 contrast-125"
+            />
           </Link>
-          <span className="font-archivo text-base md:text-lg tracking-wider font-black text-white text-glow-cyan cursor-default">
-              HackZero
+          <span className="font-archivo text-lg md:text-xl tracking-wider font-black text-white text-glow-cyan cursor-default">
+            Hexathon
           </span>
         </div>
 
@@ -364,10 +368,10 @@ const PublicLanding = () => {
 
       {/* Hero Section */}
       <section className="min-h-screen flex flex-col justify-center items-center px-4 sm:px-8 pt-24 pb-16 text-center max-w-7xl mx-auto w-full relative">
-        <StatusPulseBadge text="HackZero Core Module Active" className="mb-6 md:mb-8" />
+        <StatusPulseBadge text="Hexathon Core Module Active" className="mb-6 md:mb-8" />
 
         <h2 className="font-archivo text-[clamp(2.5rem,10vw,8rem)] font-black tracking-tighter leading-[0.9] select-none mb-6 md:mb-10 bg-gradient-to-b from-white via-white/80 to-white/10 bg-clip-text text-transparent uppercase">
-          HackZero
+          Hexathon
         </h2>
 
         <p className="max-w-xl text-xs sm:text-sm md:text-base text-text-secondary font-light leading-relaxed mb-8 md:mb-12 select-none px-2">

@@ -93,7 +93,7 @@ export const HackathonsListPage: React.FC = () => {
             <span>Internal Hackathon Directory</span>
           </div>
           <h2 className="font-archivo text-3xl md:text-4xl font-black text-[#0f172a] dark:text-white uppercase tracking-tight">
-            Explore HackZero Events
+            Explore Hexathon Events
           </h2>
         </div>
         <LoadingState message="Fetching active hackathon directory..." />
@@ -106,7 +106,7 @@ export const HackathonsListPage: React.FC = () => {
       <div className="flex flex-col gap-8 max-w-7xl mx-auto w-full font-manrope">
         <div>
           <h2 className="font-archivo text-3xl md:text-4xl font-black text-[#0f172a] dark:text-white uppercase tracking-tight">
-            Explore HackZero Events
+            Explore Hexathon Events
           </h2>
         </div>
         <ErrorState
@@ -129,7 +129,7 @@ export const HackathonsListPage: React.FC = () => {
             <span>Internal Hackathon Directory</span>
           </div>
           <h2 className="font-archivo text-3xl md:text-4xl font-black text-[#0f172a] dark:text-white uppercase tracking-tight">
-            Explore HackZero Events
+            Explore Hexathon Events
           </h2>
           <p className="text-xs md:text-sm text-[#475569] dark:text-[rgba(255,255,255,0.65)] font-light mt-1">
             View active sprints, problem statements, registration deadlines.
