@@ -125,8 +125,14 @@ elif isinstance(settings.CORS_ORIGINS, str):
 else:
     origins = [settings.CORS_ORIGINS]
 
-# Force include Vercel frontend and localhost for development
-essential_origins = ["https://chms-lj.vercel.app", "http://localhost:5173", "http://localhost:5174", "http://localhost:3000"]
+# Force include custom domain, Vercel frontend and localhost for development
+essential_origins = [
+    "https://hexathon.aira-lab.in",
+    "https://chms-lj.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:3000"
+]
 for org in essential_origins:
     if org not in origins:
         origins.append(org)
@@ -135,8 +141,8 @@ setup_exception_handlers(app)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origins=["*"] if not origins else list(set(origins + ["https://hexathon.aira-lab.in", "*"])),
+    allow_origin_regex=r"https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
