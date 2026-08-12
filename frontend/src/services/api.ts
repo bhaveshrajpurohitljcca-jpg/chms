@@ -16,6 +16,7 @@ export interface UserProfile {
   college_id?: string;
   avatar_url?: string;
   bio?: string;
+  phone?: string;
   is_active: boolean;
   auto_accept_invites?: boolean;
   github_url?: string;

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Modal from '@/components/ui/modal';
 import {
   Calendar, FileText, Users,
@@ -64,7 +64,6 @@ function QuickLink({ to, icon: Icon, label, color }: {
 
 export function CoordinatorDashboardPage() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [assignedHackathons, setAssignedHackathons] = useState<BackendHackathon[]>([]);
   const [selectedHackathon, setSelectedHackathon] = useState<BackendHackathon | null>(null);
   const [registrations, setRegistrations] = useState<BackendRegistration[]>([]);
@@ -241,7 +240,7 @@ export function CoordinatorDashboardPage() {
               assignedHackathons.map(h => {
                 const isSelected = selectedHackathon?.id === h.id;
                 return (
-                  <button key={h.id} onClick={() => navigate(`/coordinator/problem-statements?hackathonId=${h.id}`)}
+                  <button key={h.id} onClick={() => setSelectedHackathon(h)}
                     className={`text-left p-3 rounded-xl border transition-all duration-200 group ${
                       isSelected
                         ? 'border-accent-primary/40 bg-accent-primary/5 shadow-[0_0_16px_rgba(0,243,255,0.05)]'

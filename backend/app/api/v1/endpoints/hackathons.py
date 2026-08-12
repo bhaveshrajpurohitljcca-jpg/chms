@@ -53,30 +53,9 @@ def sync_hackathon_statuses(db: Session):
 
 
 def _sync_assignment_account_statuses(db: Session) -> None:
-    active_hackathon_ids = {
-        hackathon_id
-        for (hackathon_id,) in db.query(Hackathon.id).filter(
-            Hackathon.status.in_([HackathonStatus.DRAFT, HackathonStatus.UPCOMING, HackathonStatus.ACTIVE])
-        ).all()
-    }
-
-    coordinator_ids = {
-        assignment.coordinator_id
-        for assignment in db.query(CoordinatorAssignment).all()
-        if assignment.hackathon_id in active_hackathon_ids
-    }
-    judge_ids = {
-        assignment.judge_id
-        for assignment in db.query(JudgeAssignment).all()
-        if assignment.hackathon_id in active_hackathon_ids
-    }
-
-    for user in db.query(User).filter(User.role == UserRole.COORDINATOR).all():
-        user.is_active = user.id in coordinator_ids
-
-    for user in db.query(User).filter(User.role == UserRole.JUDGE).all():
-        user.is_active = user.id in judge_ids
-
+    # Ensure coordinator and judge accounts remain active so past hackathons remain accessible
+    for user in db.query(User).filter(User.role.in_([UserRole.COORDINATOR, UserRole.JUDGE])).all():
+        user.is_active = True
     db.commit()
 
 

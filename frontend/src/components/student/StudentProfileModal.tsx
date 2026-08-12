@@ -4,7 +4,7 @@ import Badge from '@/components/ui/badge';
 import { apiService } from '@/services/api';
 import type { UserProfile } from '@/services/api';
 import { LoadingState, ErrorState } from '@/components/student/StateContainer';
-import { Mail, Building, CreditCard, Sparkles, Code, Globe } from 'lucide-react';
+import { Mail, Building, CreditCard, Sparkles, Code, Globe, Phone } from 'lucide-react';
 
 interface StudentProfileModalProps {
   isOpen: boolean;
@@ -105,6 +105,11 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                     <span className="flex items-center gap-1.5">
                       <Mail size={14} className="text-accent-primary" /> {profile.email}
                     </span>
+                    {profile.phone && (
+                      <span className="flex items-center gap-1.5 font-semibold text-white">
+                        <Phone size={14} className="text-accent-primary" /> {profile.phone}
+                      </span>
+                    )}
                     {profile.department && (
                       <span className="flex items-center gap-1.5">
                         <Building size={14} className="text-accent-primary" /> {profile.department}
@@ -177,17 +182,17 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 flex flex-col gap-1">
                 <span className="text-[10px] uppercase font-semibold text-white/40">Status</span>
                 <span className="text-sm font-bold text-success capitalize">Active Member</span>
               </div>
-              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 flex flex-col gap-1">
-                <span className="text-[10px] uppercase font-semibold text-white/40">Auto-Join Enabled</span>
-                <span className={`text-sm font-bold ${profile.auto_accept_invites ? 'text-accent-primary' : 'text-zinc-500'}`}>
-                  {profile.auto_accept_invites ? 'Yes' : 'No'}
-                </span>
-              </div>
+              {profile.phone && (
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 flex flex-col gap-1">
+                  <span className="text-[10px] uppercase font-semibold text-white/40">Mobile Number</span>
+                  <span className="text-sm font-bold text-white font-mono">{profile.phone}</span>
+                </div>
+              )}
             </div>
 
           </div>

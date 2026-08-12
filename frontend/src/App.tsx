@@ -68,6 +68,7 @@ import JudgeAssignmentPage from '@/pages/admin/JudgeAssignmentPage';
 import { CoordinatorDashboardPage } from '@/pages/coordinator/CoordinatorDashboardPage';
 import { CoordinatorHackathonsPage } from '@/pages/coordinator/CoordinatorHackathonsPage';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { StudentProfileModal } from '@/components/student/StudentProfileModal';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { useTheme } from '@/context/ThemeContext';
@@ -2347,6 +2348,7 @@ export const CoordinatorView = () => {
   const [teams, setTeams] = useState<any[]>([]);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
+  const [studentProfileUserId, setStudentProfileUserId] = useState<string | null>(null);
   const [judgeAssignments, setJudgeAssignments] = useState<any[]>([]);
 
   const getCoordinatorRouteState = (pathname: string): {
@@ -2811,7 +2813,12 @@ export const CoordinatorView = () => {
                 <h4 className="font-archivo text-sm font-black uppercase text-white tracking-wider">Team Members</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {(selectedPSTeam.team?.members || []).map((member: any) => (
-                    <div key={member.id} className="p-3 rounded-xl border border-white/5 bg-white/[0.01] flex items-center gap-3">
+                    <div
+                      key={member.id}
+                      onClick={() => setStudentProfileUserId(member.user_id || member.user?.id || member.id)}
+                      className="p-3 rounded-xl border border-white/5 bg-white/[0.01] hover:border-accent-primary hover:bg-white/[0.03] cursor-pointer transition-all flex items-center gap-3 group"
+                      title="Click to view student profile"
+                    >
                       <img
                         src={member.user?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${member.user_id}`}
                         alt="avatar"
@@ -3073,7 +3080,12 @@ export const CoordinatorView = () => {
                 <h4 className="font-archivo text-sm font-black uppercase text-white tracking-wider">Team Members</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {(selectedTeam.team?.members || []).map((member: any) => (
-                    <div key={member.id} className="p-3 rounded-xl border border-white/5 bg-white/[0.01] flex items-center gap-3">
+                    <div
+                      key={member.id}
+                      onClick={() => setStudentProfileUserId(member.user_id || member.user?.id || member.id)}
+                      className="p-3 rounded-xl border border-white/5 bg-white/[0.01] hover:border-accent-primary hover:bg-white/[0.03] cursor-pointer transition-all flex items-center gap-3 group"
+                      title="Click to view student profile"
+                    >
                       <img
                         src={member.user?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${member.user_id}`}
                         alt="avatar"
@@ -3220,6 +3232,12 @@ export const CoordinatorView = () => {
           )}
         </div>
       )}
+
+      <StudentProfileModal
+        isOpen={!!studentProfileUserId}
+        onClose={() => setStudentProfileUserId(null)}
+        userId={studentProfileUserId}
+      />
 
       {/* Edit PS Modal */}
       {/* ─── ANNOUNCEMENTS TAB ─── */}
@@ -3472,7 +3490,7 @@ const AdminView = () => {
     maxTeams: 10 
   });
 
-  const [newJudge, setNewJudge] = useState({ fullName: '', email: '', password: '', judgeType: 'INTERNAL', department: '' });
+  const [newJudge, setNewJudge] = useState({ fullName: '', email: '', password: '', judgeType: 'INTERNAL', department: '', phone: '' });
   const [newCoordinator, setNewCoordinator] = useState({ fullName: '', email: '', password: '', semester: '1', rollNumber: '', phone: '', stream: '' });
 
   // Allocation forms inside details
@@ -3963,10 +3981,11 @@ const AdminView = () => {
         full_name: newJudge.fullName,
         role: 'judge',
         college_id: newJudge.judgeType,
-        department: newJudge.department
+        department: newJudge.department,
+        phone: newJudge.phone
       });
       showToast(`Judge "${newJudge.fullName}" account successfully created!`);
-      setNewJudge({ fullName: '', email: '', password: '', judgeType: 'INTERNAL', department: '' });
+      setNewJudge({ fullName: '', email: '', password: '', judgeType: 'INTERNAL', department: '', phone: '' });
       setShowCreateJudgeModal(false);
       fetchUsers();
     } catch (err: any) {
@@ -6098,6 +6117,12 @@ const AdminView = () => {
                 onChange={(e) => setNewJudge(prev => ({ ...prev, department: e.target.value }))}
               />
             </div>
+            <Input
+              label="Phone Number"
+              placeholder="e.g. 9876543210"
+              value={newJudge.phone}
+              onChange={(e) => setNewJudge(prev => ({ ...prev, phone: e.target.value }))}
+            />
             
             <div className="flex gap-3 justify-end mt-4">
               <Button type="button" variant="secondary" onClick={() => setShowCreateJudgeModal(false)}>
