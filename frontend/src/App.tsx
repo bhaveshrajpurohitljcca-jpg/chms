@@ -112,9 +112,9 @@ const GlobalLayout = () => {
         <div className="flex items-center gap-3 select-none">
           <Link to="/" className="w-10 h-10 flex items-center justify-center flex-shrink-0 group hover:scale-105 transition-transform" title="Hexathon Home">
             <img
-              src="/real_logo.jpeg"
+              src="/real_logo.png"
               alt="Hexathon Logo"
-              className="w-10 h-10 object-contain rounded-lg mix-blend-screen drop-shadow-[0_0_14px_rgba(0,243,255,0.95)] filter brightness-110 contrast-125"
+              className="w-10 h-10 object-contain drop-shadow-[0_0_14px_rgba(0,243,255,0.95)] filter brightness-110"
             />
           </Link>
           <span className="font-archivo text-lg md:text-xl tracking-wider font-black text-white text-glow-cyan cursor-default">
