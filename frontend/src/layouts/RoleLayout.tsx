@@ -162,17 +162,17 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
       {/* ── TOP HEADER WITH INTEGRATED TOP NAVIGATION BAR ─────── */}
       <header className="fixed top-0 left-0 right-0 h-16 md:h-18 z-30 px-4 md:px-8 flex items-center justify-between glass-surface backdrop-blur-md border-b border-[var(--border-color)]">
         
-        {/* Left: Hexathon Brand Link with Glowing Logo */}
-        <Link to="/" className="flex items-center gap-3 flex-shrink-0 group hover:opacity-90 transition-opacity" title="Hexathon Home">
-          <div className="relative w-10 h-10 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+        {/* Left: HexaThon Brand Link with Larger Glowing Logo */}
+        <Link to="/" className="flex items-center gap-3 flex-shrink-0 group hover:opacity-90 transition-opacity" title="HexaThon Home">
+          <div className="relative w-12 h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
             <img
               src="/real_logo.png"
-              alt="Hexathon Logo"
-              className="w-10 h-10 object-contain drop-shadow-[0_0_14px_rgba(0,243,255,0.95)] filter brightness-110"
+              alt="HexaThon Logo"
+              className="w-12 h-12 md:w-14 md:h-14 object-contain drop-shadow-[0_0_16px_rgba(0,243,255,0.95)] filter brightness-115"
             />
           </div>
-          <span className="font-archivo text-lg md:text-xl tracking-wider font-black text-white text-glow-cyan">
-            Hexathon
+          <span className="font-archivo text-xl md:text-2xl tracking-wider font-black text-white text-glow-cyan">
+            HexaThon
           </span>
         </Link>
 

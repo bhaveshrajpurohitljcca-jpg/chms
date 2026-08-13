@@ -53,7 +53,7 @@ export const IntroVideoModal: React.FC<IntroVideoModalProps> = ({ isOpen, onClos
 
           <div>
             <h3 className="font-archivo text-base sm:text-xl font-black text-white uppercase tracking-wider drop-shadow-md">
-              Welcome to Hexathon
+              Welcome to HexaThon
             </h3>
             <p className="text-[10px] sm:text-xs text-white/50 font-light mt-0.5">
               The Next-Generation College Hackathon Platform

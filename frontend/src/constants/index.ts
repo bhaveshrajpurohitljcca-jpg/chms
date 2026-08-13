@@ -1,5 +1,5 @@
-export const APP_NAME = "Hexathon";
-export const APP_SHORT_NAME = "Hexathon";
+export const APP_NAME = "HexaThon";
+export const APP_SHORT_NAME = "HexaThon";
 
 export const USER_ROLES = {
   STUDENT: 'student',
