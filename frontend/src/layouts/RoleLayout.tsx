@@ -14,8 +14,7 @@ import {
   Shield,
   Loader2,
   Sun,
-  Moon,
-  Play
+  Moon
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { IntroVideoModal } from '@/components/common/IntroVideoModal';
@@ -34,15 +33,11 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
 
   useEffect(() => {
     if (user) {
-      const hasPlayed = sessionStorage.getItem('hexathon_intro_played');
-      if (!hasPlayed) {
-        setShowIntroVideo(true);
-      }
+      setShowIntroVideo(true);
     }
   }, [user]);
 
   const handleCloseIntro = () => {
-    sessionStorage.setItem('hexathon_intro_played', 'true');
     setShowIntroVideo(false);
   };
   const location = useLocation();
@@ -171,7 +166,7 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
         <Link to="/" className="flex items-center gap-3 flex-shrink-0 group hover:opacity-90 transition-opacity" title="Hexathon Home">
           <div className="relative w-10 h-10 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
             <img
-              src="/hexathon_logo.jpeg"
+              src="/real_logo.jpeg"
               alt="Hexathon Logo"
               className="w-10 h-10 object-contain rounded-lg mix-blend-screen drop-shadow-[0_0_14px_rgba(0,243,255,0.95)] filter brightness-110 contrast-125"
             />
@@ -188,16 +183,7 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
 
         {/* Right: Actions (Theme Toggle, Watch Intro & Profile Link) */}
         <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
-          {user && (
-            <button
-              onClick={() => setShowIntroVideo(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-primary/10 border border-accent-primary/30 text-accent-primary text-xs font-bold hover:bg-accent-primary/20 transition-all"
-              title="Watch Hexathon Intro Animation"
-            >
-              <Play size={12} className="fill-accent-primary" />
-              <span className="hidden sm:inline">Intro</span>
-            </button>
-          )}
+
           <button 
             onClick={toggleTheme}
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
