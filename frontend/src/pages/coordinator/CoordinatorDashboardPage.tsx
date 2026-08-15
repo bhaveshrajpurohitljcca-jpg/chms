@@ -5,7 +5,7 @@ import {
   Calendar, FileText, Users,
   ArrowRight, Clock, AlertCircle, RefreshCw,
   Zap, CheckCircle2, BookOpen, ChevronRight, Activity,
-  Inbox, Eye, Settings, Edit2
+  Inbox, Eye, Settings, Edit2, Award
 } from 'lucide-react';
 import { apiService, type BackendHackathon, type BackendRegistration } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
