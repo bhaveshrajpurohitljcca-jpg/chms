@@ -177,6 +177,10 @@ def create_hackathon(
         raise HTTPException(status_code=400, detail="Registration deadline cannot be in the past.")
     if payload.end_date and payload.end_date.date() < now.date():
         raise HTTPException(status_code=400, detail="End date cannot be in the past.")
+    if payload.evaluation_mode not in ("single_round", "two_round"):
+        raise HTTPException(status_code=400, detail="Evaluation mode must be single_round or two_round.")
+    if payload.finalists_per_problem is not None and payload.finalists_per_problem < 1:
+        raise HTTPException(status_code=400, detail="Finalists per problem must be at least 1.")
 
     is_strict = payload.is_strict_team_size or False
     strict_size = payload.strict_team_size if is_strict else None

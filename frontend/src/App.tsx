@@ -3489,7 +3489,9 @@ const AdminView = () => {
     announcePsAdvance: true,
     problemStatementPublishAt: '',
     problemSelectionDeadline: '',
-    submissionDeadline: ''
+    submissionDeadline: '',
+    evaluationMode: 'single_round' as 'single_round' | 'two_round',
+    finalistsPerProblem: 3
   });
   
   const [newPS, setNewPS] = useState({ 
@@ -3831,10 +3833,12 @@ const AdminView = () => {
         announce_ps_advance: newEvent.announcePsAdvance,
         problem_statement_publish_at: istInputToISOString(newEvent.problemStatementPublishAt),
         problem_selection_deadline: istInputToISOString(newEvent.problemSelectionDeadline),
-        submission_deadline: istInputToISOString(newEvent.submissionDeadline)
+        submission_deadline: istInputToISOString(newEvent.submissionDeadline),
+        evaluation_mode: newEvent.evaluationMode,
+        finalists_per_problem: newEvent.evaluationMode === 'two_round' ? newEvent.finalistsPerProblem : undefined
       });
       showToast(`Hackathon "${newEvent.title}" successfully created!`);
-      setNewEvent({ title: '', slug: '', tagline: '', description: '', startDate: '', endDate: '', registrationDeadline: '', maxTeamSize: 3, announcePsAdvance: true, problemStatementPublishAt: '', problemSelectionDeadline: '', submissionDeadline: '' });
+      setNewEvent({ title: '', slug: '', tagline: '', description: '', startDate: '', endDate: '', registrationDeadline: '', maxTeamSize: 3, announcePsAdvance: true, problemStatementPublishAt: '', problemSelectionDeadline: '', submissionDeadline: '', evaluationMode: 'single_round', finalistsPerProblem: 3 });
       setShowEventModal(false);
       fetchHackathons();
     } catch (err: any) {
@@ -5712,6 +5716,49 @@ const AdminView = () => {
               value={newEvent.maxTeamSize} 
               onChange={(e) => setNewEvent(prev => ({ ...prev, maxTeamSize: parseInt(e.target.value) }))} 
             />
+
+            <div className="flex flex-col gap-2 rounded-xl border border-white/10 bg-white/[0.02] p-3">
+              <div>
+                <p className="text-xs font-bold text-white/80">Evaluation Format</p>
+                <p className="mt-0.5 text-[10px] text-white/40">Choose the winner selection flow for this hackathon.</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label className={`cursor-pointer rounded-lg border p-3 transition-colors ${newEvent.evaluationMode === 'single_round' ? 'border-accent-primary bg-accent-primary/10' : 'border-white/10 bg-black/20'}`}>
+                  <input
+                    type="radio"
+                    name="evaluationMode"
+                    value="single_round"
+                    checked={newEvent.evaluationMode === 'single_round'}
+                    onChange={() => setNewEvent(prev => ({ ...prev, evaluationMode: 'single_round' }))}
+                    className="sr-only"
+                  />
+                  <span className="block text-xs font-bold text-white">Single Round</span>
+                  <span className="mt-1 block text-[10px] text-white/45">Highest scoring team wins each problem statement.</span>
+                </label>
+                <label className={`cursor-pointer rounded-lg border p-3 transition-colors ${newEvent.evaluationMode === 'two_round' ? 'border-accent-secondary bg-accent-secondary/10' : 'border-white/10 bg-black/20'}`}>
+                  <input
+                    type="radio"
+                    name="evaluationMode"
+                    value="two_round"
+                    checked={newEvent.evaluationMode === 'two_round'}
+                    onChange={() => setNewEvent(prev => ({ ...prev, evaluationMode: 'two_round' }))}
+                    className="sr-only"
+                  />
+                  <span className="block text-xs font-bold text-white">Two Rounds</span>
+                  <span className="mt-1 block text-[10px] text-white/45">Shortlist finalists first, then select one winner per problem.</span>
+                </label>
+              </div>
+              {newEvent.evaluationMode === 'two_round' && (
+                <Input
+                  label="Finalists Per Problem Statement"
+                  type="number"
+                  min="1"
+                  required
+                  value={newEvent.finalistsPerProblem}
+                  onChange={(e) => setNewEvent(prev => ({ ...prev, finalistsPerProblem: Math.max(1, parseInt(e.target.value) || 1) }))}
+                />
+              )}
+            </div>
 
             {!newEvent.announcePsAdvance && (
               <Input
