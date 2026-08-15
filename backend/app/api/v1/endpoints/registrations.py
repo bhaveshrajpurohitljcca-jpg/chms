@@ -86,6 +86,12 @@ def create_registration(
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found.")
 
+    if hackathon.registration_deadline and datetime.utcnow() > hackathon.registration_deadline:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The registration deadline has passed."
+        )
+
     # Validate team belongs to this hackathon
     if team.hackathon_id != hackathon.id:
         raise HTTPException(

@@ -71,6 +71,9 @@ async def lifespan(app: FastAPI):
             _add_col("hackathon", "problem_statement_publish_at", "TIMESTAMP")
             _add_col("hackathon", "problem_selection_deadline", "TIMESTAMP")
             _add_col("hackathon", "submission_deadline", "TIMESTAMP")
+            _add_col("hackathon", "evaluation_mode", "VARCHAR(20) DEFAULT 'single_round'")
+            _add_col("hackathon", "finalists_per_problem", "INTEGER DEFAULT 3")
+            _add_col("hackathon", "current_evaluation_round", "INTEGER DEFAULT 1")
             _add_col("problem_statement", "technical_deliverable", "TEXT")
             _add_col("problem_statement", "points", "INTEGER DEFAULT 100")
 
@@ -84,6 +87,9 @@ async def lifespan(app: FastAPI):
             _add_col("submission", "file_name", "VARCHAR(255)")
             _add_col("submission", "tech_stack", "VARCHAR(500)")
             _add_col("submission", "status", "VARCHAR(50) DEFAULT 'submitted'")
+            _add_col("submission", "is_finalist", "BOOLEAN DEFAULT FALSE")
+            _add_col("submission", "round_one_score", "FLOAT")
+            _add_col("submission", "final_rank", "INTEGER")
 
             # Evaluation columns
             _add_col("evaluation", "score_technical", "FLOAT DEFAULT 0.0")

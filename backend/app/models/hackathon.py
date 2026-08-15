@@ -37,6 +37,9 @@ class Hackathon(BaseTable):
     banner_url = Column(String(500), nullable=True)
     results_published = Column(Boolean, default=False, nullable=False)
     announce_ps_advance = Column(Boolean, default=True, nullable=False)
+    evaluation_mode = Column(String(20), default="single_round", nullable=False)
+    finalists_per_problem = Column(Integer, default=3, nullable=False)
+    current_evaluation_round = Column(Integer, default=1, nullable=False)
 
 
     problem_statements = relationship("ProblemStatement", back_populates="hackathon", cascade="all, delete-orphan")

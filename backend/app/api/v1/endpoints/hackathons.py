@@ -201,7 +201,9 @@ def create_hackathon(
         strict_team_size=strict_size,
         status=payload.status or HackathonStatus.UPCOMING,
         banner_url=payload.banner_url,
-        announce_ps_advance=payload.announce_ps_advance if payload.announce_ps_advance is not None else True
+        announce_ps_advance=payload.announce_ps_advance if payload.announce_ps_advance is not None else True,
+        evaluation_mode=payload.evaluation_mode or "single_round",
+        finalists_per_problem=payload.finalists_per_problem or 3
     )
     db.add(hackathon)
     db.commit()
@@ -277,6 +279,12 @@ def update_hackathon(
     hackathon.banner_url = payload.banner_url
     if payload.announce_ps_advance is not None:
         hackathon.announce_ps_advance = payload.announce_ps_advance
+    if payload.evaluation_mode is not None:
+        if payload.evaluation_mode not in ("single_round", "two_round"):
+            raise HTTPException(status_code=400, detail="Evaluation mode must be single_round or two_round.")
+        hackathon.evaluation_mode = payload.evaluation_mode
+    if payload.finalists_per_problem is not None:
+        hackathon.finalists_per_problem = max(1, payload.finalists_per_problem)
 
     db.commit()
     db.refresh(hackathon)
@@ -518,6 +526,94 @@ def get_hackathon_leaderboard(
         message="Leaderboard retrieved successfully.",
         data=leaderboard
     )
+
+
+@router.post("/{hackathon_id}/rounds/shortlist", response_model=StandardResponse[List[dict]])
+def shortlist_round_one_finalists(
+    hackathon_id: str,
+    current_user: User = Depends(RoleChecker([UserRole.COORDINATOR, UserRole.ADMIN])),
+    db: Session = Depends(get_db)
+):
+    """Select the top configured teams for every problem statement from round-one scores."""
+    from app.models.submission import Submission, Evaluation
+    hackathon = db.query(Hackathon).filter(Hackathon.id == hackathon_id).first()
+    if not hackathon:
+        raise HTTPException(status_code=404, detail="Hackathon not found.")
+    _ensure_hackathon_editor(db, current_user, hackathon.id)
+    if hackathon.evaluation_mode != "two_round":
+        raise HTTPException(status_code=400, detail="Enable two-round evaluation before shortlisting finalists.")
+
+    shortlisted = []
+    for problem in hackathon.problem_statements:
+        scored = []
+        for submission in db.query(Submission).filter(
+            Submission.hackathon_id == hackathon.id,
+            Submission.problem_statement_id == problem.id
+        ).all():
+            scores = [evaluation.total_score for evaluation in db.query(Evaluation).filter(
+                Evaluation.submission_id == submission.id,
+                Evaluation.is_draft == False
+            ).all()]
+            submission.is_finalist = False
+            submission.final_rank = None
+            submission.round_one_score = round(sum(scores) / len(scores), 2) if scores else None
+            if scores:
+                scored.append(submission)
+        scored.sort(key=lambda item: item.round_one_score or 0, reverse=True)
+        for rank, submission in enumerate(scored[:hackathon.finalists_per_problem], start=1):
+            submission.is_finalist = True
+            shortlisted.append({
+                "problem_statement_id": problem.id,
+                "problem_statement_title": problem.title,
+                "team_id": submission.team_id,
+                "team_name": submission.team.name if submission.team else "Unknown Team",
+                "round_one_rank": rank,
+                "round_one_score": submission.round_one_score,
+            })
+    hackathon.current_evaluation_round = 2
+    db.commit()
+    return StandardResponse(success=True, message="Round-one finalists selected.", data=shortlisted)
+
+
+@router.post("/{hackathon_id}/rounds/finalize", response_model=StandardResponse[List[dict]])
+def finalize_problem_statement_winners(
+    hackathon_id: str,
+    current_user: User = Depends(RoleChecker([UserRole.COORDINATOR, UserRole.ADMIN])),
+    db: Session = Depends(get_db)
+):
+    """Rank only shortlisted teams inside their own problem statement and mark one winner each."""
+    from app.models.submission import Submission, Evaluation
+    hackathon = db.query(Hackathon).filter(Hackathon.id == hackathon_id).first()
+    if not hackathon:
+        raise HTTPException(status_code=404, detail="Hackathon not found.")
+    _ensure_hackathon_editor(db, current_user, hackathon.id)
+    if hackathon.evaluation_mode != "two_round" or hackathon.current_evaluation_round < 2:
+        raise HTTPException(status_code=400, detail="Shortlist round-one finalists before finalizing winners.")
+
+    results = []
+    for problem in hackathon.problem_statements:
+        finalists = db.query(Submission).filter(
+            Submission.hackathon_id == hackathon.id,
+            Submission.problem_statement_id == problem.id,
+            Submission.is_finalist == True
+        ).all()
+        ranked = []
+        for submission in finalists:
+            scores = [evaluation.total_score for evaluation in db.query(Evaluation).filter(
+                Evaluation.submission_id == submission.id,
+                Evaluation.is_draft == False
+            ).all()]
+            if scores:
+                ranked.append((submission, round(sum(scores) / len(scores), 2)))
+        ranked.sort(key=lambda item: item[1], reverse=True)
+        for rank, (submission, score) in enumerate(ranked, start=1):
+            submission.final_rank = rank
+            results.append({"problem_statement_id": problem.id, "problem_statement_title": problem.title,
+                            "team_id": submission.team_id, "team_name": submission.team.name if submission.team else "Unknown Team",
+                            "rank": rank, "score": score, "is_winner": rank == 1})
+    hackathon.current_evaluation_round = 3
+    db.commit()
+    return StandardResponse(success=True, message="Problem-statement winners finalized.", data=results)
 
 
 @router.get("/{hackathon_id}/certificates/eligibility", response_model=StandardResponse[dict])

@@ -55,6 +55,8 @@ class HackathonCreate(BaseModel):
     status: Optional[HackathonStatus] = HackathonStatus.UPCOMING
     banner_url: Optional[str] = None
     announce_ps_advance: Optional[bool] = True
+    evaluation_mode: Optional[str] = "single_round"
+    finalists_per_problem: Optional[int] = 3
 
 class HackathonUpdate(BaseModel):
     title: Optional[str] = None
@@ -73,6 +75,8 @@ class HackathonUpdate(BaseModel):
     strict_team_size: Optional[int] = None
     status: Optional[HackathonStatus] = None
     banner_url: Optional[str] = None
+    evaluation_mode: Optional[str] = None
+    finalists_per_problem: Optional[int] = None
 
 class HackathonResponse(BaseModel):
     id: str
@@ -94,6 +98,9 @@ class HackathonResponse(BaseModel):
     banner_url: Optional[str] = None
     results_published: bool = False
     announce_ps_advance: bool = True
+    evaluation_mode: str = "single_round"
+    finalists_per_problem: int = 3
+    current_evaluation_round: int = 1
     problem_statements: List[ProblemStatementResponse] = []
     created_at: datetime
 

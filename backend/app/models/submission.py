@@ -38,6 +38,9 @@ class Submission(BaseTable):
     file_name = Column(String(255), nullable=True)
     tech_stack = Column(String(500), nullable=True)
     status = Column(String(50), default=SubmissionStatus.SUBMITTED, nullable=False)
+    is_finalist = Column(Boolean, default=False, nullable=False)
+    round_one_score = Column(Float, nullable=True)
+    final_rank = Column(Integer, nullable=True)
     submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     team = relationship("Team", back_populates="submissions")

@@ -81,7 +81,8 @@ export const RegistrationPage: React.FC = () => {
         let loadedRegistrations: BackendRegistration[] = [];
 
         if (hackathonsRes.status === 'fulfilled' && hackathonsRes.value.data) {
-          loadedHackathons = hackathonsRes.value.data.filter(h => h.status === 'active');
+          // Upcoming events remain open until their configured registration deadline.
+          loadedHackathons = hackathonsRes.value.data.filter(h => h.status === 'active' || h.status === 'upcoming');
           setHackathons(loadedHackathons);
         } else if (hackathonsRes.status === 'rejected') {
           throw hackathonsRes.reason;
