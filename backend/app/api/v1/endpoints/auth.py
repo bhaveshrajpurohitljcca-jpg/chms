@@ -6,7 +6,7 @@ from app.database import get_db
 from app.models.user import User, UserRole
 from app.schemas.user import UserRegister, UserLogin, UserResponse, TokenResponse
 from app.schemas.response import StandardResponse
-from app.core.security import hash_password, verify_password, create_access_token
+from app.core.security import hash_password, verify_password, password_needs_rehash, create_access_token
 from app.api.deps import get_current_active_user
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -73,6 +73,11 @@ def login_user(payload: UserLogin, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Account is inactive. Please contact system administrator."
         )
+
+    # Upgrade legacy SHA-256 credentials without forcing a password reset.
+    if password_needs_rehash(user.hashed_password):
+        user.hashed_password = hash_password(payload.password)
+        db.commit()
 
     token = create_access_token({"sub": user.id, "email": user.email, "role": user.role.value})
     user_resp = UserResponse.from_orm(user)

@@ -9,6 +9,7 @@ from app.database import get_db
 from app.models.submission import Submission, Evaluation, JudgeAssignment, SubmissionStatus
 from app.models.team import Team, TeamMember
 from app.models.hackathon import Hackathon, CoordinatorAssignment
+from app.models.registration import Registration, RegistrationStatus
 from app.models.user import User, UserRole
 from app.schemas.submission import (
     SubmissionCreate, SubmissionUpdate, SubmissionResponse,
@@ -226,7 +227,20 @@ def create_submission(
             detail="Your team has already submitted for this hackathon. Use the update endpoint to modify it."
         )
 
-    ps_id = payload.problem_statement_id if payload.problem_statement_id and payload.problem_statement_id.strip() else None
+    registration = db.query(Registration).filter(
+        Registration.team_id == team.id,
+        Registration.hackathon_id == hackathon.id,
+        Registration.status == RegistrationStatus.REGISTERED
+    ).first()
+    if not registration:
+        raise HTTPException(status_code=400, detail="Register your team for this hackathon before submitting.")
+    if not registration.problem_statement_id:
+        raise HTTPException(status_code=400, detail="Select a problem statement before submitting your solution.")
+
+    requested_ps_id = payload.problem_statement_id.strip() if payload.problem_statement_id else None
+    if requested_ps_id and requested_ps_id != registration.problem_statement_id:
+        raise HTTPException(status_code=400, detail="Submission must use the problem statement selected during registration.")
+    ps_id = registration.problem_statement_id
     demo_url = payload.demo_url if payload.demo_url and payload.demo_url.strip() else None
     video_url = payload.video_url if payload.video_url and payload.video_url.strip() else None
     notes = payload.additional_notes if payload.additional_notes and payload.additional_notes.strip() else None

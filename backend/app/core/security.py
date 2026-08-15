@@ -1,4 +1,3 @@
-import hashlib
 import hmac
 import base64
 import json
@@ -7,18 +6,32 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 
 from app.config import settings
+from passlib.context import CryptContext
 
 SECRET_KEY = getattr(settings, "JWT_SECRET", "").strip()
 ALGORITHM = getattr(settings, "JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 7 days
+password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def _legacy_hash_password(password: str) -> str:
+    """Verify legacy hashes only so accounts can be upgraded at next login."""
+    import hashlib
+    return hashlib.sha256((password + "chms_secure_salt_2026").encode("utf-8")).hexdigest()
 
 def hash_password(password: str) -> str:
-    """Simple robust password hashing using SHA256 + salt."""
-    salt = "chms_secure_salt_2026"
-    return hashlib.sha256((password + salt).encode('utf-8')).hexdigest()
+    """Create an adaptive bcrypt hash with a unique per-password salt."""
+    return password_context.hash(password)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return hash_password(plain_password) == hashed_password
+    if hashed_password.startswith("$2"):
+        return password_context.verify(plain_password, hashed_password)
+    return hmac.compare_digest(_legacy_hash_password(plain_password), hashed_password)
+
+
+def password_needs_rehash(hashed_password: str) -> bool:
+    """Legacy SHA-256 credentials are rehashed after their next valid login."""
+    return not hashed_password.startswith("$2") or password_context.needs_update(hashed_password)
 
 def _b64_encode(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b'=').decode('utf-8')

@@ -16,7 +16,7 @@ export interface RadioProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
 export const Radio = forwardRef<HTMLInputElement, RadioProps>(
   ({ className = '', label, error, helperText, options, name, value, onChange, ...props }, ref) => {
     return (
-      <div className="flex flex-col gap-2 w-full font-manrope">
+      <div className={["flex flex-col gap-2 w-full font-manrope", className].filter(Boolean).join(" ")}>
         {label && (
           <span className="text-xs font-semibold tracking-wider uppercase text-[rgba(255,255,255,0.65)] select-none">
             {label}

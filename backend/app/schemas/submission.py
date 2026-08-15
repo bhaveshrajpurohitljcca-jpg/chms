@@ -136,6 +136,7 @@ class EvaluationScores(BaseModel):
 class EvaluationDraftSave(EvaluationScores):
     """Payload for saving a draft evaluation (partial, no feedback required)."""
     submission_id: str
+    round_number: int = 1
     feedback: Optional[str] = None
     strengths: Optional[str] = None
     weaknesses: Optional[str] = None
@@ -146,6 +147,7 @@ class EvaluationDraftSave(EvaluationScores):
 class EvaluationFinalSubmit(EvaluationScores):
     """Payload for final evaluation submission (feedback required)."""
     submission_id: str
+    round_number: int = 1
     feedback: str
     strengths: Optional[str] = None
     weaknesses: Optional[str] = None
@@ -196,6 +198,7 @@ class EvaluationResponse(BaseModel):
     weaknesses: Optional[str] = None
     suggestions: Optional[str] = None
     recommendation: str
+    round_number: int = 1
     is_draft: bool
     submitted_at: Optional[datetime] = None
     judge: Optional[JudgeUserInfo] = None
@@ -219,6 +222,8 @@ class SubmissionResponse(BaseModel):
     file_name: Optional[str] = None
     tech_stack: Optional[str] = None
     status: str
+    is_finalist: bool = False
+    evaluation_round: int = 1
     submitted_at: datetime
     evaluations: List[EvaluationResponse] = []
     judge_assignments: List[JudgeAssignmentResponse] = []

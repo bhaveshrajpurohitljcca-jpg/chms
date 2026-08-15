@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { 
   BrowserRouter as Router, 
   Routes, 
@@ -62,12 +62,6 @@ import { HackathonDetailPage } from '@/pages/student/HackathonDetailPage';
 import { TeamManagementPage } from '@/pages/student/TeamManagementPage';
 import { CreateTeamPage } from '@/pages/student/CreateTeamPage';
 import { RegistrationPage } from '@/pages/student/RegistrationPage';
-import StudentSubmissionPage from '@/pages/student/StudentSubmissionPage';
-import JudgeDashboardPage from '@/pages/judge/JudgeDashboardPage';
-import JudgeAssignmentPage from '@/pages/admin/JudgeAssignmentPage';
-import { CoordinatorDashboardPage } from '@/pages/coordinator/CoordinatorDashboardPage';
-import { CoordinatorHackathonsPage } from '@/pages/coordinator/CoordinatorHackathonsPage';
-import { CoordinatorProblemStatementsPage } from '@/pages/coordinator/CoordinatorProblemStatementsPage';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { StudentProfileModal } from '@/components/student/StudentProfileModal';
 import { AuthModal } from '@/components/auth/AuthModal';
@@ -78,6 +72,13 @@ import { istInputToISOString, toISTDateTimeInput } from '@/utils/formatDate';
 // Auth Imports
 import RoleLayout from './layouts/RoleLayout';
 import Badge from '@/components/ui/badge';
+
+const StudentSubmissionPage = lazy(() => import('@/pages/student/StudentSubmissionPage'));
+const JudgeDashboardPage = lazy(() => import('@/pages/judge/JudgeDashboardPage'));
+const JudgeAssignmentPage = lazy(() => import('@/pages/admin/JudgeAssignmentPage'));
+const CoordinatorDashboardPage = lazy(() => import('@/pages/coordinator/CoordinatorDashboardPage').then((module) => ({ default: module.CoordinatorDashboardPage })));
+const CoordinatorHackathonsPage = lazy(() => import('@/pages/coordinator/CoordinatorHackathonsPage').then((module) => ({ default: module.CoordinatorHackathonsPage })));
+const CoordinatorProblemStatementsPage = lazy(() => import('@/pages/coordinator/CoordinatorProblemStatementsPage').then((module) => ({ default: module.CoordinatorProblemStatementsPage })));
 
 // ==========================================
 // A. GLOBAL LAYOUT (Header + WebGL Particles + Menu Drawer)
@@ -5234,36 +5235,29 @@ const AdminView = () => {
                     <p className="text-[10px] text-white/40 mt-0.5">Assign and manage hackathons this judge can evaluate</p>
                   </div>
 
-                  {/* Dropdown for assigning new hackathons */}
-                  {judgeAssignments.filter(a => a.judgeId === selectedJudgeDetail.id && !a.submissionId).length === 0 ? (
-                    <div className="flex flex-col gap-3">
-                      <label className="font-bold text-white/70 text-xs">Assign Hackathon Scope</label>
-                      <form onSubmit={handleAssignHackathonToJudge} className="flex flex-col gap-2.5">
-                        <select
-                          value={judgeAllocHackathonId}
-                          onChange={(e) => setJudgeAllocHackathonId(e.target.value)}
-                          className="p-2.5 rounded-xl bg-black border border-white/10 text-white focus:outline-none text-[11px]"
-                          required
-                        >
-                          <option value="">-- Choose Hackathon to Assign --</option>
-                          {hackathonsList
-                            .filter(h => !judgeAssignments.some(a => a.judgeId === selectedJudgeDetail.id && a.hackathonId === h.id))
-                            .map(h => (
-                              <option key={h.id} value={h.id}>{h.title}</option>
-                            ))
-                          }
-                        </select>
-                        <Button type="submit" variant="secondary" className="text-[10px] w-full py-2 font-bold uppercase tracking-wider">
-                          Assign Hackathon
-                        </Button>
-                      </form>
-                    </div>
-                  ) : (
-                    <div className="p-4 rounded-xl bg-accent-secondary/5 border border-accent-secondary/20 text-xs text-white/70">
-                      <p className="font-bold text-white text-glow-magenta">Evaluation Scope Locked</p>
-                      <p className="mt-1 text-[10px] text-white/40">This judge is already assigned to a hackathon scope. Revoke the active scope if you need to reassign them.</p>
-                    </div>
-                  )}
+                  {/* A judge can hold scopes for multiple hackathons. */}
+                  <div className="flex flex-col gap-3">
+                    <label className="font-bold text-white/70 text-xs">Assign Hackathon Scope</label>
+                    <form onSubmit={handleAssignHackathonToJudge} className="flex flex-col gap-2.5">
+                      <select
+                        value={judgeAllocHackathonId}
+                        onChange={(e) => setJudgeAllocHackathonId(e.target.value)}
+                        className="p-2.5 rounded-xl bg-black border border-white/10 text-white focus:outline-none text-[11px]"
+                        required
+                      >
+                        <option value="">-- Choose Hackathon to Assign --</option>
+                        {hackathonsList
+                          .filter(h => !judgeAssignments.some(a => a.judgeId === selectedJudgeDetail.id && a.hackathonId === h.id && !a.submissionId))
+                          .map(h => (
+                            <option key={h.id} value={h.id}>{h.title}</option>
+                          ))
+                        }
+                      </select>
+                      <Button type="submit" variant="secondary" className="text-[10px] w-full py-2 font-bold uppercase tracking-wider">
+                        Assign Hackathon
+                      </Button>
+                    </form>
+                  </div>
 
                   {/* List of currently assigned hackathons */}
                   <div className="flex flex-col gap-2 mt-2">
@@ -6539,6 +6533,7 @@ function App() {
       )}
 
       <Router>
+        <Suspense fallback={<div className="min-h-screen bg-[#050505] flex items-center justify-center text-accent-primary font-mono text-sm">Loading workspace...</div>}>
         <Routes>
           {/* Public Views nested in GlobalLayout */}
           <Route element={<GlobalLayout />}>
@@ -6601,6 +6596,7 @@ function App() {
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </Router>
     </AuthProvider>
   );

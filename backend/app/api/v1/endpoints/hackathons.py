@@ -546,6 +546,8 @@ def shortlist_round_one_finalists(
     _ensure_hackathon_editor(db, current_user, hackathon.id)
     if hackathon.evaluation_mode != "two_round":
         raise HTTPException(status_code=400, detail="Enable two-round evaluation before shortlisting finalists.")
+    if hackathon.current_evaluation_round != 1:
+        raise HTTPException(status_code=400, detail="Round-one finalists have already been selected.")
 
     shortlisted = []
     for problem in hackathon.problem_statements:
@@ -556,6 +558,7 @@ def shortlist_round_one_finalists(
         ).all():
             scores = [evaluation.total_score for evaluation in db.query(Evaluation).filter(
                 Evaluation.submission_id == submission.id,
+                Evaluation.round_number == 1,
                 Evaluation.is_draft == False
             ).all()]
             submission.is_finalist = False
@@ -591,7 +594,7 @@ def finalize_problem_statement_winners(
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found.")
     _ensure_hackathon_editor(db, current_user, hackathon.id)
-    if hackathon.evaluation_mode != "two_round" or hackathon.current_evaluation_round < 2:
+    if hackathon.evaluation_mode != "two_round" or hackathon.current_evaluation_round != 2:
         raise HTTPException(status_code=400, detail="Shortlist round-one finalists before finalizing winners.")
 
     results = []
@@ -605,6 +608,7 @@ def finalize_problem_statement_winners(
         for submission in finalists:
             scores = [evaluation.total_score for evaluation in db.query(Evaluation).filter(
                 Evaluation.submission_id == submission.id,
+                Evaluation.round_number == 2,
                 Evaluation.is_draft == False
             ).all()]
             if scores:

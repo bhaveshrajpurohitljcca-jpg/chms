@@ -49,6 +49,12 @@ class Submission(BaseTable):
     evaluations = relationship("Evaluation", back_populates="submission", cascade="all, delete-orphan")
     judge_assignments = relationship("JudgeAssignment", back_populates="submission", cascade="all, delete-orphan")
 
+    @property
+    def evaluation_round(self):
+        if self.hackathon and self.hackathon.evaluation_mode == "two_round":
+            return self.hackathon.current_evaluation_round
+        return 1
+
 
 # ─── Judge Assignment ───────────────────────────────────────────
 class JudgeAssignment(BaseTable):
@@ -100,6 +106,7 @@ class Evaluation(BaseTable):
     weaknesses = Column(Text, nullable=True)        # Areas needing improvement
     suggestions = Column(Text, nullable=True)       # Actionable suggestions
     recommendation = Column(String(50), default=EvaluationRecommendation.PENDING, nullable=False)
+    round_number = Column(Integer, default=1, nullable=False)
 
     # ── Lifecycle State ────────────────────────────────────────
     is_draft = Column(Boolean, default=True, nullable=False)
@@ -109,7 +116,7 @@ class Evaluation(BaseTable):
     judge = relationship("User")
 
     __table_args__ = (
-        UniqueConstraint("submission_id", "judge_id", name="unique_judge_submission_evaluation"),
+        UniqueConstraint("submission_id", "judge_id", "round_number", name="unique_judge_submission_round_evaluation"),
     )
 
 

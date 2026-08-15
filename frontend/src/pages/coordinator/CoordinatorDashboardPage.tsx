@@ -188,7 +188,6 @@ export function CoordinatorDashboardPage() {
         );
         myHackathons = allHackathons.filter(h => myIds.has(h.id));
       }
-      if (myHackathons.length === 0) myHackathons = allHackathons;
       const sorted = sortHackathons(myHackathons);
       setAssignedHackathons(sorted);
       if (sorted.length > 0) setSelectedHackathon(prev => prev ?? sorted[0]);

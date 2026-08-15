@@ -32,6 +32,11 @@ function Badge({ children, variant = 'default' }: { children: React.ReactNode; v
 // Demo fallback state if no API or unauthenticated
 const DEMO_ASSIGNMENTS: SubmissionRecord[] = [];
 
+function currentRoundEvaluation(submission: SubmissionRecord) {
+  const round = submission.evaluation_round ?? 1;
+  return submission.evaluations?.find((evaluation) => evaluation.round_number === round);
+}
+
 export default function JudgeDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [submissions, setSubmissions] = useState<SubmissionRecord[]>([]);
@@ -89,11 +94,11 @@ export default function JudgeDashboardPage() {
 
   // ── Derived Stats ─────────────────────────────────────────────
   const totalAssigned = submissions.length;
-  const gradedCount = submissions.filter(s => s.status === 'graded' || (s.evaluations && s.evaluations.some(e => !e.is_draft))).length;
+  const gradedCount = submissions.filter((submission) => !currentRoundEvaluation(submission)?.is_draft && currentRoundEvaluation(submission)).length;
   const pendingCount = Math.max(0, totalAssigned - gradedCount);
   
   const totalScoreSum = submissions.reduce((acc, sub) => {
-    const ev = sub.evaluations?.find(e => !e.is_draft) || sub.evaluations?.[0];
+    const ev = currentRoundEvaluation(sub);
     return acc + (ev ? ev.total_score : 0);
   }, 0);
   const averageScore = gradedCount > 0 ? Math.round(totalScoreSum / gradedCount) : 0;
@@ -102,7 +107,7 @@ export default function JudgeDashboardPage() {
   // ── Open Evaluation Drawer ────────────────────────────────────
   const handleOpenEval = (sub: SubmissionRecord) => {
     setSelectedSub(sub);
-    const existingEv = sub.evaluations?.find(e => !e.is_draft) || sub.evaluations?.[0];
+    const existingEv = currentRoundEvaluation(sub);
 
     if (existingEv) {
       setScores({
@@ -139,6 +144,7 @@ export default function JudgeDashboardPage() {
       if (!isDemoMode) {
         await apiService.saveDraftEvaluation({
           submission_id: selectedSub.id,
+          round_number: selectedSub.evaluation_round ?? 1,
           score_innovation: scores.innovation,
           score_technical: scores.technical,
           score_uiux: scores.uiux,
@@ -175,6 +181,7 @@ export default function JudgeDashboardPage() {
       if (!isDemoMode) {
         await apiService.submitFinalEvaluation({
           submission_id: selectedSub.id,
+          round_number: selectedSub.evaluation_round ?? 1,
           score_innovation: scores.innovation,
           score_technical: scores.technical,
           score_uiux: scores.uiux,
@@ -205,6 +212,7 @@ export default function JudgeDashboardPage() {
                 total_score: currentTotal,
                 feedback,
                 recommendation: recommendation as any,
+                round_number: s.evaluation_round ?? 1,
                 is_draft: false,
                 submitted_at: new Date().toISOString()
               }]
@@ -353,9 +361,9 @@ export default function JudgeDashboardPage() {
             </thead>
             <tbody className="divide-y divide-white/5 text-sm">
               {submissions.map((sub) => {
-                const isGraded = sub.status === 'graded' || sub.evaluations?.some(e => !e.is_draft);
-                const isDraft = sub.evaluations?.some(e => e.is_draft);
-                const ev = sub.evaluations?.[0];
+                const ev = currentRoundEvaluation(sub);
+                const isGraded = Boolean(ev && !ev.is_draft);
+                const isDraft = Boolean(ev?.is_draft);
 
                 return (
                   <tr key={sub.id} className="hover:bg-white/[0.01] transition-all">
@@ -363,7 +371,7 @@ export default function JudgeDashboardPage() {
                       <div>
                         <h4 className="text-sm font-bold text-white">{sub.title}</h4>
                         <p className="text-xs text-white/40 font-mono mt-0.5">
-                          {sub.team?.name ?? 'Team Submission'}
+                          {sub.team?.name ?? 'Team Submission'} · Round {sub.evaluation_round ?? 1}
                         </p>
                       </div>
                     </td>

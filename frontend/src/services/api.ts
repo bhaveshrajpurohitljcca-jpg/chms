@@ -169,6 +169,7 @@ export interface EvaluationRecord {
   weaknesses?: string;
   suggestions?: string;
   recommendation: 'pending' | 'shortlist' | 'accepted' | 'rejected';
+  round_number?: number;
   is_draft: boolean;
   submitted_at?: string;
   judge?: UserProfile;
@@ -189,6 +190,8 @@ export interface SubmissionRecord {
   file_name?: string;
   tech_stack?: string;
   status: string;
+  is_finalist?: boolean;
+  evaluation_round?: number;
   submitted_at: string;
   evaluations?: EvaluationRecord[];
   judge_assignments?: JudgeAssignmentRecord[];
@@ -823,13 +826,15 @@ export const apiService = {
   },
 
   /** Get evaluation for a submission */
-  async getEvaluation(submissionId: string) {
-    return request<EvaluationRecord | null>(`/evaluations/submission/${submissionId}`);
+  async getEvaluation(submissionId: string, roundNumber?: number) {
+    const query = roundNumber ? `?round_number=${roundNumber}` : '';
+    return request<EvaluationRecord | null>(`/evaluations/submission/${submissionId}${query}`);
   },
 
   /** Save a draft evaluation (Judge) */
   async saveDraftEvaluation(payload: {
     submission_id: string;
+    round_number?: number;
     score_innovation: number;
     score_technical: number;
     score_uiux: number;
@@ -850,6 +855,7 @@ export const apiService = {
   /** Final submit an evaluation (Judge) */
   async submitFinalEvaluation(payload: {
     submission_id: string;
+    round_number?: number;
     score_innovation: number;
     score_technical: number;
     score_uiux: number;
