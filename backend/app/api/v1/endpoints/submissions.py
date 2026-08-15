@@ -206,8 +206,9 @@ def create_submission(
             detail=f"Team size criteria unfulfilled: Your team must have at least {hackathon.min_team_size} members to submit. Current members: {member_count}."
         )
 
-    # 4. Deadline check
-    if hackathon.end_date and datetime.utcnow() > hackathon.end_date:
+    # 4. Deadline check. Dedicated submission deadline falls back to event end for older events.
+    submission_deadline = hackathon.submission_deadline or hackathon.end_date
+    if submission_deadline and datetime.utcnow() > submission_deadline:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Submission deadline has passed. Submissions are no longer accepted."
@@ -287,7 +288,8 @@ def update_submission(
 
     # Deadline check
     hackathon = db.query(Hackathon).filter(Hackathon.id == submission.hackathon_id).first()
-    if hackathon and hackathon.end_date and datetime.utcnow() > hackathon.end_date:
+    submission_deadline = (hackathon.submission_deadline or hackathon.end_date) if hackathon else None
+    if submission_deadline and datetime.utcnow() > submission_deadline:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Submission deadline has passed."
@@ -356,6 +358,10 @@ async def upload_submission_file(
         submission = db.query(Submission).filter(Submission.id == submission_id).first()
         if submission:
             _ensure_team_membership(db, submission.team_id, current_user.id)
+            hackathon = db.query(Hackathon).filter(Hackathon.id == submission.hackathon_id).first()
+            submission_deadline = (hackathon.submission_deadline or hackathon.end_date) if hackathon else None
+            if submission_deadline and datetime.utcnow() > submission_deadline:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Submission deadline has passed.")
             # Delete old file if present
             if submission.file_url:
                 old_path = submission.file_url.lstrip("/")

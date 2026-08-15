@@ -17,6 +17,7 @@ import type { BackendHackathon, BackendRegistration, BackendProblemStatement } f
 import { ProblemStatementCard } from '@/components/student/ProblemStatementCard';
 import { ProblemStatementModal } from '@/components/student/ProblemStatementModal';
 import { LoadingState, ErrorState, EmptyState } from '@/components/student/StateContainer';
+import { formatISTDate } from '@/utils/formatDate';
 
 const statusVariantMap: Record<string, 'success' | 'warning' | 'primary' | 'secondary'> = {
   active: 'success',
@@ -37,10 +38,7 @@ export const HackathonDetailPage: React.FC = () => {
   const [selectedProblem, setSelectedProblem] = useState<BackendProblemStatement | null>(null);
   const [isProblemModalOpen, setIsProblemModalOpen] = useState(false);
 
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return 'TBD';
-    return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-  };
+  const formatDate = (dateStr?: string) => formatISTDate(dateStr, true);
 
   useEffect(() => {
     async function loadData() {
@@ -162,6 +160,24 @@ export const HackathonDetailPage: React.FC = () => {
               <span>{formatDate(hackathon.start_date)} – {formatDate(hackathon.end_date)}</span>
             </div>
           </div>
+          {hackathon.problem_selection_deadline && (
+            <div>
+              <span className="text-[10px] uppercase tracking-wider text-white/40 block font-semibold">Problem Selection Closes</span>
+              <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-accent-secondary mt-1">
+                <Clock size={14} />
+                <span>{formatDate(hackathon.problem_selection_deadline)}</span>
+              </div>
+            </div>
+          )}
+          {hackathon.submission_deadline && (
+            <div>
+              <span className="text-[10px] uppercase tracking-wider text-white/40 block font-semibold">Solution Submission Closes</span>
+              <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-danger mt-1">
+                <Clock size={14} />
+                <span>{formatDate(hackathon.submission_deadline)}</span>
+              </div>
+            </div>
+          )}
 
           <div>
             <span className="text-[10px] uppercase tracking-wider text-white/40 block font-semibold">Team Constraints</span>

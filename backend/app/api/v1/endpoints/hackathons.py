@@ -59,6 +59,35 @@ def _sync_assignment_account_statuses(db: Session) -> None:
     db.commit()
 
 
+def _ensure_hackathon_editor(db: Session, user: User, hackathon_id: str) -> None:
+    """Admins can manage every event; coordinators only manage assigned events."""
+    if user.role == UserRole.ADMIN:
+        return
+    if user.role == UserRole.COORDINATOR and db.query(CoordinatorAssignment).filter(
+        CoordinatorAssignment.coordinator_id == user.id,
+        CoordinatorAssignment.hackathon_id == hackathon_id,
+    ).first():
+        return
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not assigned to manage this hackathon.")
+
+
+def _normalise_hackathon_dates(payload: HackathonCreate) -> None:
+    for field in (
+        "start_date", "end_date", "registration_deadline", "problem_statement_publish_at",
+        "problem_selection_deadline", "submission_deadline",
+    ):
+        setattr(payload, field, make_naive(getattr(payload, field)))
+
+    if payload.end_date and payload.start_date and payload.end_date < payload.start_date:
+        raise HTTPException(status_code=400, detail="End date cannot be before start date.")
+    if payload.problem_statement_publish_at and payload.start_date and payload.problem_statement_publish_at < payload.start_date:
+        raise HTTPException(status_code=400, detail="Problem statement release cannot be before the hackathon start.")
+    if payload.problem_selection_deadline and payload.problem_statement_publish_at and payload.problem_selection_deadline < payload.problem_statement_publish_at:
+        raise HTTPException(status_code=400, detail="Problem selection deadline cannot be before problem statement release.")
+    if payload.submission_deadline and payload.start_date and payload.submission_deadline < payload.start_date:
+        raise HTTPException(status_code=400, detail="Submission deadline cannot be before the hackathon start.")
+
+
 @router.get("", response_model=StandardResponse[List[HackathonResponse]])
 def list_hackathons(
     status_filter: Optional[HackathonStatus] = None,
@@ -80,7 +109,8 @@ def list_hackathons(
     for h in hackathons:
         res = HackathonResponse.from_orm(h)
         if not is_privileged and not h.announce_ps_advance:
-            if h.start_date and now < h.start_date:
+            publish_at = h.problem_statement_publish_at or h.start_date
+            if publish_at and now < publish_at:
                 res.problem_statements = []
         results.append(res)
         
@@ -111,7 +141,8 @@ def get_hackathon(
     
     res = HackathonResponse.from_orm(hackathon)
     if not is_privileged and not hackathon.announce_ps_advance:
-        if hackathon.start_date and now < hackathon.start_date:
+        publish_at = hackathon.problem_statement_publish_at or hackathon.start_date
+        if publish_at and now < publish_at:
             res.problem_statements = []
             
     return StandardResponse(
@@ -130,11 +161,9 @@ def make_naive(dt: Optional[datetime]) -> Optional[datetime]:
 def create_hackathon(
     payload: HackathonCreate,
     db: Session = Depends(get_db),
-    admin: User = Depends(RoleChecker([UserRole.ADMIN, UserRole.COORDINATOR]))
+    admin: User = Depends(RoleChecker([UserRole.ADMIN]))
 ):
-    payload.start_date = make_naive(payload.start_date)
-    payload.end_date = make_naive(payload.end_date)
-    payload.registration_deadline = make_naive(payload.registration_deadline)
+    _normalise_hackathon_dates(payload)
 
     existing = db.query(Hackathon).filter(Hackathon.slug == payload.slug).first()
     if existing:
@@ -148,8 +177,6 @@ def create_hackathon(
         raise HTTPException(status_code=400, detail="Registration deadline cannot be in the past.")
     if payload.end_date and payload.end_date.date() < now.date():
         raise HTTPException(status_code=400, detail="End date cannot be in the past.")
-    if payload.end_date and payload.start_date and payload.end_date < payload.start_date:
-        raise HTTPException(status_code=400, detail="End date cannot be before start date.")
 
     is_strict = payload.is_strict_team_size or False
     strict_size = payload.strict_team_size if is_strict else None
@@ -165,6 +192,9 @@ def create_hackathon(
         start_date=payload.start_date,
         end_date=payload.end_date,
         registration_deadline=payload.registration_deadline,
+        problem_statement_publish_at=payload.problem_statement_publish_at,
+        problem_selection_deadline=payload.problem_selection_deadline,
+        submission_deadline=payload.submission_deadline,
         max_team_size=max_size,
         min_team_size=min_size,
         is_strict_team_size=is_strict,
@@ -192,15 +222,14 @@ def update_hackathon(
     admin: User = Depends(RoleChecker([UserRole.ADMIN, UserRole.COORDINATOR]))
 ):
     """Update hackathon details and deadlines."""
-    payload.start_date = make_naive(payload.start_date)
-    payload.end_date = make_naive(payload.end_date)
-    payload.registration_deadline = make_naive(payload.registration_deadline)
+    _normalise_hackathon_dates(payload)
 
     hackathon = db.query(Hackathon).filter(Hackathon.id == hackathon_id).first()
     if not hackathon:
         hackathon = db.query(Hackathon).filter(Hackathon.slug == hackathon_id).first()
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found.")
+    _ensure_hackathon_editor(db, admin, hackathon.id)
 
     if payload.slug != hackathon.slug:
         existing = db.query(Hackathon).filter(Hackathon.slug == payload.slug).first()
@@ -220,6 +249,9 @@ def update_hackathon(
     hackathon.start_date = payload.start_date
     hackathon.end_date = payload.end_date
     hackathon.registration_deadline = payload.registration_deadline
+    hackathon.problem_statement_publish_at = payload.problem_statement_publish_at
+    hackathon.problem_selection_deadline = payload.problem_selection_deadline
+    hackathon.submission_deadline = payload.submission_deadline
     if payload.is_strict_team_size is not None:
         hackathon.is_strict_team_size = payload.is_strict_team_size
     if payload.strict_team_size is not None:
@@ -268,6 +300,7 @@ def update_problem_statement(
     hackathon = db.query(Hackathon).filter(Hackathon.id == hackathon_id).first()
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found.")
+    _ensure_hackathon_editor(db, admin, hackathon.id)
 
     ps = db.query(ProblemStatement).filter(
         ProblemStatement.id == problem_id,
@@ -279,6 +312,7 @@ def update_problem_statement(
     ps.title = payload.title
     ps.description = payload.description
     ps.technical_deliverable = payload.technical_deliverable
+    ps.points = payload.points if payload.points is not None else 100
     ps.category = payload.category
     ps.difficulty = payload.difficulty or "Medium"
     ps.max_teams = payload.max_teams or 10
@@ -304,6 +338,7 @@ def delete_problem_statement(
     hackathon = db.query(Hackathon).filter(Hackathon.id == hackathon_id).first()
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found.")
+    _ensure_hackathon_editor(db, admin, hackathon.id)
 
     ps = db.query(ProblemStatement).filter(
         ProblemStatement.id == problem_id,
@@ -332,12 +367,14 @@ def create_problem_statement(
     hackathon = db.query(Hackathon).filter(Hackathon.id == hackathon_id).first()
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found.")
+    _ensure_hackathon_editor(db, admin, hackathon.id)
 
     ps = ProblemStatement(
         hackathon_id=hackathon.id,
         title=payload.title,
         description=payload.description,
         technical_deliverable=payload.technical_deliverable,
+        points=payload.points if payload.points is not None else 100,
         category=payload.category,
         difficulty=payload.difficulty or "Medium",
         max_teams=payload.max_teams or 10

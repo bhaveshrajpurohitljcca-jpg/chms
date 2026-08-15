@@ -144,11 +144,11 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
             onClick={onNavigate}
             className={`flex items-center gap-2 px-3 sm:px-4 h-9 sm:h-10 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-300 touch-target ${
               active
-                ? 'bg-[#0252cd]/15 dark:bg-accent-primary text-[#0252cd] dark:text-black border border-[#0252cd]/25 dark:border-transparent shadow-sm scale-[1.02]'
+                ? 'bg-[#0f172a]/10 dark:bg-accent-primary text-[#0f172a] dark:text-black border border-[#0f172a]/15 dark:border-transparent shadow-sm scale-[1.02]'
                 : 'text-[#475569] dark:text-text-secondary hover:text-[#0f172a] dark:hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/10'
             }`}
           >
-            <Icon size={14} className={active ? 'text-white' : 'text-[#64748b] dark:text-text-secondary'} />
+            <Icon size={14} className={active ? 'text-[#0f172a] dark:text-black' : 'text-[#64748b] dark:text-text-secondary'} />
             <span>{item.label}</span>
           </Link>
         );

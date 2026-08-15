@@ -44,6 +44,7 @@ export interface BackendProblemStatement {
   title: string;
   description: string;
   technical_deliverable?: string;
+  points: number;
   category: string;
   difficulty: string;
   max_teams: number;
@@ -59,6 +60,9 @@ export interface BackendHackathon {
   start_date?: string;
   end_date?: string;
   registration_deadline?: string;
+  problem_statement_publish_at?: string;
+  problem_selection_deadline?: string;
+  submission_deadline?: string;
   max_team_size: number;
   min_team_size: number;
   is_strict_team_size?: boolean;
@@ -436,6 +440,7 @@ export const apiService = {
     title: string;
     description: string;
     technical_deliverable?: string;
+    points?: number;
     category?: string;
     difficulty?: string;
     max_teams?: number;
@@ -454,6 +459,9 @@ export const apiService = {
     start_date?: string;
     end_date?: string;
     registration_deadline?: string;
+    problem_statement_publish_at?: string;
+    problem_selection_deadline?: string;
+    submission_deadline?: string;
     max_team_size?: number;
     min_team_size?: number;
     status?: string;
@@ -477,6 +485,9 @@ export const apiService = {
     start_date?: string;
     end_date?: string;
     registration_deadline?: string;
+    problem_statement_publish_at?: string;
+    problem_selection_deadline?: string;
+    submission_deadline?: string;
     max_team_size?: number;
     min_team_size?: number;
     status?: string;
@@ -509,6 +520,7 @@ export const apiService = {
     title: string;
     description: string;
     technical_deliverable?: string;
+    points?: number;
     category?: string;
     difficulty?: string;
     max_teams?: number;
@@ -520,6 +532,7 @@ export const apiService = {
     title: string;
     description: string;
     technical_deliverable?: string;
+    points?: number;
     category?: string;
     difficulty?: string;
     max_teams?: number;

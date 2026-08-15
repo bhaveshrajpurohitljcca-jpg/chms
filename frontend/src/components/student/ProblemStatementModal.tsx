@@ -63,7 +63,7 @@ export const ProblemStatementModal: React.FC<ProblemStatementModalProps> = ({
               {problem.difficulty}
             </Badge>
             <span className="text-xs font-semibold text-accent-secondary uppercase">
-              {problem.category}
+              {problem.points || 100} Points
             </span>
           </div>
         </div>

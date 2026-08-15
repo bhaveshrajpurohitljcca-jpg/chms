@@ -80,8 +80,12 @@ export function CoordinatorHackathonsPage() {
   const loadHackathons = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await apiService.listHackathons();
-      setHackathons(res.data || []);
+        const [hackathonsRes, assignmentsRes] = await Promise.all([
+          apiService.listHackathons(),
+          apiService.listCoordinatorAssignments(),
+        ]);
+        const assignedIds = new Set((assignmentsRes.data || []).map((assignment: any) => assignment.hackathon_id));
+        setHackathons((hackathonsRes.data || []).filter(hackathon => assignedIds.has(hackathon.id)));
     } catch {
       showToast('Failed to load hackathons', 'error');
     } finally {
@@ -95,8 +99,12 @@ export function CoordinatorHackathonsPage() {
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const res = await apiService.listHackathons();
-        if (res.data) setHackathons(res.data);
+        const [hackathonsRes, assignmentsRes] = await Promise.all([
+          apiService.listHackathons(),
+          apiService.listCoordinatorAssignments(),
+        ]);
+        const assignedIds = new Set((assignmentsRes.data || []).map((assignment: any) => assignment.hackathon_id));
+        if (hackathonsRes.data) setHackathons(hackathonsRes.data.filter(hackathon => assignedIds.has(hackathon.id)));
       } catch {
         // silent sync
       }

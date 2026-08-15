@@ -1,4 +1,5 @@
 from typing import List
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -253,6 +254,22 @@ def select_problem_statement(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only team members can select or modify the problem statement choice."
+        )
+
+    hackathon = registration.hackathon
+    now = datetime.utcnow()
+    publish_at = hackathon.problem_statement_publish_at or (
+        hackathon.start_date if not hackathon.announce_ps_advance else None
+    )
+    if publish_at and now < publish_at:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Problem statements have not been released yet."
+        )
+    if hackathon.problem_selection_deadline and now > hackathon.problem_selection_deadline:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The problem statement selection deadline has passed."
         )
 
     ps_id = payload.get("problem_statement_id")

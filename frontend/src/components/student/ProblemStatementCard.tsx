@@ -94,9 +94,9 @@ export const ProblemStatementCard: React.FC<ProblemStatementCardProps> = ({
           {problem.title}
         </h4>
 
-        {/* Category tag */}
+        {/* Point value */}
         <p className="text-[11px] uppercase tracking-wider text-accent-secondary font-semibold mb-3">
-          Category: {problem.category}
+          {problem.points || 100} Points
         </p>
 
         {/* Description */}

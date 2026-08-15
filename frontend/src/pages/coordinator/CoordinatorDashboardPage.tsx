@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { apiService, type BackendHackathon, type BackendRegistration } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
+import { istInputToISOString, toISTDateTimeInput } from '@/utils/formatDate';
 
 const STATUS_BADGE: Record<string, string> = {
   active:   'bg-success/15 text-success border-success/30',
@@ -75,7 +76,8 @@ export function CoordinatorDashboardPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editForm, setEditForm] = useState<any>({
     title: '', tagline: '', description: '', status: 'active',
-    start_date: '', end_date: '', registration_deadline: '',
+    start_date: '', end_date: '', registration_deadline: '', problem_statement_publish_at: '',
+    problem_selection_deadline: '', submission_deadline: '', banner_url: '', announce_ps_advance: true,
     max_team_size: 3, min_team_size: 1, is_strict_team_size: false, strict_team_size: 3
   });
   const [savingEdit, setSavingEdit] = useState(false);
@@ -89,9 +91,14 @@ export function CoordinatorDashboardPage() {
       tagline: selectedHackathon.tagline || '',
       description: selectedHackathon.description || '',
       status: selectedHackathon.status || 'active',
-      start_date: selectedHackathon.start_date ? selectedHackathon.start_date.slice(0, 16) : '',
-      end_date: selectedHackathon.end_date ? selectedHackathon.end_date.slice(0, 16) : '',
-      registration_deadline: selectedHackathon.registration_deadline ? selectedHackathon.registration_deadline.slice(0, 16) : '',
+      start_date: toISTDateTimeInput(selectedHackathon.start_date),
+      end_date: toISTDateTimeInput(selectedHackathon.end_date),
+      registration_deadline: toISTDateTimeInput(selectedHackathon.registration_deadline),
+      problem_statement_publish_at: toISTDateTimeInput(selectedHackathon.problem_statement_publish_at),
+      problem_selection_deadline: toISTDateTimeInput(selectedHackathon.problem_selection_deadline),
+      submission_deadline: toISTDateTimeInput(selectedHackathon.submission_deadline),
+      banner_url: selectedHackathon.banner_url || '',
+      announce_ps_advance: selectedHackathon.announce_ps_advance !== false,
       max_team_size: selectedHackathon.max_team_size || 3,
       min_team_size: selectedHackathon.min_team_size || 1,
       is_strict_team_size: selectedHackathon.is_strict_team_size || false,
@@ -115,13 +122,18 @@ export function CoordinatorDashboardPage() {
         tagline: editForm.tagline || undefined,
         description: editForm.description || undefined,
         status: editForm.status,
-        start_date: editForm.start_date ? new Date(editForm.start_date).toISOString() : undefined,
-        end_date: editForm.end_date ? new Date(editForm.end_date).toISOString() : undefined,
-        registration_deadline: editForm.registration_deadline ? new Date(editForm.registration_deadline).toISOString() : undefined,
+        start_date: istInputToISOString(editForm.start_date),
+        end_date: istInputToISOString(editForm.end_date),
+        registration_deadline: istInputToISOString(editForm.registration_deadline),
+        problem_statement_publish_at: istInputToISOString(editForm.problem_statement_publish_at),
+        problem_selection_deadline: istInputToISOString(editForm.problem_selection_deadline),
+        submission_deadline: istInputToISOString(editForm.submission_deadline),
         max_team_size: editForm.is_strict_team_size ? (editForm.strict_team_size || 3) : editForm.max_team_size,
         min_team_size: editForm.is_strict_team_size ? (editForm.strict_team_size || 3) : editForm.min_team_size,
         is_strict_team_size: editForm.is_strict_team_size,
         strict_team_size: editForm.is_strict_team_size ? (editForm.strict_team_size || 3) : undefined,
+        banner_url: editForm.banner_url || undefined,
+        announce_ps_advance: editForm.announce_ps_advance,
       };
       const res = await apiService.updateHackathon(selectedHackathon.id, payload);
       if (res.data) {
@@ -510,6 +522,23 @@ export function CoordinatorDashboardPage() {
               />
             </div>
 
+            <div className="sm:col-span-2 rounded-xl border border-white/10 bg-white/[0.02] p-3.5">
+              <label className="flex items-center gap-2 text-xs font-semibold text-white cursor-pointer">
+                <input type="checkbox" checked={editForm.announce_ps_advance}
+                  onChange={(e) => setEditForm({ ...editForm, announce_ps_advance: e.target.checked })}
+                  className="rounded border-white/20 bg-black text-accent-primary focus:ring-accent-primary" />
+                Show problem statements before the hackathon starts
+              </label>
+              {!editForm.announce_ps_advance && (
+                <div className="mt-3 flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">Problem Statement Release Time (IST)</label>
+                  <input type="datetime-local" required value={editForm.problem_statement_publish_at}
+                    onChange={(e) => setEditForm({ ...editForm, problem_statement_publish_at: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs outline-none focus:border-accent-primary" />
+                </div>
+              )}
+            </div>
+
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">Start Date</label>
               <input
@@ -518,6 +547,28 @@ export function CoordinatorDashboardPage() {
                 onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs outline-none focus:border-accent-primary"
               />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">Problem Selection Closes (IST)</label>
+              <input type="datetime-local" value={editForm.problem_selection_deadline}
+                onChange={(e) => setEditForm({ ...editForm, problem_selection_deadline: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs outline-none focus:border-accent-primary" />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">Solution Submission Closes (IST)</label>
+              <input type="datetime-local" value={editForm.submission_deadline}
+                onChange={(e) => setEditForm({ ...editForm, submission_deadline: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs outline-none focus:border-accent-primary" />
+            </div>
+
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">Banner Image URL</label>
+              <input type="url" value={editForm.banner_url}
+                onChange={(e) => setEditForm({ ...editForm, banner_url: e.target.value })}
+                placeholder="https://..."
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder-white/20 focus:outline-none focus:border-accent-primary" />
             </div>
 
             <div className="flex flex-col gap-1.5">
