@@ -67,9 +67,16 @@ export default function CertificateStudioPage() {
         certificate_type: type,
         field_layout: fields,
       });
-      if (created.data && file) await apiService.uploadCertificateBackground(created.data.id, file);
+      if (!created.data) throw new Error('Template save returned no template record.');
+      let savedTemplate = created.data;
+      if (file) {
+        const uploaded = await apiService.uploadCertificateBackground(created.data.id, file);
+        if (uploaded.data) savedTemplate = uploaded.data;
+      }
       setMessage(editingId ? 'Draft updated successfully.' : 'Template saved as draft.');
-      setEditingId(created.data?.id || editingId);
+      setEditingId(savedTemplate.id);
+      setBackgroundUrl(savedTemplate.background_url || backgroundUrl);
+      setFile(null);
       await loadTemplates(selectedHackathon);
     } catch (err: any) {
       setError(err.message || 'Template could not be saved.');

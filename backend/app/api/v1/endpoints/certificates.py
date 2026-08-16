@@ -212,7 +212,7 @@ def update_template(
     if "field_layout" in updates:
         _validate_layout(updates["field_layout"])
         template.field_layout = json.dumps(updates.pop("field_layout"))
-    if updates.get("is_published") and not template.background_url:
+    if updates.get("is_published") and not (template.background_url or template.background_storage_path):
         raise HTTPException(status_code=400, detail="Upload a certificate background before publishing.")
     for name, value in updates.items():
         setattr(template, name, value)
