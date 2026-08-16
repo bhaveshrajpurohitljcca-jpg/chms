@@ -1341,74 +1341,7 @@ const SubmissionsView = () => {
   );
 };
 
-// 7. CERTIFICATES VAULT
-const CertificatesView = () => {
-  const [registrations, setRegistrations] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadCerts() {
-      try {
-        setIsLoading(true);
-        const res = await apiService.getMyRegistrations();
-        if (res.data) {
-          setRegistrations(res.data);
-        }
-      } catch {
-        setRegistrations([]);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    loadCerts();
-  }, []);
-
-  return (
-    <div className="flex flex-col gap-6 md:gap-10 w-full max-w-6xl px-4 md:pl-12 md:pr-4">
-      <div>
-        <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-white">
-          Certificates Vault
-        </h2>
-        <p className="text-xs text-text-secondary mt-1 font-light">Download verified, signed participation and finalist awards certificates.</p>
-      </div>
-
-      {isLoading ? (
-        <div className="py-12 flex justify-center">
-          <Loader2 className="animate-spin text-accent-primary" size={32} />
-        </div>
-      ) : registrations.length === 0 ? (
-        <div className="glass-card rounded-2xl p-12 text-center flex flex-col items-center gap-3 border border-white/10">
-          <Award size={40} className="text-white/30" />
-          <h3 className="font-archivo text-lg font-bold uppercase tracking-wider text-white">No Verified Certificates Yet</h3>
-          <p className="text-xs text-white/50 max-w-md">Certificates are automatically issued upon completion and grading of hackathon events.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {registrations.map((reg) => (
-            <Card key={reg.id} hoverable className="bg-white/[0.02]">
-              <div className="flex flex-col justify-between h-full gap-4">
-                <div className="flex gap-4">
-                  <div className="p-3 rounded-lg bg-accent-primary/10 border border-accent-primary/20 text-accent-primary">
-                    <Award size={24} />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-white">{reg.hackathon?.title || 'Hackathon Event'} Participation</h4>
-                    <p className="text-[10px] text-white/40 mt-1">Status: Verified Official Ledger</p>
-                  </div>
-                </div>
-                <Button variant="primary" className="h-9 px-4 text-xs mt-2 self-start" onClick={() => alert(`Downloading PDF for ${reg.hackathon?.title || 'Certificate'}...`)}>
-                  Download PDF
-                </Button>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// 8. ANNOUNCEMENTS
+// 7. ANNOUNCEMENTS
 const AnnouncementsView = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<any[]>([]);
