@@ -31,6 +31,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     try:
         return password_context.verify(plain_password, hashed_password)
     except (UnknownHashError, ValueError):
+        # ValueError is raised by bcrypt 4.1+ when password > 72 bytes.
+        # Fall back to legacy SHA-256 check so login never crashes with 500.
         return hmac.compare_digest(_legacy_hash_password(plain_password), hashed_password)
 
 
