@@ -138,6 +138,34 @@ export interface BackendAnnouncement {
   updated_at?: string;
 }
 
+export interface CertificateTemplateRecord {
+  id: string;
+  hackathon_id: string;
+  name: string;
+  recipient_type: 'participant' | 'coordinator';
+  certificate_type: string;
+  background_url?: string;
+  field_layout: Array<{ key: string; x?: number; y?: number; fontSize?: number; color?: string }>;
+  is_published: boolean;
+  published_at?: string;
+  created_at: string;
+}
+
+export interface CertificateRecord {
+  id: string;
+  verification_id: string;
+  template_id: string;
+  hackathon_id: string;
+  hackathon_title: string;
+  certificate_type: string;
+  recipient_name: string;
+  team_name?: string;
+  award_label?: string;
+  issued_at: string;
+  revoked_at?: string;
+  template: CertificateTemplateRecord;
+}
+
 
 export interface JudgeAssignmentRecord {
   id: string;
@@ -1013,6 +1041,49 @@ export const apiService = {
 
   async getCertificateEligibility(hackathonId: string) {
     return request<any>(`/hackathons/${hackathonId}/certificates/eligibility`);
+  },
+
+  // ─── Certificate Studio ───────────────────────────────────
+  async listCertificateTemplates(hackathonId: string) {
+    return request<CertificateTemplateRecord[]>(`/certificates/templates?hackathon_id=${encodeURIComponent(hackathonId)}`);
+  },
+
+  async createCertificateTemplate(payload: {
+    hackathon_id: string;
+    name: string;
+    recipient_type: 'participant' | 'coordinator';
+    certificate_type: string;
+    field_layout: CertificateTemplateRecord['field_layout'];
+  }) {
+    return request<CertificateTemplateRecord>('/certificates/templates', { method: 'POST', body: JSON.stringify(payload) });
+  },
+
+  async updateCertificateTemplate(templateId: string, payload: Partial<Pick<CertificateTemplateRecord, 'name' | 'certificate_type' | 'field_layout' | 'is_published'>>) {
+    return request<CertificateTemplateRecord>(`/certificates/templates/${templateId}`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
+
+  async uploadCertificateBackground(templateId: string, file: File) {
+    const form = new FormData();
+    form.append('file', file);
+    return requestFormData<CertificateTemplateRecord>(`/certificates/templates/${templateId}/background`, form);
+  },
+
+  async listAvailableCertificateTemplates() {
+    return request<CertificateTemplateRecord[]>('/certificates/available');
+  },
+
+  async listMyCertificates() {
+    return request<CertificateRecord[]>('/certificates/mine');
+  },
+
+  async generateCertificate(templateId: string, displayName?: string) {
+    return request<CertificateRecord>(`/certificates/templates/${templateId}/generate`, {
+      method: 'POST', body: JSON.stringify({ display_name: displayName || undefined })
+    });
+  },
+
+  async revokeCertificate(certificateId: string, reason: string) {
+    return request<CertificateRecord>(`/certificates/${certificateId}/revoke`, { method: 'POST', body: JSON.stringify({ reason }) });
   },
 
   async getHackathonStats(hackathonId: string) {

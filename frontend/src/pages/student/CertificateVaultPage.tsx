@@ -1,0 +1,76 @@
+import { useEffect, useState } from 'react';
+import { Award, CheckCircle2, Download, Loader2, Plus, Printer, ShieldCheck } from 'lucide-react';
+import { apiService, STATIC_BASE, type CertificateRecord, type CertificateTemplateRecord } from '@/services/api';
+import { useAuth } from '@/context/AuthContext';
+
+const valueFor = (key: string, certificate: CertificateRecord) => ({
+  student_name: certificate.recipient_name,
+  team_name: certificate.team_name || '',
+  hackathon_title: certificate.hackathon_title,
+  certificate_type: certificate.certificate_type,
+  issue_date: new Date(certificate.issued_at).toLocaleDateString('en-IN'),
+  verification_id: certificate.verification_id,
+  award_label: certificate.award_label || '',
+}[key] || '');
+
+function CertificatePreview({ certificate }: { certificate: CertificateRecord }) {
+  const { template } = certificate;
+  return (
+    <div className="relative aspect-[1.414/1] overflow-hidden rounded-xl border border-accent-primary/30 bg-[#f7f0dc] text-[#302312] shadow-xl">
+      {template.background_url && <img src={`${STATIC_BASE}${template.background_url}`} alt="Certificate template" className="absolute inset-0 h-full w-full object-cover" />}
+      {!template.background_url && <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#fff7df,#d4a85c)]" />}
+      <div className="absolute inset-3 border-2 border-[#8a6429]/70" />
+      {template.field_layout.length ? template.field_layout.map((field, index) => (
+        <span key={`${field.key}-${index}`} className="absolute -translate-x-1/2 -translate-y-1/2 text-center font-serif font-semibold" style={{ left: `${field.x ?? 50}%`, top: `${field.y ?? 50}%`, fontSize: `${field.fontSize ?? 16}px`, color: field.color || '#302312' }}>
+          {valueFor(field.key, certificate)}
+        </span>
+      )) : (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center">
+          <Award size={34} /><p className="text-lg font-bold">{certificate.certificate_type}</p><p>{certificate.recipient_name}</p><p className="text-xs">{certificate.hackathon_title}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function CertificateVaultPage() {
+  const { user } = useAuth();
+  const [issued, setIssued] = useState<CertificateRecord[]>([]);
+  const [available, setAvailable] = useState<CertificateTemplateRecord[]>([]);
+  const [displayName, setDisplayName] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [workingId, setWorkingId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<CertificateRecord | null>(null);
+  const [error, setError] = useState('');
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [mine, templates] = await Promise.all([apiService.listMyCertificates(), apiService.listAvailableCertificateTemplates()]);
+      setIssued(mine.data || []); setAvailable(templates.data || []);
+    } catch (err: any) { setError(err.message || 'Certificates could not be loaded.'); }
+    finally { setLoading(false); }
+  };
+  useEffect(() => { void load(); }, []);
+
+  const generate = async (template: CertificateTemplateRecord) => {
+    setWorkingId(template.id); setError('');
+    try {
+      const result = await apiService.generateCertificate(template.id, displayName || user?.full_name);
+      if (result.data) { setSelected(result.data); await load(); }
+    } catch (err: any) { setError(err.message || 'Certificate could not be generated.'); }
+    finally { setWorkingId(null); }
+  };
+
+  return <div className="mx-auto flex max-w-6xl flex-col gap-7">
+    <header><p className="text-xs font-bold uppercase tracking-[.24em] text-accent-primary">Verified credentials</p><h1 className="font-archivo text-3xl font-black uppercase">Certificates Vault</h1><p className="mt-2 text-sm text-text-secondary">Your hackathon, team and award details are locked from the official record.</p></header>
+    {error && <p className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{error}</p>}
+    <section className="rounded-2xl border border-[var(--border-color)] bg-white/[.03] p-5">
+      <div className="mb-4 flex items-center gap-2"><Plus size={18} className="text-accent-primary" /><h2 className="font-archivo font-bold uppercase">Available To Generate</h2></div>
+      <div className="mb-4 max-w-md"><label className="text-xs text-text-secondary">Display name (optional correction only)</label><input value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder={user?.full_name || 'Your official name'} className="mt-1 w-full rounded-lg border border-[var(--border-color)] bg-transparent px-3 py-2 text-sm" /></div>
+      {loading ? <Loader2 className="animate-spin text-accent-primary" /> : available.length === 0 ? <p className="text-sm text-text-secondary">No published certificate is available for your completed hackathons yet.</p> : <div className="grid gap-3 md:grid-cols-2">{available.map((template) => <div key={template.id} className="rounded-xl border border-[var(--border-color)] p-4"><p className="font-bold">{template.certificate_type}</p><p className="mt-1 text-xs text-text-secondary">{template.recipient_type} template: {template.name}</p><button onClick={() => void generate(template)} disabled={workingId === template.id} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-accent-primary px-3 py-2 text-xs font-bold text-black disabled:opacity-60">{workingId === template.id ? <Loader2 size={14} className="animate-spin" /> : <Award size={14} />} Generate certificate</button></div>)}</div>}
+    </section>
+    <section><div className="mb-4 flex items-center gap-2"><ShieldCheck size={18} className="text-accent-primary" /><h2 className="font-archivo font-bold uppercase">Issued Certificates</h2></div><div className="grid gap-5 md:grid-cols-2">{issued.map((certificate) => <article key={certificate.id} className="rounded-2xl border border-[var(--border-color)] bg-white/[.03] p-4"><CertificatePreview certificate={certificate} /><div className="mt-4"><p className="font-bold">{certificate.certificate_type}</p><p className="text-sm text-text-secondary">{certificate.hackathon_title}</p><p className="mt-2 font-mono text-[10px] text-accent-primary">{certificate.verification_id}</p><button onClick={() => setSelected(certificate)} className="mt-3 inline-flex items-center gap-2 rounded-lg border border-accent-primary/40 px-3 py-2 text-xs font-bold text-accent-primary"><Download size={14} /> View / Download</button></div></article>)}</div></section>
+    {selected && <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-4"><div className="mx-auto mt-8 max-w-4xl rounded-2xl bg-[var(--bg-primary)] p-5"><div className="mb-4 flex justify-between gap-4"><div><h2 className="font-archivo text-xl font-bold uppercase">Certificate Preview</h2><p className="text-xs text-text-secondary">Verification ID: {selected.verification_id}</p></div><button onClick={() => setSelected(null)} className="text-sm">Close</button></div><CertificatePreview certificate={selected} /><button onClick={() => window.print()} className="mt-5 inline-flex items-center gap-2 rounded-lg bg-accent-primary px-4 py-2 text-sm font-bold text-black"><Printer size={16} /> Print / Save as PDF</button><p className="mt-2 text-xs text-text-secondary"><CheckCircle2 size={12} className="mr-1 inline" />Choose “Save as PDF” in your browser print dialog.</p></div></div>}
+  </div>;
+}

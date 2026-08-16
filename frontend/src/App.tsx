@@ -79,6 +79,8 @@ const JudgeAssignmentPage = lazy(() => import('@/pages/admin/JudgeAssignmentPage
 const CoordinatorDashboardPage = lazy(() => import('@/pages/coordinator/CoordinatorDashboardPage').then((module) => ({ default: module.CoordinatorDashboardPage })));
 const CoordinatorHackathonsPage = lazy(() => import('@/pages/coordinator/CoordinatorHackathonsPage').then((module) => ({ default: module.CoordinatorHackathonsPage })));
 const CoordinatorProblemStatementsPage = lazy(() => import('@/pages/coordinator/CoordinatorProblemStatementsPage').then((module) => ({ default: module.CoordinatorProblemStatementsPage })));
+const CertificateVaultPage = lazy(() => import('@/pages/student/CertificateVaultPage'));
+const CertificateStudioPage = lazy(() => import('@/pages/coordinator/CertificateStudioPage'));
 
 // ==========================================
 // A. GLOBAL LAYOUT (Header + WebGL Particles + Menu Drawer)
@@ -6564,7 +6566,7 @@ function App() {
             <Route path="registration" element={<RegistrationPage />} />
             <Route path="registration/:id" element={<RegistrationPage />} />
             <Route path="submissions" element={<StudentSubmissionPage />} />
-            <Route path="certificates" element={<CertificatesView />} />
+            <Route path="certificates" element={<CertificateVaultPage />} />
             <Route path="profile" element={<ProfilePage />} />
           </Route>
 
@@ -6578,6 +6580,7 @@ function App() {
           {/* Coordinator Protected Portal */}
           <Route path="/coordinator" element={<RoleLayout allowedRoles={['coordinator']} />}>
             <Route index element={<CoordinatorDashboardPage />} />
+            <Route path="certificates" element={<CertificateStudioPage />} />
             <Route path="hackathons" element={<CoordinatorHackathonsPage />} />
             <Route path="problem-statements" element={<CoordinatorProblemStatementsPage />} />
             <Route path="registrations" element={<CoordinatorView />} />
