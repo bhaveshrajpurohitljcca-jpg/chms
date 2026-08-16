@@ -157,7 +157,11 @@ def _bulk_issue(db: Session, template: CertificateTemplate) -> int:
         return len(users)
     members = db.query(TeamMember).join(Team).join(Registration).filter(Team.hackathon_id == template.hackathon_id, Registration.hackathon_id == template.hackathon_id, Registration.status == RegistrationStatus.REGISTERED).all()
     for member in members:
-        _issue_certificate(db, template, member.user, member.team)
+        submission = db.query(Submission).filter(Submission.team_id == member.team.id, Submission.hackathon_id == template.hackathon_id).first()
+        award_label = None
+        if submission and submission.final_rank:
+            award_label = "Winner" if submission.final_rank == 1 else f"Finalist Rank {submission.final_rank}"
+        _issue_certificate(db, template, member.user, member.team, award_label)
     return len(members)
 
 
@@ -292,7 +296,10 @@ def list_my_certificates(
 @router.get("/vault", response_model=StandardResponse[list[CertificateResponse]])
 def coordinator_vault(hackathon_id: str, db: Session = Depends(get_db), current_user: User = Depends(RoleChecker([UserRole.COORDINATOR, UserRole.ADMIN]))):
     _ensure_template_scope(db, current_user, hackathon_id)
-    rows = db.query(Certificate).filter(Certificate.hackathon_id == hackathon_id).order_by(Certificate.issued_at.desc()).all()
+    query = db.query(Certificate).filter(Certificate.hackathon_id == hackathon_id)
+    if current_user.role == UserRole.COORDINATOR:
+        query = query.filter(Certificate.recipient_id == current_user.id)
+    rows = query.order_by(Certificate.issued_at.desc()).all()
     return StandardResponse(message="Certificate vault retrieved.", data=[_certificate_response(row) for row in rows])
 
 @router.get("/{certificate_id}/download")
