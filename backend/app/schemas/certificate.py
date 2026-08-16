@@ -15,6 +15,7 @@ class CertificateTemplateCreate(BaseModel):
 class CertificateTemplateUpdate(BaseModel):
     name: Optional[str] = Field(default=None, min_length=2, max_length=255)
     certificate_type: Optional[str] = Field(default=None, max_length=100)
+    recipient_type: Optional[str] = Field(default=None, pattern="^(participant|coordinator)$")
     field_layout: Optional[List[dict[str, Any]]] = None
     is_published: Optional[bool] = None
 
@@ -26,6 +27,7 @@ class CertificateTemplateResponse(BaseModel):
     recipient_type: str
     certificate_type: str
     background_url: Optional[str] = None
+    background_storage_path: Optional[str] = None
     field_layout: List[dict[str, Any]] = Field(default_factory=list)
     is_published: bool
     published_at: Optional[datetime] = None

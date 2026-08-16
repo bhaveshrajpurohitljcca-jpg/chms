@@ -17,6 +17,7 @@ class CertificateTemplate(BaseTable):
     recipient_type = Column(String(30), nullable=False, default="participant")
     certificate_type = Column(String(100), nullable=False, default="Participation Certificate")
     background_url = Column(String(500), nullable=True)
+    background_storage_path = Column(String(500), nullable=True)
     # JSON array consumed by the browser renderer. Fields use trusted placeholder keys only.
     field_layout = Column(Text, nullable=False, default="[]")
     is_published = Column(Boolean, nullable=False, default=False)

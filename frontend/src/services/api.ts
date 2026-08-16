@@ -144,8 +144,9 @@ export interface CertificateTemplateRecord {
   name: string;
   recipient_type: 'participant' | 'coordinator';
   certificate_type: string;
-  background_url?: string;
-  field_layout: Array<{ key: string; x?: number; y?: number; fontSize?: number; color?: string }>;
+    background_url?: string;
+    background_storage_path?: string;
+    field_layout: Array<{ key: string; x?: number; y?: number; fontSize?: number; color?: string; fontFamily?: string; fontWeight?: number; fontStyle?: 'normal' | 'italic'; textDecoration?: 'none' | 'underline'; opacity?: number; rotation?: number; letterSpacing?: number; textAlign?: 'left' | 'center' | 'right'; visible?: boolean; locked?: boolean }>;
   is_published: boolean;
   published_at?: string;
   created_at: string;
@@ -1054,12 +1055,12 @@ export const apiService = {
     name: string;
     recipient_type: 'participant' | 'coordinator';
     certificate_type: string;
-    field_layout: CertificateTemplateRecord['field_layout'];
+      field_layout: CertificateTemplateRecord['field_layout'];
   }) {
     return request<CertificateTemplateRecord>('/certificates/templates', { method: 'POST', body: JSON.stringify(payload) });
   },
 
-  async updateCertificateTemplate(templateId: string, payload: Partial<Pick<CertificateTemplateRecord, 'name' | 'certificate_type' | 'field_layout' | 'is_published'>>) {
+    async updateCertificateTemplate(templateId: string, payload: Partial<Pick<CertificateTemplateRecord, 'name' | 'certificate_type' | 'recipient_type' | 'field_layout' | 'is_published'>>) {
     return request<CertificateTemplateRecord>(`/certificates/templates/${templateId}`, { method: 'PUT', body: JSON.stringify(payload) });
   },
 

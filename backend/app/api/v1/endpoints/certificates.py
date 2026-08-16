@@ -2,6 +2,7 @@ import json
 import os
 import secrets
 import shutil
+import httpx
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -26,6 +27,7 @@ from app.schemas.certificate import (
     CertificateTemplateUpdate,
 )
 from app.schemas.response import StandardResponse
+from app.config import settings
 
 
 router = APIRouter(prefix="/certificates", tags=["Certificates"])
@@ -63,10 +65,18 @@ def _template_response(template: CertificateTemplate) -> CertificateTemplateResp
         layout = json.loads(template.field_layout or "[]")
     except json.JSONDecodeError:
         layout = []
+    background_url = template.background_url
+    if template.background_storage_path and settings.SUPABASE_URL and settings.SUPABASE_SERVICE_ROLE_KEY:
+        try:
+            response = httpx.post(f"{settings.SUPABASE_URL}/storage/v1/object/sign/{settings.SUPABASE_STORAGE_BUCKET}/{template.background_storage_path}", headers={"apikey": settings.SUPABASE_SERVICE_ROLE_KEY, "Authorization": f"Bearer {settings.SUPABASE_SERVICE_ROLE_KEY}", "Content-Type": "application/json"}, json={"expiresIn": 3600}, timeout=10)
+            if response.is_success:
+                background_url = f"{settings.SUPABASE_URL}/storage/v1{response.json().get('signedURL', '')}"
+        except Exception:
+            pass
     return CertificateTemplateResponse(
         id=template.id, hackathon_id=template.hackathon_id, name=template.name,
         recipient_type=template.recipient_type, certificate_type=template.certificate_type,
-        background_url=template.background_url, field_layout=layout, is_published=template.is_published,
+        background_url=background_url, background_storage_path=template.background_storage_path, field_layout=layout, is_published=template.is_published,
         published_at=template.published_at, created_at=template.created_at,
     )
 
@@ -187,6 +197,10 @@ def update_template(
         raise HTTPException(status_code=404, detail="Certificate template not found.")
     _ensure_template_scope(db, current_user, template.hackathon_id)
     updates = payload.model_dump(exclude_unset=True)
+    if updates.get("recipient_type") and updates["recipient_type"] != template.recipient_type:
+        conflict = db.query(CertificateTemplate).filter(CertificateTemplate.hackathon_id == template.hackathon_id, CertificateTemplate.recipient_type == updates["recipient_type"], CertificateTemplate.id != template.id).first()
+        if conflict:
+            raise HTTPException(status_code=409, detail=f"Only one {updates['recipient_type']} template is allowed per hackathon.")
     if "field_layout" in updates:
         _validate_layout(updates["field_layout"])
         template.field_layout = json.dumps(updates.pop("field_layout"))
@@ -205,7 +219,7 @@ def update_template(
 
 
 @router.post("/templates/{template_id}/background", response_model=StandardResponse[CertificateTemplateResponse])
-def upload_template_background(
+async def upload_template_background(
     template_id: str,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -220,12 +234,20 @@ def upload_template_background(
     extension = Path(file.filename or "").suffix.lower()
     if extension not in {".png", ".jpg", ".jpeg"}:
         raise HTTPException(status_code=400, detail="Unsupported certificate template file extension.")
-    directory = Path("uploads") / "certificates"
-    directory.mkdir(parents=True, exist_ok=True)
-    filename = f"{template.id}-{secrets.token_hex(8)}{extension}"
-    with (directory / filename).open("wb") as destination:
-        shutil.copyfileobj(file.file, destination)
-    template.background_url = f"/uploads/certificates/{filename}"
+    filename = f"{template.id}/{secrets.token_hex(8)}{extension}"
+    content = await file.read()
+    if settings.SUPABASE_SERVICE_ROLE_KEY and settings.SUPABASE_URL and not settings.SUPABASE_URL.endswith("placeholder.supabase.co"):
+        response = httpx.post(f"{settings.SUPABASE_URL}/storage/v1/object/{settings.SUPABASE_STORAGE_BUCKET}/templates/{filename}", headers={"apikey": settings.SUPABASE_SERVICE_ROLE_KEY, "Authorization": f"Bearer {settings.SUPABASE_SERVICE_ROLE_KEY}", "Content-Type": file.content_type or "application/octet-stream", "x-upsert": "true"}, content=content, timeout=30)
+        if not response.is_success:
+            raise HTTPException(status_code=502, detail="Supabase Storage upload failed.")
+        template.background_storage_path = f"templates/{filename}"
+        template.background_url = None
+    else:
+        directory = Path("uploads") / "certificates"
+        directory.mkdir(parents=True, exist_ok=True)
+        local_name = f"{template.id}-{secrets.token_hex(8)}{extension}"
+        (directory / local_name).write_bytes(content)
+        template.background_url = f"/uploads/certificates/{local_name}"
     db.commit()
     db.refresh(template)
     return StandardResponse(message="Certificate background uploaded.", data=_template_response(template))
