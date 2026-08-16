@@ -21,6 +21,7 @@ class CertificateTemplate(BaseTable):
     field_layout = Column(Text, nullable=False, default="[]")
     is_published = Column(Boolean, nullable=False, default=False)
     published_at = Column(DateTime, nullable=True)
+    __table_args__ = (UniqueConstraint("hackathon_id", "recipient_type", name="unique_hackathon_recipient_template"),)
 
     hackathon = relationship("Hackathon")
     created_by = relationship("User", foreign_keys=[created_by_id])
@@ -43,6 +44,7 @@ class Certificate(BaseTable):
     issued_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     revoked_at = Column(DateTime, nullable=True)
     revoke_reason = Column(Text, nullable=True)
+    pdf_url = Column(String(500), nullable=True)
 
     template = relationship("CertificateTemplate", back_populates="certificates")
     hackathon = relationship("Hackathon")

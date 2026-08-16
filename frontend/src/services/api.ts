@@ -162,7 +162,8 @@ export interface CertificateRecord {
   team_name?: string;
   award_label?: string;
   issued_at: string;
-  revoked_at?: string;
+    revoked_at?: string;
+    pdf_url?: string;
   template: CertificateTemplateRecord;
 }
 
@@ -1076,11 +1077,19 @@ export const apiService = {
     return request<CertificateRecord[]>('/certificates/mine');
   },
 
-  async generateCertificate(templateId: string, displayName?: string) {
-    return request<CertificateRecord>(`/certificates/templates/${templateId}/generate`, {
-      method: 'POST', body: JSON.stringify({ display_name: displayName || undefined })
-    });
-  },
+    async generateCertificate(templateId: string) {
+      return request<CertificateRecord>(`/certificates/templates/${templateId}/generate`, {
+        method: 'POST', body: JSON.stringify({})
+      });
+    },
+
+    async listCoordinatorCertificateVault(hackathonId: string) {
+      return request<CertificateRecord[]>(`/certificates/vault?hackathon_id=${encodeURIComponent(hackathonId)}`);
+    },
+
+    certificateDownloadUrl(certificateId: string) {
+      return `${API_BASE}/certificates/${certificateId}/download`;
+    },
 
   async revokeCertificate(certificateId: string, reason: string) {
     return request<CertificateRecord>(`/certificates/${certificateId}/revoke`, { method: 'POST', body: JSON.stringify({ reason }) });

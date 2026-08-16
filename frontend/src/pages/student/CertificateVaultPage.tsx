@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Award, CheckCircle2, Download, Loader2, Plus, Printer, ShieldCheck } from 'lucide-react';
 import { apiService, STATIC_BASE, type CertificateRecord, type CertificateTemplateRecord } from '@/services/api';
-import { useAuth } from '@/context/AuthContext';
 
 const valueFor = (key: string, certificate: CertificateRecord) => ({
   student_name: certificate.recipient_name,
@@ -34,10 +33,8 @@ function CertificatePreview({ certificate }: { certificate: CertificateRecord })
 }
 
 export default function CertificateVaultPage() {
-  const { user } = useAuth();
   const [issued, setIssued] = useState<CertificateRecord[]>([]);
   const [available, setAvailable] = useState<CertificateTemplateRecord[]>([]);
-  const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(true);
   const [workingId, setWorkingId] = useState<string | null>(null);
   const [selected, setSelected] = useState<CertificateRecord | null>(null);
@@ -56,7 +53,7 @@ export default function CertificateVaultPage() {
   const generate = async (template: CertificateTemplateRecord) => {
     setWorkingId(template.id); setError('');
     try {
-      const result = await apiService.generateCertificate(template.id, displayName || user?.full_name);
+      const result = await apiService.generateCertificate(template.id);
       if (result.data) { setSelected(result.data); await load(); }
     } catch (err: any) { setError(err.message || 'Certificate could not be generated.'); }
     finally { setWorkingId(null); }
@@ -67,7 +64,6 @@ export default function CertificateVaultPage() {
     {error && <p className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{error}</p>}
     <section className="rounded-2xl border border-[var(--border-color)] bg-white/[.03] p-5">
       <div className="mb-4 flex items-center gap-2"><Plus size={18} className="text-accent-primary" /><h2 className="font-archivo font-bold uppercase">Available To Generate</h2></div>
-      <div className="mb-4 max-w-md"><label className="text-xs text-text-secondary">Display name (optional correction only)</label><input value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder={user?.full_name || 'Your official name'} className="mt-1 w-full rounded-lg border border-[var(--border-color)] bg-transparent px-3 py-2 text-sm" /></div>
       {loading ? <Loader2 className="animate-spin text-accent-primary" /> : available.length === 0 ? <p className="text-sm text-text-secondary">No published certificate is available for your completed hackathons yet.</p> : <div className="grid gap-3 md:grid-cols-2">{available.map((template) => <div key={template.id} className="rounded-xl border border-[var(--border-color)] p-4"><p className="font-bold">{template.certificate_type}</p><p className="mt-1 text-xs text-text-secondary">{template.recipient_type} template: {template.name}</p><button onClick={() => void generate(template)} disabled={workingId === template.id} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-accent-primary px-3 py-2 text-xs font-bold text-black disabled:opacity-60">{workingId === template.id ? <Loader2 size={14} className="animate-spin" /> : <Award size={14} />} Generate certificate</button></div>)}</div>}
     </section>
     <section><div className="mb-4 flex items-center gap-2"><ShieldCheck size={18} className="text-accent-primary" /><h2 className="font-archivo font-bold uppercase">Issued Certificates</h2></div><div className="grid gap-5 md:grid-cols-2">{issued.map((certificate) => <article key={certificate.id} className="rounded-2xl border border-[var(--border-color)] bg-white/[.03] p-4"><CertificatePreview certificate={certificate} /><div className="mt-4"><p className="font-bold">{certificate.certificate_type}</p><p className="text-sm text-text-secondary">{certificate.hackathon_title}</p><p className="mt-2 font-mono text-[10px] text-accent-primary">{certificate.verification_id}</p><button onClick={() => setSelected(certificate)} className="mt-3 inline-flex items-center gap-2 rounded-lg border border-accent-primary/40 px-3 py-2 text-xs font-bold text-accent-primary"><Download size={14} /> View / Download</button></div></article>)}</div></section>

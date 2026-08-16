@@ -80,7 +80,8 @@ const CoordinatorDashboardPage = lazy(() => import('@/pages/coordinator/Coordina
 const CoordinatorHackathonsPage = lazy(() => import('@/pages/coordinator/CoordinatorHackathonsPage').then((module) => ({ default: module.CoordinatorHackathonsPage })));
 const CoordinatorProblemStatementsPage = lazy(() => import('@/pages/coordinator/CoordinatorProblemStatementsPage').then((module) => ({ default: module.CoordinatorProblemStatementsPage })));
 const CertificateVaultPage = lazy(() => import('@/pages/student/CertificateVaultPage'));
-const CertificateStudioPage = lazy(() => import('@/pages/coordinator/CertificateStudioPage'));
+  const CertificateStudioPage = lazy(() => import('@/pages/coordinator/CertificateStudioPage'));
+  const CoordinatorCertificateVaultPage = lazy(() => import('@/pages/coordinator/CertificateVaultPage'));
 
 // ==========================================
 // A. GLOBAL LAYOUT (Header + WebGL Particles + Menu Drawer)
@@ -6513,7 +6514,8 @@ function App() {
           {/* Coordinator Protected Portal */}
           <Route path="/coordinator" element={<RoleLayout allowedRoles={['coordinator']} />}>
             <Route index element={<CoordinatorDashboardPage />} />
-            <Route path="certificates" element={<CertificateStudioPage />} />
+              <Route path="certificates" element={<CertificateStudioPage />} />
+              <Route path="certificate-vault" element={<CoordinatorCertificateVaultPage />} />
             <Route path="hackathons" element={<CoordinatorHackathonsPage />} />
             <Route path="problem-statements" element={<CoordinatorProblemStatementsPage />} />
             <Route path="registrations" element={<CoordinatorView />} />

@@ -107,6 +107,7 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
         return [
           { label: 'Dashboard',          shortLabel: 'Home',    path: '/coordinator',                    icon: LayoutDashboard },
           { label: 'Certificate Studio', shortLabel: 'Certs',   path: '/coordinator/certificates',       icon: Award },
+          { label: 'Certificate Vault', shortLabel: 'Vault', path: '/coordinator/certificate-vault', icon: Shield },
           { label: 'Announcements',      shortLabel: 'News',    path: '/coordinator/announcements',      icon: Bell },
           { label: 'Profile Settings',   shortLabel: 'Profile', path: '/coordinator/profile',            icon: UserIcon },
         ];

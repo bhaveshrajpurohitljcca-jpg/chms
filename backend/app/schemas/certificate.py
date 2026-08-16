@@ -44,11 +44,12 @@ class CertificateResponse(BaseModel):
     award_label: Optional[str] = None
     issued_at: datetime
     revoked_at: Optional[datetime] = None
+    pdf_url: Optional[str] = None
     template: CertificateTemplateResponse
 
 
 class CertificateGenerateRequest(BaseModel):
-    display_name: Optional[str] = Field(default=None, min_length=2, max_length=255)
+    pass
 
 
 class CertificateRevokeRequest(BaseModel):
