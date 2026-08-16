@@ -10,10 +10,17 @@ from app.models.hackathon import Hackathon
 
 def test_passwords_use_bcrypt_and_verify():
     hashed = hash_password("SafePassword123!")
-    assert hashed.startswith("$2")
+    assert hashed.startswith("$bcrypt-sha256$")
     assert verify_password("SafePassword123!", hashed)
     assert not verify_password("wrong-password", hashed)
     assert not password_needs_rehash(hashed)
+
+
+def test_long_passwords_are_supported_without_truncation():
+    password = "p" * 100
+    hashed = hash_password(password)
+    assert verify_password(password, hashed)
+    assert not verify_password(password[:-1], hashed)
 
 
 def test_legacy_password_is_still_accepted_for_login_migration():

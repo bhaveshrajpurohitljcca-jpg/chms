@@ -7,11 +7,15 @@ from typing import Optional, Dict, Any
 
 from app.config import settings
 from passlib.context import CryptContext
+from passlib.exc import UnknownHashError
 
 SECRET_KEY = getattr(settings, "JWT_SECRET", "").strip()
 ALGORITHM = getattr(settings, "JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 7 days
-password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# bcrypt_sha256 preserves bcrypt's adaptive work factor while safely accepting
+# passwords longer than bcrypt's 72-byte input limit. Keep bcrypt temporarily
+# so accounts created by the previous version can still log in.
+password_context = CryptContext(schemes=["bcrypt_sha256", "bcrypt"], deprecated=["bcrypt"])
 
 
 def _legacy_hash_password(password: str) -> str:
@@ -20,18 +24,22 @@ def _legacy_hash_password(password: str) -> str:
     return hashlib.sha256((password + "chms_secure_salt_2026").encode("utf-8")).hexdigest()
 
 def hash_password(password: str) -> str:
-    """Create an adaptive bcrypt hash with a unique per-password salt."""
+    """Create a bcrypt-based hash that safely supports long passwords."""
     return password_context.hash(password)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    if hashed_password.startswith("$2"):
+    try:
         return password_context.verify(plain_password, hashed_password)
-    return hmac.compare_digest(_legacy_hash_password(plain_password), hashed_password)
+    except (UnknownHashError, ValueError):
+        return hmac.compare_digest(_legacy_hash_password(plain_password), hashed_password)
 
 
 def password_needs_rehash(hashed_password: str) -> bool:
     """Legacy SHA-256 credentials are rehashed after their next valid login."""
-    return not hashed_password.startswith("$2") or password_context.needs_update(hashed_password)
+    try:
+        return password_context.needs_update(hashed_password)
+    except (UnknownHashError, ValueError):
+        return True
 
 def _b64_encode(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b'=').decode('utf-8')
