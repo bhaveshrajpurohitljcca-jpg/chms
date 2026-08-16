@@ -269,7 +269,7 @@ def get_my_assignments(
 
     return StandardResponse(
         success=True, message="Assigned submissions retrieved.",
-        data=[SubmissionResponse.from_orm(s) for s in submissions]
+        data=[SubmissionResponse.from_orm_safe(s) for s in submissions]
     )
 
 
@@ -324,7 +324,7 @@ def get_evaluation(
     return StandardResponse(
         success=True,
         message="Evaluation retrieved." if ev else "No evaluation found yet.",
-        data=EvaluationResponse.from_orm(ev) if ev else None
+        data=EvaluationResponse.model_validate(ev, from_attributes=True) if ev else None
     )
 
 
@@ -383,7 +383,7 @@ def save_draft(
         db.commit()
         db.refresh(ev)
 
-    return StandardResponse(success=True, message="Draft saved.", data=EvaluationResponse.from_orm(ev))
+    return StandardResponse(success=True, message="Draft saved.", data=EvaluationResponse.model_validate(ev, from_attributes=True))
 
 
 @router.post("/submit", response_model=StandardResponse[EvaluationResponse])
@@ -451,7 +451,7 @@ def submit_evaluation(
 
     db.commit()
     db.refresh(ev)
-    return StandardResponse(success=True, message="Evaluation submitted and locked.", data=EvaluationResponse.from_orm(ev))
+    return StandardResponse(success=True, message="Evaluation submitted and locked.", data=EvaluationResponse.model_validate(ev, from_attributes=True))
 
 
 @router.put("/{evaluation_id}", response_model=StandardResponse[EvaluationResponse])
@@ -485,7 +485,7 @@ def admin_update_evaluation(
 
     db.commit()
     db.refresh(ev)
-    return StandardResponse(success=True, message="Evaluation updated by Admin.", data=EvaluationResponse.from_orm(ev))
+    return StandardResponse(success=True, message="Evaluation updated by Admin.", data=EvaluationResponse.model_validate(ev, from_attributes=True))
 
 
 @router.get("/history", response_model=StandardResponse[List[EvaluationResponse]])
@@ -509,5 +509,5 @@ def get_evaluation_history(
     results = query.order_by(Evaluation.submitted_at.desc().nullslast()).all()
     return StandardResponse(
         success=True, message="History retrieved.",
-        data=[EvaluationResponse.from_orm(e) for e in results]
+        data=[EvaluationResponse.model_validate(e, from_attributes=True) for e in results]
     )
