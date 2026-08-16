@@ -110,16 +110,18 @@ const GlobalLayout = () => {
       <header className="fixed top-0 left-0 right-0 h-16 md:h-24 z-40 px-4 md:px-8 py-4 md:py-6 flex items-center justify-between bg-[#050505]/95 dark:bg-[#050505]/95 backdrop-blur-md border-b border-[rgba(255,255,255,0.1)] pointer-events-auto">
         {/* Left Brand Logo with Larger Shining Glowing Logo */}
         <div className="flex items-center gap-3 select-none">
-          <Link to="/" className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0 group hover:scale-105 transition-transform" title="HexaThon Home">
+          <Link to="/" className="flex items-center gap-3 flex-shrink-0 group hover:scale-105 transition-transform" title="HexaThon Home">
             <img
-              src="/real_logo.png"
+              src="/chms_logo.jpeg"
+              alt="HexaThon Icon"
+              className="w-10 h-10 md:w-12 md:h-12 object-contain rounded-lg drop-shadow-[0_0_16px_rgba(100,120,255,0.95)]"
+            />
+            <img
+              src="/chms_logo_full.jpeg"
               alt="HexaThon Logo"
-              className="w-12 h-12 md:w-14 md:h-14 object-contain drop-shadow-[0_0_16px_rgba(0,243,255,0.95)] filter brightness-115"
+              className="hidden md:block h-8 w-auto object-contain drop-shadow-[0_0_12px_rgba(100,120,255,0.7)]"
             />
           </Link>
-          <span className="font-archivo text-xl md:text-2xl tracking-wider font-black text-white text-glow-cyan cursor-default">
-            HexaThon
-          </span>
         </div>
 
         {/* Center links with Cyan Underline hover + active effects */}
@@ -6387,30 +6389,31 @@ function App() {
     <AuthProvider>
       {showSplash && (
         <div 
-          className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#050505] text-white px-8 font-manrope transition-opacity duration-700 ${
+          onClick={() => {
+            setIsFadingOut(true);
+            setTimeout(() => setShowSplash(false), 700);
+          }}
+          className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#050505] text-white font-manrope transition-opacity duration-700 cursor-pointer ${
             isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
           }`}
         >
-          {/* Animated 3D WebGL particle field inside the splash page */}
-          <ThreeParticleBg />
+          {/* Intro Video - Full Screen */}
+          <video
+            autoPlay
+            muted
+            playsInline
+            onEnded={() => {
+              setIsFadingOut(true);
+              setTimeout(() => setShowSplash(false), 700);
+            }}
+            className="absolute inset-0 w-full h-full object-cover"
+          >
+            <source src="/logo_intro.mp4" type="video/mp4" />
+          </video>
 
-          {/* Centered quote container */}
-          <div className="relative z-10 max-w-2xl text-center flex flex-col gap-8 animate-fade-in-up">
-            <div className="flex justify-center">
-              <div className="w-16 h-16 rounded-2xl bg-accent-primary/5 border border-accent-primary/20 flex items-center justify-center shadow-[0_0_30px_rgba(0,243,255,0.15)] animate-pulse">
-                <span className="font-archivo text-lg font-black text-accent-primary tracking-wider">AiRA</span>
-              </div>
-            </div>
-            
-            <p className="text-xl md:text-2xl lg:text-3xl font-light leading-relaxed text-white tracking-wide font-archivo uppercase select-none italic text-glow-cyan">
-              &ldquo;You can do anything or everything. You just have to believe that you can do it.&rdquo;
-            </p>
-
-            <div className="flex justify-center gap-1.5 mt-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-accent-primary animate-ping" />
-              <span className="w-2.5 h-2.5 rounded-full bg-accent-primary/60 animate-ping delay-75" />
-              <span className="w-2.5 h-2.5 rounded-full bg-accent-primary/30 animate-ping delay-150" />
-            </div>
+          {/* Skip hint */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 opacity-60">
+            <span className="text-white/50 text-xs font-semibold uppercase tracking-[0.3em]">Click anywhere to skip</span>
           </div>
         </div>
       )}
