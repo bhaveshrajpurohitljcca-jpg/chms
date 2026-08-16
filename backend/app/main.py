@@ -44,6 +44,12 @@ else:
 # when bearer tokens or cookies can be sent by browsers.
 origins = [origin for origin in origins if origin and origin != "*"]
 
+# Production frontends owned by this application. Environment values can add
+# further approved domains, but cannot accidentally remove the live website.
+for trusted_origin in ("https://hexathon.aira-lab.in", "https://chms-lj.vercel.app"):
+    if trusted_origin not in origins:
+        origins.append(trusted_origin)
+
 setup_exception_handlers(app)
 
 app.add_middleware(
