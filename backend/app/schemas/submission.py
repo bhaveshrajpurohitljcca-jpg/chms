@@ -1,7 +1,10 @@
-from typing import Optional, List
+from typing import Optional, List, Any
 from datetime import datetime
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, field_validator, model_validator, model_serializer
 import re
+import logging
+
+logger = logging.getLogger("chms.schemas.submission")
 
 GITHUB_URL_REGEX = re.compile(r'^https://(?:www\.)?github\.com/[\w\-\.]+/[\w\-\.]+(?:/.*|\.git)?$')
 
@@ -230,3 +233,70 @@ class SubmissionResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+    @classmethod
+    def from_orm_safe(cls, obj: Any) -> 'SubmissionResponse':
+        """
+        Safe alternative to from_orm / model_validate that catches DB errors
+        (e.g. missing columns like round_number) on lazy-loaded relationships.
+        Returns evaluations=[] and judge_assignments=[] on any DB error so the
+        endpoint never crashes with a 500 due to a missing migration column.
+        """
+        try:
+            evaluations_data = list(obj.evaluations)
+        except Exception as e:
+            logger.warning("Could not load evaluations for submission %s: %s", obj.id, e)
+            evaluations_data = []
+
+        try:
+            assignments_data = list(obj.judge_assignments)
+        except Exception as e:
+            logger.warning("Could not load judge_assignments for submission %s: %s", obj.id, e)
+            assignments_data = []
+            # Roll back the aborted transaction so the session stays usable
+            try:
+                obj.__class__.metadata.bind and None  # no-op
+            except Exception:
+                pass
+
+        safe_evals: List[EvaluationResponse] = []
+        for ev in evaluations_data:
+            try:
+                safe_evals.append(EvaluationResponse.model_validate(ev, from_attributes=True))
+            except Exception as e:
+                logger.warning("Skipping malformed evaluation %s: %s", getattr(ev, 'id', '?'), e)
+
+        safe_assignments: List[JudgeAssignmentResponse] = []
+        for ja in assignments_data:
+            try:
+                safe_assignments.append(JudgeAssignmentResponse.model_validate(ja, from_attributes=True))
+            except Exception as e:
+                logger.warning("Skipping malformed assignment %s: %s", getattr(ja, 'id', '?'), e)
+
+        is_finalist = False
+        try:
+            is_finalist = bool(obj.is_finalist)
+        except Exception:
+            pass
+
+        return cls(
+            id=obj.id,
+            team_id=obj.team_id,
+            hackathon_id=obj.hackathon_id,
+            problem_statement_id=obj.problem_statement_id,
+            title=obj.title,
+            description=obj.description,
+            repo_url=obj.repo_url,
+            demo_url=obj.demo_url,
+            video_url=obj.video_url,
+            additional_notes=obj.additional_notes,
+            file_url=getattr(obj, 'file_url', None),
+            file_name=getattr(obj, 'file_name', None),
+            tech_stack=getattr(obj, 'tech_stack', None),
+            status=obj.status,
+            is_finalist=is_finalist,
+            evaluation_round=getattr(obj, 'evaluation_round', 1),
+            submitted_at=obj.submitted_at,
+            evaluations=safe_evals,
+            judge_assignments=safe_assignments,
+        )

@@ -113,7 +113,8 @@ def list_submissions(
         query = query.filter(Submission.hackathon_id == hackathon_id)
 
     subs = query.order_by(Submission.submitted_at.desc()).all()
-    results = [SubmissionResponse.from_orm(s) for s in subs]
+    db.rollback()  # Clear any aborted transaction state before safe serialization
+    results = [SubmissionResponse.from_orm_safe(s) for s in subs]
     return StandardResponse(
         success=True,
         message="Submissions retrieved successfully.",
@@ -151,7 +152,7 @@ def get_my_submission(
     return StandardResponse(
         success=True,
         message="Submission retrieved." if submission else "No submission found yet.",
-        data=SubmissionResponse.from_orm(submission) if submission else None
+        data=SubmissionResponse.from_orm_safe(submission) if submission else None
     )
 
 
@@ -267,7 +268,7 @@ def create_submission(
     return StandardResponse(
         success=True,
         message="Project submitted successfully!",
-        data=SubmissionResponse.from_orm(submission)
+        data=SubmissionResponse.from_orm_safe(submission)
     )
 
 
@@ -320,7 +321,7 @@ def update_submission(
     return StandardResponse(
         success=True,
         message="Submission updated successfully.",
-        data=SubmissionResponse.from_orm(submission)
+        data=SubmissionResponse.from_orm_safe(submission)
     )
 
 
