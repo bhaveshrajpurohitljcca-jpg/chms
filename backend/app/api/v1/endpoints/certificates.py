@@ -36,6 +36,14 @@ ALLOWED_PLACEHOLDERS = {
 }
 ALLOWED_UPLOAD_TYPES = {"image/png", "image/jpeg"}
 
+def _storage_is_configured() -> bool:
+    return bool(
+        settings.SUPABASE_SERVICE_ROLE_KEY
+        and settings.SUPABASE_URL
+        and not settings.SUPABASE_URL.endswith("placeholder.supabase.co")
+        and "yourproject.supabase.co" not in settings.SUPABASE_URL
+    )
+
 
 def _ensure_template_scope(db: Session, user: User, hackathon_id: str) -> None:
     if user.role == UserRole.ADMIN:
@@ -66,7 +74,7 @@ def _template_response(template: CertificateTemplate) -> CertificateTemplateResp
     except json.JSONDecodeError:
         layout = []
     background_url = template.background_url
-    if template.background_storage_path and settings.SUPABASE_URL and settings.SUPABASE_SERVICE_ROLE_KEY:
+    if template.background_storage_path and _storage_is_configured():
         try:
             response = httpx.post(f"{settings.SUPABASE_URL}/storage/v1/object/sign/{settings.SUPABASE_STORAGE_BUCKET}/{template.background_storage_path}", headers={"apikey": settings.SUPABASE_SERVICE_ROLE_KEY, "Authorization": f"Bearer {settings.SUPABASE_SERVICE_ROLE_KEY}", "Content-Type": "application/json"}, json={"expiresIn": 3600}, timeout=10)
             if response.is_success:
@@ -236,13 +244,15 @@ async def upload_template_background(
         raise HTTPException(status_code=400, detail="Unsupported certificate template file extension.")
     filename = f"{template.id}/{secrets.token_hex(8)}{extension}"
     content = await file.read()
-    if settings.SUPABASE_SERVICE_ROLE_KEY and settings.SUPABASE_URL and not settings.SUPABASE_URL.endswith("placeholder.supabase.co"):
+    if _storage_is_configured():
         response = httpx.post(f"{settings.SUPABASE_URL}/storage/v1/object/{settings.SUPABASE_STORAGE_BUCKET}/templates/{filename}", headers={"apikey": settings.SUPABASE_SERVICE_ROLE_KEY, "Authorization": f"Bearer {settings.SUPABASE_SERVICE_ROLE_KEY}", "Content-Type": file.content_type or "application/octet-stream", "x-upsert": "true"}, content=content, timeout=30)
         if not response.is_success:
             raise HTTPException(status_code=502, detail="Supabase Storage upload failed.")
         template.background_storage_path = f"templates/{filename}"
         template.background_url = None
     else:
+        if settings.ENVIRONMENT.lower() in {"production", "prod"}:
+            raise HTTPException(status_code=503, detail="Supabase Storage is not configured on the backend. Set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and SUPABASE_STORAGE_BUCKET.")
         directory = Path("uploads") / "certificates"
         directory.mkdir(parents=True, exist_ok=True)
         local_name = f"{template.id}-{secrets.token_hex(8)}{extension}"
