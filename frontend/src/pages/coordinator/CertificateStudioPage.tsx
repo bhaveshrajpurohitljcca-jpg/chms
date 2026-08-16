@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Award, FileUp, Loader2, Plus, Save, Send } from 'lucide-react';
+import { FileUp, Loader2, Plus, Save, Send } from 'lucide-react';
 import { apiService, type BackendHackathon, type CertificateTemplateRecord } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { CertificateCanvasDesigner, type CertificateCanvasField } from '@/components/coordinator/CertificateCanvasDesigner';
