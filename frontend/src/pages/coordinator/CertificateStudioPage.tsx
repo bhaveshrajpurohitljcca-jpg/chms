@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FileUp, Loader2, Plus, Save, Send } from 'lucide-react';
+import { FileUp, Loader2, Plus, Save, Send, Trash2 } from 'lucide-react';
 import { apiService, type BackendHackathon, type CertificateTemplateRecord } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { CertificateCanvasDesigner, type CertificateCanvasField } from '@/components/coordinator/CertificateCanvasDesigner';
@@ -82,6 +82,16 @@ export default function CertificateStudioPage() {
     setEditingId(template.id); setName(template.name); setType(template.certificate_type); setRecipient(template.recipient_type); setFields(template.field_layout as CertificateCanvasField[]); setBackgroundUrl(template.background_url || ''); setFile(null); setMessage(`Editing draft: ${template.name}`); window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const newTemplate = () => { setEditingId(null); setName('Participation Certificate'); setType('Participation Certificate'); setRecipient('participant'); setFields(standardFields); setFile(null); setBackgroundUrl(''); setMessage('New draft started.'); };
+  const removeTemplate = async (template: CertificateTemplateRecord) => {
+    if (!window.confirm(`Delete draft "${template.name}"?`)) return;
+    setError('');
+    try {
+      await apiService.deleteCertificateTemplate(template.id);
+      if (editingId === template.id) newTemplate();
+      setMessage('Draft deleted successfully.');
+      await loadTemplates(selectedHackathon);
+    } catch (err: any) { setError(err.message || 'Template could not be deleted.'); }
+  };
 
   const publish = async (template: CertificateTemplateRecord) => {
     setError('');
@@ -125,6 +135,6 @@ export default function CertificateStudioPage() {
       <div className="mb-4"><h2 className="font-archivo font-bold uppercase">Certificate Canvas</h2><p className="mt-1 text-xs text-text-secondary">Upload a background above, then drag text fields onto the exact position you want.</p></div>
       <CertificateCanvasDesigner backgroundFile={file} backgroundUrl={backgroundUrl} fields={fields} onChange={setFields} />
     </section>
-    <section><h2 className="mb-4 font-archivo font-bold uppercase">Saved Templates</h2>{loading ? <Loader2 className="animate-spin text-accent-primary" /> : <div className="grid gap-4 md:grid-cols-2">{templates.map((template) => <article key={template.id} className="rounded-xl border border-[var(--border-color)] bg-white/[.03] p-4"><button onClick={() => openTemplate(template)} className="text-left"><p className="font-bold">{template.name}</p><p className="mt-1 text-xs text-text-secondary">{template.certificate_type} · {template.recipient_type}</p></button><p className={`mt-3 text-xs font-bold uppercase ${template.is_published ? 'text-success' : 'text-yellow-400'}`}>{template.is_published ? 'Published' : 'Draft'}</p><div className="flex gap-2"><button onClick={() => openTemplate(template)} className="mt-4 rounded-lg border border-[var(--border-color)] px-3 py-2 text-xs font-bold">Edit draft</button><button disabled={!template.background_url && !template.background_storage_path} onClick={() => void publish(template)} className="mt-4 inline-flex items-center gap-2 rounded-lg border border-accent-primary/50 px-3 py-2 text-xs font-bold text-accent-primary disabled:opacity-40"><Send size={14} /> {template.is_published ? 'Unpublish' : 'Publish'}</button></div>{!template.background_url && !template.background_storage_path && <p className="mt-2 text-[11px] text-danger">Upload a background before publishing.</p>}</article>)}</div>}</section>
+    <section><h2 className="mb-4 font-archivo font-bold uppercase">Saved Templates</h2>{loading ? <Loader2 className="animate-spin text-accent-primary" /> : <div className="grid gap-4 md:grid-cols-2">{templates.map((template) => <article key={template.id} className="rounded-xl border border-[var(--border-color)] bg-white/[.03] p-4"><button onClick={() => openTemplate(template)} className="text-left"><p className="font-bold">{template.name}</p><p className="mt-1 text-xs text-text-secondary">{template.certificate_type} · {template.recipient_type}</p></button><p className={`mt-3 text-xs font-bold uppercase ${template.is_published ? 'text-success' : 'text-yellow-400'}`}>{template.is_published ? 'Published' : 'Draft'}</p><div className="flex flex-wrap gap-2"><button onClick={() => openTemplate(template)} className="mt-4 rounded-lg border border-[var(--border-color)] px-3 py-2 text-xs font-bold">Edit draft</button><button disabled={!template.background_url && !template.background_storage_path} onClick={() => void publish(template)} className="mt-4 inline-flex items-center gap-2 rounded-lg border border-accent-primary/50 px-3 py-2 text-xs font-bold text-accent-primary disabled:opacity-40"><Send size={14} /> {template.is_published ? 'Unpublish' : 'Publish'}</button>{!template.is_published && <button onClick={() => void removeTemplate(template)} className="mt-4 inline-flex items-center gap-1 rounded-lg border border-danger/50 px-3 py-2 text-xs font-bold text-danger"><Trash2 size={14} /> Delete</button>}</div>{!template.background_url && !template.background_storage_path && <p className="mt-2 text-[11px] text-danger">Upload a background before publishing.</p>}</article>)}</div>}</section>
   </div>;
 }

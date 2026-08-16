@@ -1061,8 +1061,12 @@ export const apiService = {
   },
 
     async updateCertificateTemplate(templateId: string, payload: Partial<Pick<CertificateTemplateRecord, 'name' | 'certificate_type' | 'recipient_type' | 'field_layout' | 'is_published'>>) {
-    return request<CertificateTemplateRecord>(`/certificates/templates/${templateId}`, { method: 'PUT', body: JSON.stringify(payload) });
-  },
+      return request<CertificateTemplateRecord>(`/certificates/templates/${templateId}`, { method: 'PUT', body: JSON.stringify(payload) });
+    },
+
+    async deleteCertificateTemplate(templateId: string) {
+      return request<{ id: string }>(`/certificates/templates/${templateId}`, { method: 'DELETE' });
+    },
 
   async uploadCertificateBackground(templateId: string, file: File) {
     const form = new FormData();

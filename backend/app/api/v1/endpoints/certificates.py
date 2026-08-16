@@ -225,6 +225,23 @@ def update_template(
     db.refresh(template)
     return StandardResponse(message="Certificate template updated.", data=_template_response(template))
 
+@router.delete("/templates/{template_id}", response_model=StandardResponse[dict])
+def delete_template(
+    template_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(RoleChecker([UserRole.COORDINATOR, UserRole.ADMIN])),
+):
+    template = db.query(CertificateTemplate).filter(CertificateTemplate.id == template_id).first()
+    if not template:
+        raise HTTPException(status_code=404, detail="Certificate template not found.")
+    _ensure_template_scope(db, current_user, template.hackathon_id)
+    issued_count = db.query(Certificate).filter(Certificate.template_id == template.id).count()
+    if template.is_published or issued_count:
+        raise HTTPException(status_code=409, detail="Published or issued templates cannot be deleted. Unpublish/archive it instead.")
+    db.delete(template)
+    db.commit()
+    return StandardResponse(message="Certificate draft deleted.", data={"id": template_id})
+
 
 @router.post("/templates/{template_id}/background", response_model=StandardResponse[CertificateTemplateResponse])
 async def upload_template_background(
