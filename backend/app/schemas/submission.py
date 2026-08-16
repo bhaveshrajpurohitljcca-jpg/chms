@@ -1,6 +1,6 @@
 from typing import Optional, List, Any
 from datetime import datetime
-from pydantic import BaseModel, field_validator, model_validator, model_serializer
+from pydantic import BaseModel, field_validator, model_validator
 import re
 import logging
 
@@ -105,16 +105,15 @@ class JudgeAssignmentResponse(BaseModel):
         from_attributes = True
 
 
-
 # ─────────────────────────────────────────────────────────────────
 # Evaluation Schemas
 # ─────────────────────────────────────────────────────────────────
 
-VALID_SCORES = range(0, 11)  # 0–10 inclusive
+VALID_SCORES = range(0, 11)  # 0-10 inclusive
 
 
 class EvaluationScores(BaseModel):
-    """Shared score fields — used by both draft and final submit."""
+    """Shared score fields - used by both draft and final submit."""
     score_innovation: float = 0.0
     score_technical: float = 0.0
     score_uiux: float = 0.0
@@ -173,7 +172,7 @@ class EvaluationFinalSubmit(EvaluationScores):
         return v
 
 
-# ─── Legacy support (old 3-field evaluations endpoint) ──────────
+# --- Legacy support (old 3-field evaluations endpoint) ----------
 class EvaluationCreate(BaseModel):
     submission_id: str
     score_innovation: float
@@ -237,47 +236,70 @@ class SubmissionResponse(BaseModel):
     @classmethod
     def from_orm_safe(cls, obj: Any) -> 'SubmissionResponse':
         """
-        Safe alternative to from_orm / model_validate that catches DB errors
-        (e.g. missing columns like round_number) on lazy-loaded relationships.
-        Returns evaluations=[] and judge_assignments=[] on any DB error so the
-        endpoint never crashes with a 500 due to a missing migration column.
+        Safe ORM serializer that catches DB errors on lazy-loaded relationships.
+        After each failed lazy-load, rolls back the SQLAlchemy session so that
+        subsequent queries don't fail with InFailedSqlTransaction.
         """
+        from sqlalchemy.orm import object_session
+
+        def _rollback(o: Any) -> None:
+            """Rollback the SQLAlchemy session attached to this ORM object."""
+            try:
+                session = object_session(o)
+                if session is not None:
+                    session.rollback()
+            except Exception:
+                pass
+
+        # ── evaluations (may fail if round_number column is missing) ──
+        evaluations_data: List[Any] = []
         try:
             evaluations_data = list(obj.evaluations)
         except Exception as e:
             logger.warning("Could not load evaluations for submission %s: %s", obj.id, e)
-            evaluations_data = []
+            _rollback(obj)
 
+        # ── judge_assignments ─────────────────────────────────────────
+        assignments_data: List[Any] = []
         try:
             assignments_data = list(obj.judge_assignments)
         except Exception as e:
             logger.warning("Could not load judge_assignments for submission %s: %s", obj.id, e)
-            assignments_data = []
-            # Roll back the aborted transaction so the session stays usable
-            try:
-                obj.__class__.metadata.bind and None  # no-op
-            except Exception:
-                pass
+            _rollback(obj)
 
+        # ── Serialize evaluations ─────────────────────────────────────
         safe_evals: List[EvaluationResponse] = []
         for ev in evaluations_data:
             try:
                 safe_evals.append(EvaluationResponse.model_validate(ev, from_attributes=True))
             except Exception as e:
                 logger.warning("Skipping malformed evaluation %s: %s", getattr(ev, 'id', '?'), e)
+                _rollback(obj)
 
+        # ── Serialize judge_assignments ───────────────────────────────
         safe_assignments: List[JudgeAssignmentResponse] = []
         for ja in assignments_data:
             try:
                 safe_assignments.append(JudgeAssignmentResponse.model_validate(ja, from_attributes=True))
             except Exception as e:
                 logger.warning("Skipping malformed assignment %s: %s", getattr(ja, 'id', '?'), e)
+                _rollback(obj)
 
+        # ── is_finalist (column may be missing pre-migration) ─────────
         is_finalist = False
         try:
             is_finalist = bool(obj.is_finalist)
         except Exception:
-            pass
+            _rollback(obj)
+
+        # ── evaluation_round (property accesses self.hackathon lazily) ─
+        # If the hackathon lazy-load fails due to aborted transaction,
+        # rollback and default to 1.
+        evaluation_round = 1
+        try:
+            evaluation_round = int(obj.evaluation_round)
+        except Exception:
+            _rollback(obj)
 
         return cls(
             id=obj.id,
@@ -295,7 +317,7 @@ class SubmissionResponse(BaseModel):
             tech_stack=getattr(obj, 'tech_stack', None),
             status=obj.status,
             is_finalist=is_finalist,
-            evaluation_round=getattr(obj, 'evaluation_round', 1),
+            evaluation_round=evaluation_round,
             submitted_at=obj.submitted_at,
             evaluations=safe_evals,
             judge_assignments=safe_assignments,
