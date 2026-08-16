@@ -3,6 +3,7 @@ import os
 import secrets
 import shutil
 import httpx
+from urllib.parse import urljoin
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -78,7 +79,8 @@ def _template_response(template: CertificateTemplate) -> CertificateTemplateResp
         try:
             response = httpx.post(f"{settings.SUPABASE_URL}/storage/v1/object/sign/{settings.SUPABASE_STORAGE_BUCKET}/{template.background_storage_path}", headers={"apikey": settings.SUPABASE_SERVICE_ROLE_KEY, "Authorization": f"Bearer {settings.SUPABASE_SERVICE_ROLE_KEY}", "Content-Type": "application/json"}, json={"expiresIn": 3600}, timeout=10)
             if response.is_success:
-                background_url = f"{settings.SUPABASE_URL}/storage/v1{response.json().get('signedURL', '')}"
+                signed_url = response.json().get("signedURL", "")
+                background_url = signed_url if signed_url.startswith("http") else urljoin(f"{settings.SUPABASE_URL}/storage/v1/", signed_url.lstrip("/"))
         except Exception:
             pass
     return CertificateTemplateResponse(

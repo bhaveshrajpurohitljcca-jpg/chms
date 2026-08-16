@@ -12,11 +12,16 @@ const valueFor = (key: string, certificate: CertificateRecord) => ({
   award_label: certificate.award_label || '',
 }[key] || '');
 
+const assetUrl = (url?: string) => {
+  if (!url) return '';
+  return /^https?:\/\//i.test(url) ? url : `${STATIC_BASE}${url}`;
+};
+
 function CertificatePreview({ certificate }: { certificate: CertificateRecord }) {
   const { template } = certificate;
   return (
     <div className="relative aspect-[1.414/1] overflow-hidden rounded-xl border border-accent-primary/30 bg-[#f7f0dc] text-[#302312] shadow-xl">
-      {template.background_url && <img src={`${STATIC_BASE}${template.background_url}`} alt="Certificate template" className="absolute inset-0 h-full w-full object-cover" />}
+      {template.background_url && <img src={assetUrl(template.background_url)} alt="Certificate template" className="absolute inset-0 h-full w-full object-cover" />}
       {!template.background_url && <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#fff7df,#d4a85c)]" />}
       <div className="absolute inset-3 border-2 border-[#8a6429]/70" />
       {template.field_layout.length ? template.field_layout.map((field, index) => (
