@@ -46,9 +46,10 @@ def resolve_announcement_recipients(
             db.query(User).filter(User.is_active == True).all()  # noqa: E712
         )
 
-    if target.startswith("user:"):
-        user_id = target.split(":", 1)[1].strip()
-        user = db.query(User).filter(User.id == user_id, User.is_active == True).first()  # noqa: E712
+    if target.startswith("user:") or target.startswith("user_email:"):
+        lookup = target.split(":", 1)[1].strip()
+        user_query = db.query(User).filter(User.is_active == True)  # noqa: E712
+        user = user_query.filter(User.id == lookup).first() if target.startswith("user:") else user_query.filter(User.email == lookup.lower()).first()
         if not user:
             raise HTTPException(status_code=404, detail="Target user not found.")
         return [user]
@@ -80,7 +81,8 @@ def resolve_announcement_recipients(
             db.query(User).filter(User.id.in_(user_ids), User.is_active == True).all()  # noqa: E712
         )
 
-    team = db.query(Team).filter(Team.id == target, Team.hackathon_id == hackathon_id).first()
+    team_id = target.split(":", 1)[1] if target.startswith("team:") else target
+    team = db.query(Team).filter(Team.id == team_id, Team.hackathon_id == hackathon_id).first()
     if not team:
         raise HTTPException(status_code=404, detail="Team not found in this hackathon.")
 
@@ -103,8 +105,16 @@ def assert_can_send_announcement(
     if current_user.role not in [UserRole.ADMIN, UserRole.COORDINATOR]:
         raise HTTPException(status_code=403, detail="Only coordinators and admins can send announcements.")
 
-    if target == "all_platform_users" or not hackathon_id:
+    if target == "all_platform_users":
         return
+
+    if (target.startswith("user:") or target.startswith("user_email:")) and not hackathon_id:
+        if current_user.role != UserRole.ADMIN:
+            raise HTTPException(status_code=403, detail="A coordinator must target a user within an assigned hackathon.")
+        return
+
+    if not hackathon_id:
+        raise HTTPException(status_code=400, detail="hackathon_id is required for this target type.")
 
     if current_user.role == UserRole.COORDINATOR:
         assigned = db.query(CoordinatorAssignment).filter(

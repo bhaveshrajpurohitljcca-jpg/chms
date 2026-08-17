@@ -106,7 +106,10 @@ def list_coordinator_assignments(
     admin_user: User = Depends(RoleChecker([UserRole.ADMIN, UserRole.COORDINATOR]))
 ):
     """List all coordinator assignments in the system."""
-    assigns = db.query(CoordinatorAssignment).all()
+    query = db.query(CoordinatorAssignment)
+    if admin_user.role == UserRole.COORDINATOR:
+        query = query.filter(CoordinatorAssignment.coordinator_id == admin_user.id)
+    assigns = query.all()
     results = []
     for a in assigns:
         coord = db.query(User).filter(User.id == a.coordinator_id).first()

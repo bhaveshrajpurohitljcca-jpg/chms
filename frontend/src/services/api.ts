@@ -136,6 +136,7 @@ export interface BackendAnnouncement {
   created_by_id?: string;
   created_at: string;
   updated_at?: string;
+  target?: string;
 }
 
 export interface CertificateTemplateRecord {
@@ -986,6 +987,7 @@ export const apiService = {
     announcement_type?: string;
     is_published?: boolean;
     hackathon_id?: string;
+    target?: string;
   }) {
     return request<BackendAnnouncement>('/announcements', {
       method: 'POST',
@@ -1001,6 +1003,7 @@ export const apiService = {
       announcement_type?: string;
       is_published?: boolean;
       hackathon_id?: string;
+      target?: string;
     }
   ) {
     return request<BackendAnnouncement>(`/announcements/${id}`, {
