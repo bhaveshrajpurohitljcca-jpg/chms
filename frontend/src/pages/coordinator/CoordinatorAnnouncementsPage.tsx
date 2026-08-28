@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Megaphone, Plus, Edit2, Trash2, AlertCircle, CheckCircle, X
 } from 'lucide-react';
-import { apiService, type BackendAnnouncement, type BackendHackathon } from '@/services/api';
+import { apiService, type BackendAnnouncement, type BackendHackathon, type BackendTeam } from '@/services/api';
 
 type AnnouncementType = 'info' | 'warning' | 'success' | 'urgent';
 
@@ -42,11 +42,12 @@ function ConfirmDialog({ title, message, onConfirm, onCancel }: {
   );
 }
 
-const EMPTY_FORM = { title: '', content: '', announcement_type: 'info' as AnnouncementType, is_published: true, hackathon_id: '' };
+const EMPTY_FORM = { title: '', content: '', announcement_type: 'info' as AnnouncementType, is_published: true, hackathon_id: '', target_kind: 'public' as 'public' | 'hackathon' | 'team' | 'user', target_id: '' };
 
 export function CoordinatorAnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<BackendAnnouncement[]>([]);
   const [hackathons, setHackathons] = useState<BackendHackathon[]>([]);
+  const [teams, setTeams] = useState<BackendTeam[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -74,6 +75,11 @@ export function CoordinatorAnnouncementsPage() {
     }
   }, []);
 
+  const loadTeams = async (hackathonId: string) => {
+    if (!hackathonId) { setTeams([]); return; }
+    try { const result = await apiService.listTeams(hackathonId); setTeams(result.data || []); } catch { setTeams([]); }
+  };
+
   useEffect(() => { loadData(); }, [loadData]);
 
   const openCreate = () => {
@@ -91,6 +97,8 @@ export function CoordinatorAnnouncementsPage() {
       announcement_type: a.announcement_type,
       is_published: a.is_published,
       hackathon_id: a.hackathon_id || '',
+      target_kind: a.target?.startsWith('team:') ? 'team' : a.target?.startsWith('user:') ? 'user' : a.target === 'all_users' ? 'hackathon' : 'public',
+      target_id: a.target?.split(':')[1] || '',
     });
     setFormError('');
     setShowForm(true);
@@ -100,6 +108,8 @@ export function CoordinatorAnnouncementsPage() {
     e.preventDefault();
     if (!form.title.trim()) { setFormError('Title is required.'); return; }
     if (!form.content.trim()) { setFormError('Content is required.'); return; }
+    if ((form.target_kind === 'team' || form.target_kind === 'user') && !form.hackathon_id) { setFormError('Select a hackathon before targeting a team or person.'); return; }
+    if ((form.target_kind === 'team' || form.target_kind === 'user') && !form.target_id.trim()) { setFormError('Choose a team or enter a person email.'); return; }
     setFormLoading(true);
     setFormError('');
     try {
@@ -109,6 +119,7 @@ export function CoordinatorAnnouncementsPage() {
         announcement_type: form.announcement_type,
         is_published: form.is_published,
         hackathon_id: form.hackathon_id || undefined,
+        target: form.target_kind === 'public' ? (form.hackathon_id ? 'all_users' : 'all_platform_users') : form.target_kind === 'hackathon' ? 'all_users' : form.target_kind === 'user' ? `user_email:${form.target_id}` : `team:${form.target_id}`,
       };
       if (editingId) {
         await apiService.updateAnnouncement(editingId, payload);
@@ -248,6 +259,10 @@ export function CoordinatorAnnouncementsPage() {
                     {hackathons.map(h => <option key={h.id} value={h.id}>{h.title}</option>)}
                   </select>
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className={labelCls}>Audience</label><select value={form.target_kind} onChange={e => setForm(p => ({ ...p, target_kind: e.target.value as typeof p.target_kind, target_id: '' }))} className={`${inputCls} cursor-pointer`}><option value="public">Public / all platform users</option><option value="hackathon">All members of selected hackathon</option><option value="team">Specific team</option><option value="user">Specific user</option></select></div>
+                <div>{form.target_kind === 'team' ? <><label className={labelCls}>Team</label><select value={form.target_id} onChange={e => setForm(p => ({ ...p, target_id: e.target.value }))} onFocus={() => void loadTeams(form.hackathon_id)} className={`${inputCls} cursor-pointer`} required><option value="">Select team</option>{teams.map(team => <option key={team.id} value={team.id}>{team.name}</option>)}</select></> : form.target_kind === 'user' ? <><label className={labelCls}>Person email</label><input type="email" value={form.target_id} onChange={e => setForm(p => ({ ...p, target_id: e.target.value }))} placeholder="student@example.com" className={inputCls} required /></> : <p className="pt-7 text-xs text-white/40">{form.target_kind === 'hackathon' ? 'All registered team members receive this announcement.' : 'Email will be sent to the selected public audience.'}</p>}</div>
               </div>
               <div className="flex items-center gap-2 pt-1">
                 <input type="checkbox" id="is_pub" checked={form.is_published} onChange={e => setForm(p => ({ ...p, is_published: e.target.checked }))} className="rounded border-white/20 bg-white/5" />

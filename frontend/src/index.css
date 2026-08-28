@@ -2,6 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+@media print {
+  @page { size: landscape; margin: 0; }
+  body * { visibility: hidden !important; }
+  .certificate-print-target,
+  .certificate-print-target * { visibility: visible !important; }
+  .certificate-print-target {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+  .certificate-print-target > div {
+    width: 100vw !important;
+    height: 100vh !important;
+    aspect-ratio: auto !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+}
+
 /* ==========================================================================
    DESIGN TOKENS — Tech-Noir Dark (Default) vs. Claymorphism Light Mode
    ========================================================================== */

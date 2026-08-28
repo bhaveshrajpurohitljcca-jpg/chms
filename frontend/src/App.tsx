@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { 
   BrowserRouter as Router, 
   Routes, 
@@ -63,20 +63,26 @@ import { HackathonDetailPage } from '@/pages/student/HackathonDetailPage';
 import { TeamManagementPage } from '@/pages/student/TeamManagementPage';
 import { CreateTeamPage } from '@/pages/student/CreateTeamPage';
 import { RegistrationPage } from '@/pages/student/RegistrationPage';
-import StudentSubmissionPage from '@/pages/student/StudentSubmissionPage';
-import JudgeDashboardPage from '@/pages/judge/JudgeDashboardPage';
-import JudgeAssignmentPage from '@/pages/admin/JudgeAssignmentPage';
-import { CoordinatorDashboardPage } from '@/pages/coordinator/CoordinatorDashboardPage';
-import { CoordinatorHackathonsPage } from '@/pages/coordinator/CoordinatorHackathonsPage';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { StudentProfileModal } from '@/components/student/StudentProfileModal';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { useTheme } from '@/context/ThemeContext';
+import { istInputToISOString, toISTDateTimeInput } from '@/utils/formatDate';
 
 // Auth Imports
 import RoleLayout from './layouts/RoleLayout';
 import Badge from '@/components/ui/badge';
+
+const StudentSubmissionPage = lazy(() => import('@/pages/student/StudentSubmissionPage'));
+const JudgeDashboardPage = lazy(() => import('@/pages/judge/JudgeDashboardPage'));
+const JudgeAssignmentPage = lazy(() => import('@/pages/admin/JudgeAssignmentPage'));
+const CoordinatorDashboardPage = lazy(() => import('@/pages/coordinator/CoordinatorDashboardPage').then((module) => ({ default: module.CoordinatorDashboardPage })));
+const CoordinatorHackathonsPage = lazy(() => import('@/pages/coordinator/CoordinatorHackathonsPage').then((module) => ({ default: module.CoordinatorHackathonsPage })));
+const CoordinatorProblemStatementsPage = lazy(() => import('@/pages/coordinator/CoordinatorProblemStatementsPage').then((module) => ({ default: module.CoordinatorProblemStatementsPage })));
+const CertificateVaultPage = lazy(() => import('@/pages/student/CertificateVaultPage'));
+  const CertificateStudioPage = lazy(() => import('@/pages/coordinator/CertificateStudioPage'));
+  const CoordinatorCertificateVaultPage = lazy(() => import('@/pages/coordinator/CertificateVaultPage'));
 
 // ==========================================
 // A. GLOBAL LAYOUT (Header + WebGL Particles + Menu Drawer)
@@ -489,7 +495,7 @@ const PublicLanding = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 bg-black pt-16 pb-10 px-8 w-full">
+      <footer className="border-t border-[#6b4a32]/35 bg-[#17110c] pt-16 pb-10 px-8 w-full">
         <div className="max-w-7xl mx-auto w-full flex flex-col gap-12">
           
           {/* Centered WhatsApp Invite Block */}
@@ -1332,74 +1338,7 @@ const SubmissionsView = () => {
   );
 };
 
-// 7. CERTIFICATES VAULT
-const CertificatesView = () => {
-  const [registrations, setRegistrations] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadCerts() {
-      try {
-        setIsLoading(true);
-        const res = await apiService.getMyRegistrations();
-        if (res.data) {
-          setRegistrations(res.data);
-        }
-      } catch {
-        setRegistrations([]);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    loadCerts();
-  }, []);
-
-  return (
-    <div className="flex flex-col gap-6 md:gap-10 w-full max-w-6xl px-4 md:pl-12 md:pr-4">
-      <div>
-        <h2 className="font-archivo text-3xl uppercase tracking-wider font-black text-white">
-          Certificates Vault
-        </h2>
-        <p className="text-xs text-text-secondary mt-1 font-light">Download verified, signed participation and finalist awards certificates.</p>
-      </div>
-
-      {isLoading ? (
-        <div className="py-12 flex justify-center">
-          <Loader2 className="animate-spin text-accent-primary" size={32} />
-        </div>
-      ) : registrations.length === 0 ? (
-        <div className="glass-card rounded-2xl p-12 text-center flex flex-col items-center gap-3 border border-white/10">
-          <Award size={40} className="text-white/30" />
-          <h3 className="font-archivo text-lg font-bold uppercase tracking-wider text-white">No Verified Certificates Yet</h3>
-          <p className="text-xs text-white/50 max-w-md">Certificates are automatically issued upon completion and grading of hackathon events.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {registrations.map((reg) => (
-            <Card key={reg.id} hoverable className="bg-white/[0.02]">
-              <div className="flex flex-col justify-between h-full gap-4">
-                <div className="flex gap-4">
-                  <div className="p-3 rounded-lg bg-accent-primary/10 border border-accent-primary/20 text-accent-primary">
-                    <Award size={24} />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-white">{reg.hackathon?.title || 'Hackathon Event'} Participation</h4>
-                    <p className="text-[10px] text-white/40 mt-1">Status: Verified Official Ledger</p>
-                  </div>
-                </div>
-                <Button variant="primary" className="h-9 px-4 text-xs mt-2 self-start" onClick={() => alert(`Downloading PDF for ${reg.hackathon?.title || 'Certificate'}...`)}>
-                  Download PDF
-                </Button>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// 8. ANNOUNCEMENTS
+// 7. ANNOUNCEMENTS
 const AnnouncementsView = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -3480,14 +3419,21 @@ const AdminView = () => {
     description: '', 
     startDate: '', 
     endDate: '', 
-    maxTeamSize: 4,
-    announcePsAdvance: true
+    registrationDeadline: '',
+    maxTeamSize: 3,
+    announcePsAdvance: true,
+    problemStatementPublishAt: '',
+    problemSelectionDeadline: '',
+    submissionDeadline: '',
+    evaluationMode: 'single_round' as 'single_round' | 'two_round',
+    finalistsPerProblem: 3
   });
   
   const [newPS, setNewPS] = useState({ 
     title: '', 
     description: '', 
-    category: 'Open Innovation', 
+    technicalDeliverable: '',
+    points: 100,
     difficulty: 'Medium', 
     maxTeams: 10 
   });
@@ -3518,7 +3464,7 @@ const AdminView = () => {
     start_date: '',
     end_date: '',
     registration_deadline: '',
-    max_team_size: 4,
+    max_team_size: 3,
     min_team_size: 1,
     announce_ps_advance: true
   });
@@ -3571,7 +3517,8 @@ const AdminView = () => {
   const [editPSData, setEditPSData] = useState<any>({
     title: '',
     description: '',
-    category: 'Open Innovation',
+    technical_deliverable: '',
+    points: 100,
     difficulty: 'Medium',
     maxTeams: 10
   });
@@ -3814,13 +3761,19 @@ const AdminView = () => {
         slug: newEvent.slug || newEvent.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
         tagline: newEvent.tagline,
         description: newEvent.description,
-        start_date: newEvent.startDate ? new Date(newEvent.startDate).toISOString() : undefined,
-        end_date: newEvent.endDate ? new Date(newEvent.endDate).toISOString() : undefined,
+        start_date: istInputToISOString(newEvent.startDate),
+        end_date: istInputToISOString(newEvent.endDate),
+        registration_deadline: istInputToISOString(newEvent.registrationDeadline),
         max_team_size: newEvent.maxTeamSize,
-        announce_ps_advance: newEvent.announcePsAdvance
+        announce_ps_advance: newEvent.announcePsAdvance,
+        problem_statement_publish_at: istInputToISOString(newEvent.problemStatementPublishAt),
+        problem_selection_deadline: istInputToISOString(newEvent.problemSelectionDeadline),
+        submission_deadline: istInputToISOString(newEvent.submissionDeadline),
+        evaluation_mode: newEvent.evaluationMode,
+        finalists_per_problem: newEvent.evaluationMode === 'two_round' ? newEvent.finalistsPerProblem : undefined
       });
       showToast(`Hackathon "${newEvent.title}" successfully created!`);
-      setNewEvent({ title: '', slug: '', tagline: '', description: '', startDate: '', endDate: '', maxTeamSize: 4, announcePsAdvance: true });
+      setNewEvent({ title: '', slug: '', tagline: '', description: '', startDate: '', endDate: '', registrationDeadline: '', maxTeamSize: 3, announcePsAdvance: true, problemStatementPublishAt: '', problemSelectionDeadline: '', submissionDeadline: '', evaluationMode: 'single_round', finalistsPerProblem: 3 });
       setShowEventModal(false);
       fetchHackathons();
     } catch (err: any) {
@@ -3839,12 +3792,13 @@ const AdminView = () => {
       await apiService.addProblemStatement(selectedHackathon.id, {
         title: newPS.title,
         description: newPS.description,
-        category: newPS.category,
+        technical_deliverable: newPS.technicalDeliverable || undefined,
+        points: newPS.points,
         difficulty: newPS.difficulty,
         max_teams: newPS.maxTeams
       });
       showToast("Problem statement added successfully!");
-      setNewPS({ title: '', description: '', category: 'Open Innovation', difficulty: 'Medium', maxTeams: 10 });
+      setNewPS({ title: '', description: '', technicalDeliverable: '', points: 100, difficulty: 'Medium', maxTeams: 10 });
       setShowPSModal(false);
       loadSelectedHackathonDetails(selectedHackathon.id);
     } catch (err: any) {
@@ -3887,9 +3841,12 @@ const AdminView = () => {
       slug: selectedHackathon.slug,
       tagline: selectedHackathon.tagline || '',
       description: selectedHackathon.description || '',
-      start_date: selectedHackathon.start_date ? selectedHackathon.start_date.substring(0, 10) : '',
-      end_date: selectedHackathon.end_date ? selectedHackathon.end_date.substring(0, 10) : '',
-      registration_deadline: selectedHackathon.registration_deadline ? selectedHackathon.registration_deadline.substring(0, 10) : '',
+      start_date: toISTDateTimeInput(selectedHackathon.start_date),
+      end_date: toISTDateTimeInput(selectedHackathon.end_date),
+      registration_deadline: toISTDateTimeInput(selectedHackathon.registration_deadline),
+      problem_statement_publish_at: toISTDateTimeInput(selectedHackathon.problem_statement_publish_at),
+      problem_selection_deadline: toISTDateTimeInput(selectedHackathon.problem_selection_deadline),
+      submission_deadline: toISTDateTimeInput(selectedHackathon.submission_deadline),
       max_team_size: selectedHackathon.max_team_size,
       min_team_size: selectedHackathon.min_team_size,
       status: selectedHackathon.status,
@@ -3908,9 +3865,12 @@ const AdminView = () => {
         slug: editHackathonData.slug,
         tagline: editHackathonData.tagline,
         description: editHackathonData.description,
-        start_date: editHackathonData.start_date ? new Date(editHackathonData.start_date).toISOString() : undefined,
-        end_date: editHackathonData.end_date ? new Date(editHackathonData.end_date).toISOString() : undefined,
-        registration_deadline: editHackathonData.registration_deadline ? new Date(editHackathonData.registration_deadline).toISOString() : undefined,
+        start_date: istInputToISOString(editHackathonData.start_date),
+        end_date: istInputToISOString(editHackathonData.end_date),
+        registration_deadline: istInputToISOString(editHackathonData.registration_deadline),
+        problem_statement_publish_at: istInputToISOString(editHackathonData.problem_statement_publish_at),
+        problem_selection_deadline: istInputToISOString(editHackathonData.problem_selection_deadline),
+        submission_deadline: istInputToISOString(editHackathonData.submission_deadline),
         max_team_size: editHackathonData.max_team_size,
         min_team_size: editHackathonData.min_team_size,
         status: editHackathonData.status,
@@ -3932,7 +3892,7 @@ const AdminView = () => {
       title: ps.title,
       description: ps.description,
       technical_deliverable: ps.technical_deliverable || '',
-      category: ps.category || 'Open Innovation',
+      points: ps.points || 100,
       difficulty: ps.difficulty || 'Medium',
       maxTeams: ps.max_teams || 10
     });
@@ -3947,7 +3907,7 @@ const AdminView = () => {
         title: editPSData.title,
         description: editPSData.description,
         technical_deliverable: editPSData.technical_deliverable || undefined,
-        category: editPSData.category,
+        points: editPSData.points,
         difficulty: editPSData.difficulty,
         max_teams: editPSData.maxTeams
       });
@@ -5209,36 +5169,29 @@ const AdminView = () => {
                     <p className="text-[10px] text-white/40 mt-0.5">Assign and manage hackathons this judge can evaluate</p>
                   </div>
 
-                  {/* Dropdown for assigning new hackathons */}
-                  {judgeAssignments.filter(a => a.judgeId === selectedJudgeDetail.id && !a.submissionId).length === 0 ? (
-                    <div className="flex flex-col gap-3">
-                      <label className="font-bold text-white/70 text-xs">Assign Hackathon Scope</label>
-                      <form onSubmit={handleAssignHackathonToJudge} className="flex flex-col gap-2.5">
-                        <select
-                          value={judgeAllocHackathonId}
-                          onChange={(e) => setJudgeAllocHackathonId(e.target.value)}
-                          className="p-2.5 rounded-xl bg-black border border-white/10 text-white focus:outline-none text-[11px]"
-                          required
-                        >
-                          <option value="">-- Choose Hackathon to Assign --</option>
-                          {hackathonsList
-                            .filter(h => !judgeAssignments.some(a => a.judgeId === selectedJudgeDetail.id && a.hackathonId === h.id))
-                            .map(h => (
-                              <option key={h.id} value={h.id}>{h.title}</option>
-                            ))
-                          }
-                        </select>
-                        <Button type="submit" variant="secondary" className="text-[10px] w-full py-2 font-bold uppercase tracking-wider">
-                          Assign Hackathon
-                        </Button>
-                      </form>
-                    </div>
-                  ) : (
-                    <div className="p-4 rounded-xl bg-accent-secondary/5 border border-accent-secondary/20 text-xs text-white/70">
-                      <p className="font-bold text-white text-glow-magenta">Evaluation Scope Locked</p>
-                      <p className="mt-1 text-[10px] text-white/40">This judge is already assigned to a hackathon scope. Revoke the active scope if you need to reassign them.</p>
-                    </div>
-                  )}
+                  {/* A judge can hold scopes for multiple hackathons. */}
+                  <div className="flex flex-col gap-3">
+                    <label className="font-bold text-white/70 text-xs">Assign Hackathon Scope</label>
+                    <form onSubmit={handleAssignHackathonToJudge} className="flex flex-col gap-2.5">
+                      <select
+                        value={judgeAllocHackathonId}
+                        onChange={(e) => setJudgeAllocHackathonId(e.target.value)}
+                        className="p-2.5 rounded-xl bg-black border border-white/10 text-white focus:outline-none text-[11px]"
+                        required
+                      >
+                        <option value="">-- Choose Hackathon to Assign --</option>
+                        {hackathonsList
+                          .filter(h => !judgeAssignments.some(a => a.judgeId === selectedJudgeDetail.id && a.hackathonId === h.id && !a.submissionId))
+                          .map(h => (
+                            <option key={h.id} value={h.id}>{h.title}</option>
+                          ))
+                        }
+                      </select>
+                      <Button type="submit" variant="secondary" className="text-[10px] w-full py-2 font-bold uppercase tracking-wider">
+                        Assign Hackathon
+                      </Button>
+                    </form>
+                  </div>
 
                   {/* List of currently assigned hackathons */}
                   <div className="flex flex-col gap-2 mt-2">
@@ -5659,22 +5612,29 @@ const AdminView = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <Input 
-                label="Launch Date" 
-                type="date"
+                label="Launch Date (IST)"
+                type="datetime-local"
                 required 
                 min={new Date().toISOString().split('T')[0]}
                 value={newEvent.startDate} 
                 onChange={(e) => setNewEvent(prev => ({ ...prev, startDate: e.target.value }))} 
               />
               <Input 
-                label="Deadline Date" 
-                type="date"
+                label="Event End (IST)"
+                type="datetime-local"
                 required 
                 min={newEvent.startDate || new Date().toISOString().split('T')[0]}
                 value={newEvent.endDate} 
                 onChange={(e) => setNewEvent(prev => ({ ...prev, endDate: e.target.value }))} 
               />
             </div>
+
+            <Input
+              label="Registration Closes (IST)"
+              type="datetime-local"
+              value={newEvent.registrationDeadline}
+              onChange={(e) => setNewEvent(prev => ({ ...prev, registrationDeadline: e.target.value }))}
+            />
 
             <Input 
               label="Maximum Team Size" 
@@ -5684,6 +5644,68 @@ const AdminView = () => {
               value={newEvent.maxTeamSize} 
               onChange={(e) => setNewEvent(prev => ({ ...prev, maxTeamSize: parseInt(e.target.value) }))} 
             />
+
+            <div className="flex flex-col gap-2 rounded-xl border border-white/10 bg-white/[0.02] p-3">
+              <div>
+                <p className="text-xs font-bold text-white/80">Evaluation Format</p>
+                <p className="mt-0.5 text-[10px] text-white/40">Choose the winner selection flow for this hackathon.</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label className={`cursor-pointer rounded-lg border p-3 transition-colors ${newEvent.evaluationMode === 'single_round' ? 'border-accent-primary bg-accent-primary/10' : 'border-white/10 bg-black/20'}`}>
+                  <input
+                    type="radio"
+                    name="evaluationMode"
+                    value="single_round"
+                    checked={newEvent.evaluationMode === 'single_round'}
+                    onChange={() => setNewEvent(prev => ({ ...prev, evaluationMode: 'single_round' }))}
+                    className="sr-only"
+                  />
+                  <span className="block text-xs font-bold text-white">Single Round</span>
+                  <span className="mt-1 block text-[10px] text-white/45">Highest scoring team wins each problem statement.</span>
+                </label>
+                <label className={`cursor-pointer rounded-lg border p-3 transition-colors ${newEvent.evaluationMode === 'two_round' ? 'border-accent-secondary bg-accent-secondary/10' : 'border-white/10 bg-black/20'}`}>
+                  <input
+                    type="radio"
+                    name="evaluationMode"
+                    value="two_round"
+                    checked={newEvent.evaluationMode === 'two_round'}
+                    onChange={() => setNewEvent(prev => ({ ...prev, evaluationMode: 'two_round' }))}
+                    className="sr-only"
+                  />
+                  <span className="block text-xs font-bold text-white">Two Rounds</span>
+                  <span className="mt-1 block text-[10px] text-white/45">Shortlist finalists first, then select one winner per problem.</span>
+                </label>
+              </div>
+              {newEvent.evaluationMode === 'two_round' && (
+                <Input
+                  label="Finalists Per Problem Statement"
+                  type="number"
+                  min="1"
+                  required
+                  value={newEvent.finalistsPerProblem}
+                  onChange={(e) => setNewEvent(prev => ({ ...prev, finalistsPerProblem: Math.max(1, parseInt(e.target.value) || 1) }))}
+                />
+              )}
+            </div>
+
+            {!newEvent.announcePsAdvance && (
+              <Input
+                label="Problem Statement Release Time (IST)"
+                type="datetime-local"
+                required
+                value={newEvent.problemStatementPublishAt}
+                onChange={(e) => setNewEvent(prev => ({ ...prev, problemStatementPublishAt: e.target.value }))}
+              />
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input label="Problem Selection Closes (IST)" type="datetime-local"
+                value={newEvent.problemSelectionDeadline}
+                onChange={(e) => setNewEvent(prev => ({ ...prev, problemSelectionDeadline: e.target.value }))} />
+              <Input label="Solution Submission Closes (IST)" type="datetime-local"
+                value={newEvent.submissionDeadline}
+                onChange={(e) => setNewEvent(prev => ({ ...prev, submissionDeadline: e.target.value }))} />
+            </div>
 
             <div className="flex items-center gap-2 py-1">
               <input 
@@ -5739,18 +5761,14 @@ const AdminView = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1">
-                <label className="font-bold text-white/70">Track Category</label>
-                <select
-                  value={newPS.category}
-                  onChange={(e) => setNewPS(prev => ({ ...prev, category: e.target.value }))}
+                <label className="font-bold text-white/70">Points</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={newPS.points}
+                  onChange={(e) => setNewPS(prev => ({ ...prev, points: parseInt(e.target.value) || 0 }))}
                   className="p-2.5 rounded-xl bg-[#050505] border border-white/10 text-white focus:outline-none"
-                >
-                  <option value="Open Innovation">Open Innovation</option>
-                  <option value="Web Development">Web Development</option>
-                  <option value="AI / Machine Learning">AI / Machine Learning</option>
-                  <option value="Mobile App Development">Mobile App Development</option>
-                  <option value="Web3 & Blockchain">Web3 & Blockchain</option>
-                </select>
+                />
               </div>
 
               <div className="flex flex-col gap-1">
@@ -5765,6 +5783,16 @@ const AdminView = () => {
                   <option value="Hard">Hard</option>
                 </select>
               </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="font-bold text-white/70">Technical Deliverable</label>
+              <textarea
+                placeholder="Expected solution output, source code, demo, documentation, etc."
+                value={newPS.technicalDeliverable}
+                onChange={(e) => setNewPS(prev => ({ ...prev, technicalDeliverable: e.target.value }))}
+                className="p-3 h-20 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-accent-primary"
+              />
             </div>
 
             <Input
@@ -5829,22 +5857,22 @@ const AdminView = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Input 
-                label="Launch Date" 
-                type="date"
+                label="Launch Date (IST)"
+                type="datetime-local"
                 required 
                 value={editHackathonData.start_date} 
                 onChange={(e) => setEditHackathonData({ ...editHackathonData, start_date: e.target.value })} 
               />
               <Input 
-                label="End Date" 
-                type="date"
+                label="End Date (IST)"
+                type="datetime-local"
                 required 
                 value={editHackathonData.end_date} 
                 onChange={(e) => setEditHackathonData({ ...editHackathonData, end_date: e.target.value })} 
               />
               <Input 
-                label="Registration Deadline" 
-                type="date"
+                label="Registration Deadline (IST)"
+                type="datetime-local"
                 required 
                 value={editHackathonData.registration_deadline} 
                 onChange={(e) => setEditHackathonData({ ...editHackathonData, registration_deadline: e.target.value })} 
@@ -5870,6 +5898,15 @@ const AdminView = () => {
               />
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <Input label="Problem Selection Closes (IST)" type="datetime-local"
+                value={editHackathonData.problem_selection_deadline}
+                onChange={(e) => setEditHackathonData({ ...editHackathonData, problem_selection_deadline: e.target.value })} />
+              <Input label="Solution Submission Closes (IST)" type="datetime-local"
+                value={editHackathonData.submission_deadline}
+                onChange={(e) => setEditHackathonData({ ...editHackathonData, submission_deadline: e.target.value })} />
+            </div>
+
             <div className="flex items-center gap-2 py-1">
               <input 
                 type="checkbox" 
@@ -5882,6 +5919,16 @@ const AdminView = () => {
                 Announce Problem Statements in Advance (otherwise on event day only)
               </label>
             </div>
+
+            {!editHackathonData.announce_ps_advance && (
+              <Input
+                label="Problem Statement Release Time (IST)"
+                type="datetime-local"
+                required
+                value={editHackathonData.problem_statement_publish_at}
+                onChange={(e) => setEditHackathonData({ ...editHackathonData, problem_statement_publish_at: e.target.value })}
+              />
+            )}
 
             <div className="flex gap-3 justify-end mt-4">
               <Button type="button" variant="secondary" onClick={() => setShowEditHackathonModal(false)}>
@@ -5924,18 +5971,14 @@ const AdminView = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1">
-                <label className="font-bold text-white/70">Track Category</label>
-                <select
-                  value={editPSData.category}
-                  onChange={(e) => setEditPSData({ ...editPSData, category: e.target.value })}
+                <label className="font-bold text-white/70">Points</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editPSData.points}
+                  onChange={(e) => setEditPSData({ ...editPSData, points: parseInt(e.target.value) || 0 })}
                   className="p-2.5 rounded-xl bg-[#050505] border border-white/10 text-white focus:outline-none"
-                >
-                  <option value="Open Innovation">Open Innovation</option>
-                  <option value="Web Development">Web Development</option>
-                  <option value="AI / Machine Learning">AI / Machine Learning</option>
-                  <option value="Mobile App Development">Mobile App Development</option>
-                  <option value="Web3 & Blockchain">Web3 & Blockchain</option>
-                </select>
+                />
               </div>
 
               <div className="flex flex-col gap-1">
@@ -5950,6 +5993,16 @@ const AdminView = () => {
                   <option value="Hard">Hard</option>
                 </select>
               </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="font-bold text-white/70">Technical Deliverable</label>
+              <textarea
+                placeholder="Expected solution output, source code, demo, documentation, etc."
+                value={editPSData.technical_deliverable}
+                onChange={(e) => setEditPSData({ ...editPSData, technical_deliverable: e.target.value })}
+                className="p-3 h-20 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-accent-primary"
+              />
             </div>
 
             <Input
@@ -6424,6 +6477,7 @@ function App() {
       <AppIntroVideo />
 
       <Router>
+        <Suspense fallback={<div className="min-h-screen bg-[#050505] flex items-center justify-center text-accent-primary font-mono text-sm">Loading workspace...</div>}>
         <Routes>
           {/* Public Views nested in GlobalLayout */}
           <Route element={<GlobalLayout />}>
@@ -6451,7 +6505,7 @@ function App() {
             <Route path="registration" element={<RegistrationPage />} />
             <Route path="registration/:id" element={<RegistrationPage />} />
             <Route path="submissions" element={<StudentSubmissionPage />} />
-            <Route path="certificates" element={<CertificatesView />} />
+            <Route path="certificates" element={<CertificateVaultPage />} />
             <Route path="profile" element={<ProfilePage />} />
           </Route>
 
@@ -6465,8 +6519,10 @@ function App() {
           {/* Coordinator Protected Portal */}
           <Route path="/coordinator" element={<RoleLayout allowedRoles={['coordinator']} />}>
             <Route index element={<CoordinatorDashboardPage />} />
+              <Route path="certificates" element={<CertificateStudioPage />} />
+              <Route path="certificate-vault" element={<CoordinatorCertificateVaultPage />} />
             <Route path="hackathons" element={<CoordinatorHackathonsPage />} />
-            <Route path="problem-statements" element={<CoordinatorView />} />
+            <Route path="problem-statements" element={<CoordinatorProblemStatementsPage />} />
             <Route path="registrations" element={<CoordinatorView />} />
             <Route path="submissions" element={<SubmissionsView />} />
             <Route path="assignments" element={<JudgeAssignmentPage />} />
@@ -6486,6 +6542,7 @@ function App() {
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </Router>
     </AuthProvider>
   );

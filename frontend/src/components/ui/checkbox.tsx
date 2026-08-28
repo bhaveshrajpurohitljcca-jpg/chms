@@ -10,7 +10,7 @@ export interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputE
 export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
   ({ className = '', label, error, helperText, id, checked, ...props }, ref) => {
     return (
-      <div className="flex flex-col gap-1 w-full font-manrope">
+      <div className={["flex flex-col gap-1 w-full font-manrope", className].filter(Boolean).join(" ")}>
         <label className="inline-flex items-center gap-3 cursor-pointer select-none">
           <div className="relative flex items-center justify-center">
             <input

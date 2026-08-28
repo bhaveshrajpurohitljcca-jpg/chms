@@ -10,6 +10,7 @@ class AnnouncementCreate(BaseModel):
     announcement_type: Optional[AnnouncementType] = AnnouncementType.INFO
     is_published: Optional[bool] = True
     hackathon_id: Optional[str] = None
+    target: Optional[str] = None
 
 
 class AnnouncementUpdate(BaseModel):
@@ -18,6 +19,7 @@ class AnnouncementUpdate(BaseModel):
     announcement_type: Optional[AnnouncementType] = None
     is_published: Optional[bool] = None
     hackathon_id: Optional[str] = None
+    target: Optional[str] = None
 
 
 class AnnouncementResponse(BaseModel):
@@ -30,6 +32,7 @@ class AnnouncementResponse(BaseModel):
     created_by_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    target: Optional[str] = None
 
     class Config:
         orm_mode = True

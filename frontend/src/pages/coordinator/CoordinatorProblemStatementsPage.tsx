@@ -6,11 +6,6 @@ import {
 import { apiService, type BackendHackathon, type BackendProblemStatement } from '@/services/api';
 import { useSearchParams } from 'react-router-dom';
 
-const CATEGORIES = [
-  'Web Development', 'AI / Machine Learning',
-  'Mobile App Development', 'Web3 & Blockchain', 'Open Innovation'
-];
-
 const DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
 
 function Toast({ message, type, onClose }: { message: string; type: 'success' | 'error'; onClose: () => void }) {
@@ -42,7 +37,7 @@ function ConfirmDialog({ title, message, onConfirm, onCancel }: {
   );
 }
 
-const EMPTY_PS = { title: '', description: '', technical_deliverable: '', category: 'Open Innovation', difficulty: 'Medium', max_teams: 10 };
+const EMPTY_PS = { title: '', description: '', technical_deliverable: '', points: 100, difficulty: 'Medium', max_teams: 10 };
 
 export function CoordinatorProblemStatementsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -77,8 +72,12 @@ export function CoordinatorProblemStatementsPage() {
     (async () => {
       setLoadingHackathons(true);
       try {
-        const res = await apiService.listHackathons();
-        const list = res.data || [];
+        const [hackathonsRes, assignmentsRes] = await Promise.all([
+          apiService.listHackathons(),
+          apiService.listCoordinatorAssignments(),
+        ]);
+        const assignedIds = new Set((assignmentsRes.data || []).map((assignment: any) => assignment.hackathon_id));
+        const list = (hackathonsRes.data || []).filter(hackathon => assignedIds.has(hackathon.id));
         setHackathons(list);
 
         const paramId = searchParams.get('hackathonId');
@@ -129,7 +128,7 @@ export function CoordinatorProblemStatementsPage() {
       title: ps.title,
       description: ps.description,
       technical_deliverable: (ps as any).technical_deliverable || '',
-      category: ps.category,
+      points: ps.points || 100,
       difficulty: ps.difficulty,
       max_teams: ps.max_teams,
     });
@@ -150,7 +149,7 @@ export function CoordinatorProblemStatementsPage() {
           title: form.title,
           description: form.description,
           technical_deliverable: (form as any).technical_deliverable || null,
-          category: form.category,
+          points: form.points,
           difficulty: form.difficulty,
           max_teams: Number(form.max_teams),
         });
@@ -160,7 +159,7 @@ export function CoordinatorProblemStatementsPage() {
           title: form.title,
           description: form.description,
           technical_deliverable: (form as any).technical_deliverable || null,
-          category: form.category,
+          points: form.points,
           difficulty: form.difficulty,
           max_teams: Number(form.max_teams),
         });
@@ -285,7 +284,7 @@ export function CoordinatorProblemStatementsPage() {
                           </div>
                           <p className="text-xs text-white/40 line-clamp-2">{ps.description}</p>
                           <div className="flex items-center gap-3 mt-2">
-                            <span className="text-[10px] font-mono text-white/30">{ps.category}</span>
+                            <span className="text-[10px] font-mono text-white/30">{ps.points || 100} points</span>
                             <span className="text-[10px] font-mono text-white/30">Max {ps.max_teams} teams</span>
                           </div>
                         </div>
@@ -342,10 +341,8 @@ export function CoordinatorProblemStatementsPage() {
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className={labelCls}>Category</label>
-                  <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} className={`${inputCls} cursor-pointer`}>
-                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <label className={labelCls}>Points</label>
+                  <input type="number" min={0} value={form.points} onChange={e => setForm(p => ({ ...p, points: Number(e.target.value) }))} className={inputCls} />
                 </div>
                 <div>
                   <label className={labelCls}>Difficulty</label>

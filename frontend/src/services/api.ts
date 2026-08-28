@@ -44,6 +44,7 @@ export interface BackendProblemStatement {
   title: string;
   description: string;
   technical_deliverable?: string;
+  points: number;
   category: string;
   difficulty: string;
   max_teams: number;
@@ -59,6 +60,9 @@ export interface BackendHackathon {
   start_date?: string;
   end_date?: string;
   registration_deadline?: string;
+  problem_statement_publish_at?: string;
+  problem_selection_deadline?: string;
+  submission_deadline?: string;
   max_team_size: number;
   min_team_size: number;
   is_strict_team_size?: boolean;
@@ -67,6 +71,9 @@ export interface BackendHackathon {
   banner_url?: string;
   problem_statements: BackendProblemStatement[];
   announce_ps_advance: boolean;
+  evaluation_mode?: 'single_round' | 'two_round';
+  finalists_per_problem?: number;
+  current_evaluation_round?: number;
   created_at: string;
 }
 
@@ -129,6 +136,37 @@ export interface BackendAnnouncement {
   created_by_id?: string;
   created_at: string;
   updated_at?: string;
+  target?: string;
+}
+
+export interface CertificateTemplateRecord {
+  id: string;
+  hackathon_id: string;
+  name: string;
+  recipient_type: 'participant' | 'coordinator';
+  certificate_type: string;
+    background_url?: string;
+    background_storage_path?: string;
+    field_layout: Array<{ key: string; x?: number; y?: number; fontSize?: number; color?: string; fontFamily?: string; fontWeight?: number; fontStyle?: 'normal' | 'italic'; textDecoration?: 'none' | 'underline'; opacity?: number; rotation?: number; letterSpacing?: number; textAlign?: 'left' | 'center' | 'right'; visible?: boolean; locked?: boolean }>;
+  is_published: boolean;
+  published_at?: string;
+  created_at: string;
+}
+
+export interface CertificateRecord {
+  id: string;
+  verification_id: string;
+  template_id: string;
+  hackathon_id: string;
+  hackathon_title: string;
+  certificate_type: string;
+  recipient_name: string;
+  team_name?: string;
+  award_label?: string;
+  issued_at: string;
+    revoked_at?: string;
+    pdf_url?: string;
+  template: CertificateTemplateRecord;
 }
 
 
@@ -162,6 +200,7 @@ export interface EvaluationRecord {
   weaknesses?: string;
   suggestions?: string;
   recommendation: 'pending' | 'shortlist' | 'accepted' | 'rejected';
+  round_number?: number;
   is_draft: boolean;
   submitted_at?: string;
   judge?: UserProfile;
@@ -182,6 +221,8 @@ export interface SubmissionRecord {
   file_name?: string;
   tech_stack?: string;
   status: string;
+  is_finalist?: boolean;
+  evaluation_round?: number;
   submitted_at: string;
   evaluations?: EvaluationRecord[];
   judge_assignments?: JudgeAssignmentRecord[];
@@ -436,6 +477,7 @@ export const apiService = {
     title: string;
     description: string;
     technical_deliverable?: string;
+    points?: number;
     category?: string;
     difficulty?: string;
     max_teams?: number;
@@ -454,10 +496,15 @@ export const apiService = {
     start_date?: string;
     end_date?: string;
     registration_deadline?: string;
+    problem_statement_publish_at?: string;
+    problem_selection_deadline?: string;
+    submission_deadline?: string;
     max_team_size?: number;
     min_team_size?: number;
     status?: string;
     announce_ps_advance?: boolean;
+    evaluation_mode?: 'single_round' | 'two_round';
+    finalists_per_problem?: number;
   }) {
     return request<any>('/hackathons', {
       method: 'POST',
@@ -477,11 +524,16 @@ export const apiService = {
     start_date?: string;
     end_date?: string;
     registration_deadline?: string;
+    problem_statement_publish_at?: string;
+    problem_selection_deadline?: string;
+    submission_deadline?: string;
     max_team_size?: number;
     min_team_size?: number;
     status?: string;
     banner_url?: string;
     announce_ps_advance?: boolean;
+    evaluation_mode?: 'single_round' | 'two_round';
+    finalists_per_problem?: number;
   }) {
     return request<any>(`/hackathons/${hackathonId}`, {
       method: 'PUT',
@@ -509,6 +561,7 @@ export const apiService = {
     title: string;
     description: string;
     technical_deliverable?: string;
+    points?: number;
     category?: string;
     difficulty?: string;
     max_teams?: number;
@@ -520,6 +573,7 @@ export const apiService = {
     title: string;
     description: string;
     technical_deliverable?: string;
+    points?: number;
     category?: string;
     difficulty?: string;
     max_teams?: number;
@@ -803,13 +857,15 @@ export const apiService = {
   },
 
   /** Get evaluation for a submission */
-  async getEvaluation(submissionId: string) {
-    return request<EvaluationRecord | null>(`/evaluations/submission/${submissionId}`);
+  async getEvaluation(submissionId: string, roundNumber?: number) {
+    const query = roundNumber ? `?round_number=${roundNumber}` : '';
+    return request<EvaluationRecord | null>(`/evaluations/submission/${submissionId}${query}`);
   },
 
   /** Save a draft evaluation (Judge) */
   async saveDraftEvaluation(payload: {
     submission_id: string;
+    round_number?: number;
     score_innovation: number;
     score_technical: number;
     score_uiux: number;
@@ -830,6 +886,7 @@ export const apiService = {
   /** Final submit an evaluation (Judge) */
   async submitFinalEvaluation(payload: {
     submission_id: string;
+    round_number?: number;
     score_innovation: number;
     score_technical: number;
     score_uiux: number;
@@ -930,6 +987,7 @@ export const apiService = {
     announcement_type?: string;
     is_published?: boolean;
     hackathon_id?: string;
+    target?: string;
   }) {
     return request<BackendAnnouncement>('/announcements', {
       method: 'POST',
@@ -945,6 +1003,7 @@ export const apiService = {
       announcement_type?: string;
       is_published?: boolean;
       hackathon_id?: string;
+      target?: string;
     }
   ) {
     return request<BackendAnnouncement>(`/announcements/${id}`, {
@@ -977,8 +1036,71 @@ export const apiService = {
     return request<any[]>(`/hackathons/${hackathonId}/leaderboard`);
   },
 
+  async shortlistRoundOneFinalists(hackathonId: string) {
+    return request<any[]>(`/hackathons/${hackathonId}/rounds/shortlist`, { method: 'POST' });
+  },
+
+  async finalizeProblemStatementWinners(hackathonId: string) {
+    return request<any[]>(`/hackathons/${hackathonId}/rounds/finalize`, { method: 'POST' });
+  },
+
   async getCertificateEligibility(hackathonId: string) {
     return request<any>(`/hackathons/${hackathonId}/certificates/eligibility`);
+  },
+
+  // ─── Certificate Studio ───────────────────────────────────
+  async listCertificateTemplates(hackathonId: string) {
+    return request<CertificateTemplateRecord[]>(`/certificates/templates?hackathon_id=${encodeURIComponent(hackathonId)}`);
+  },
+
+  async createCertificateTemplate(payload: {
+    hackathon_id: string;
+    name: string;
+    recipient_type: 'participant' | 'coordinator';
+    certificate_type: string;
+      field_layout: CertificateTemplateRecord['field_layout'];
+  }) {
+    return request<CertificateTemplateRecord>('/certificates/templates', { method: 'POST', body: JSON.stringify(payload) });
+  },
+
+    async updateCertificateTemplate(templateId: string, payload: Partial<Pick<CertificateTemplateRecord, 'name' | 'certificate_type' | 'recipient_type' | 'field_layout' | 'is_published'>>) {
+      return request<CertificateTemplateRecord>(`/certificates/templates/${templateId}`, { method: 'PUT', body: JSON.stringify(payload) });
+    },
+
+    async deleteCertificateTemplate(templateId: string) {
+      return request<{ id: string }>(`/certificates/templates/${templateId}`, { method: 'DELETE' });
+    },
+
+  async uploadCertificateBackground(templateId: string, file: File) {
+    const form = new FormData();
+    form.append('file', file);
+    return requestFormData<CertificateTemplateRecord>(`/certificates/templates/${templateId}/background`, form);
+  },
+
+  async listAvailableCertificateTemplates() {
+    return request<CertificateTemplateRecord[]>('/certificates/available');
+  },
+
+  async listMyCertificates() {
+    return request<CertificateRecord[]>('/certificates/mine');
+  },
+
+    async generateCertificate(templateId: string) {
+      return request<CertificateRecord>(`/certificates/templates/${templateId}/generate`, {
+        method: 'POST', body: JSON.stringify({})
+      });
+    },
+
+    async listCoordinatorCertificateVault(hackathonId: string) {
+      return request<CertificateRecord[]>(`/certificates/vault?hackathon_id=${encodeURIComponent(hackathonId)}`);
+    },
+
+    certificateDownloadUrl(certificateId: string) {
+      return `${API_BASE}/certificates/${certificateId}/download`;
+    },
+
+  async revokeCertificate(certificateId: string, reason: string) {
+    return request<CertificateRecord>(`/certificates/${certificateId}/revoke`, { method: 'POST', body: JSON.stringify({ reason }) });
   },
 
   async getHackathonStats(hackathonId: string) {

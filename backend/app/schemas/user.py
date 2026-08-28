@@ -1,11 +1,11 @@
 from typing import Optional, List, Any
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from app.models.user import UserRole
 
 class UserRegister(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=8, max_length=128)
     full_name: str
     role: Optional[UserRole] = UserRole.STUDENT
     department: Optional[str] = None
@@ -43,8 +43,8 @@ class UserRoleUpdate(BaseModel):
     role: UserRole
 
 class PasswordChange(BaseModel):
-    current_password: str
-    new_password: str
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
 
 class UserResponse(BaseModel):
     id: str

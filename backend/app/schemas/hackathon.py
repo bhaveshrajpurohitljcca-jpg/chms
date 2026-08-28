@@ -7,6 +7,7 @@ class ProblemStatementCreate(BaseModel):
     title: str
     description: str
     technical_deliverable: Optional[str] = None
+    points: Optional[int] = 100
     category: Optional[ProblemCategory] = ProblemCategory.OPEN_INNOVATION
     difficulty: Optional[str] = "Medium"
     max_teams: Optional[int] = 10
@@ -15,6 +16,7 @@ class ProblemStatementUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     technical_deliverable: Optional[str] = None
+    points: Optional[int] = None
     category: Optional[ProblemCategory] = None
     difficulty: Optional[str] = None
     max_teams: Optional[int] = None
@@ -25,6 +27,7 @@ class ProblemStatementResponse(BaseModel):
     title: str
     description: str
     technical_deliverable: Optional[str] = None
+    points: int = 100
     category: ProblemCategory
     difficulty: str
     max_teams: int
@@ -42,6 +45,9 @@ class HackathonCreate(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     registration_deadline: Optional[datetime] = None
+    problem_statement_publish_at: Optional[datetime] = None
+    problem_selection_deadline: Optional[datetime] = None
+    submission_deadline: Optional[datetime] = None
     max_team_size: Optional[int] = 3
     min_team_size: Optional[int] = 1
     is_strict_team_size: Optional[bool] = False
@@ -49,6 +55,8 @@ class HackathonCreate(BaseModel):
     status: Optional[HackathonStatus] = HackathonStatus.UPCOMING
     banner_url: Optional[str] = None
     announce_ps_advance: Optional[bool] = True
+    evaluation_mode: Optional[str] = "single_round"
+    finalists_per_problem: Optional[int] = 3
 
 class HackathonUpdate(BaseModel):
     title: Optional[str] = None
@@ -58,12 +66,17 @@ class HackathonUpdate(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     registration_deadline: Optional[datetime] = None
+    problem_statement_publish_at: Optional[datetime] = None
+    problem_selection_deadline: Optional[datetime] = None
+    submission_deadline: Optional[datetime] = None
     max_team_size: Optional[int] = None
     min_team_size: Optional[int] = None
     is_strict_team_size: Optional[bool] = None
     strict_team_size: Optional[int] = None
     status: Optional[HackathonStatus] = None
     banner_url: Optional[str] = None
+    evaluation_mode: Optional[str] = None
+    finalists_per_problem: Optional[int] = None
 
 class HackathonResponse(BaseModel):
     id: str
@@ -74,6 +87,9 @@ class HackathonResponse(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     registration_deadline: Optional[datetime] = None
+    problem_statement_publish_at: Optional[datetime] = None
+    problem_selection_deadline: Optional[datetime] = None
+    submission_deadline: Optional[datetime] = None
     max_team_size: int
     min_team_size: int
     is_strict_team_size: bool = False
@@ -82,6 +98,9 @@ class HackathonResponse(BaseModel):
     banner_url: Optional[str] = None
     results_published: bool = False
     announce_ps_advance: bool = True
+    evaluation_mode: str = "single_round"
+    finalists_per_problem: int = 3
+    current_evaluation_round: int = 1
     problem_statements: List[ProblemStatementResponse] = []
     created_at: datetime
 

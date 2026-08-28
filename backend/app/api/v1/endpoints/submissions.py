@@ -9,6 +9,7 @@ from app.database import get_db
 from app.models.submission import Submission, Evaluation, JudgeAssignment, SubmissionStatus
 from app.models.team import Team, TeamMember
 from app.models.hackathon import Hackathon, CoordinatorAssignment
+from app.models.registration import Registration, RegistrationStatus
 from app.models.user import User, UserRole
 from app.schemas.submission import (
     SubmissionCreate, SubmissionUpdate, SubmissionResponse,
@@ -112,7 +113,8 @@ def list_submissions(
         query = query.filter(Submission.hackathon_id == hackathon_id)
 
     subs = query.order_by(Submission.submitted_at.desc()).all()
-    results = [SubmissionResponse.from_orm(s) for s in subs]
+    db.rollback()  # Clear any aborted transaction state before safe serialization
+    results = [SubmissionResponse.from_orm_safe(s) for s in subs]
     return StandardResponse(
         success=True,
         message="Submissions retrieved successfully.",
@@ -150,7 +152,7 @@ def get_my_submission(
     return StandardResponse(
         success=True,
         message="Submission retrieved." if submission else "No submission found yet.",
-        data=SubmissionResponse.from_orm(submission) if submission else None
+        data=SubmissionResponse.from_orm_safe(submission) if submission else None
     )
 
 
@@ -206,8 +208,9 @@ def create_submission(
             detail=f"Team size criteria unfulfilled: Your team must have at least {hackathon.min_team_size} members to submit. Current members: {member_count}."
         )
 
-    # 4. Deadline check
-    if hackathon.end_date and datetime.utcnow() > hackathon.end_date:
+    # 4. Deadline check. Dedicated submission deadline falls back to event end for older events.
+    submission_deadline = hackathon.submission_deadline or hackathon.end_date
+    if submission_deadline and datetime.utcnow() > submission_deadline:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Submission deadline has passed. Submissions are no longer accepted."
@@ -225,7 +228,20 @@ def create_submission(
             detail="Your team has already submitted for this hackathon. Use the update endpoint to modify it."
         )
 
-    ps_id = payload.problem_statement_id if payload.problem_statement_id and payload.problem_statement_id.strip() else None
+    registration = db.query(Registration).filter(
+        Registration.team_id == team.id,
+        Registration.hackathon_id == hackathon.id,
+        Registration.status == RegistrationStatus.REGISTERED
+    ).first()
+    if not registration:
+        raise HTTPException(status_code=400, detail="Register your team for this hackathon before submitting.")
+    if not registration.problem_statement_id:
+        raise HTTPException(status_code=400, detail="Select a problem statement before submitting your solution.")
+
+    requested_ps_id = payload.problem_statement_id.strip() if payload.problem_statement_id else None
+    if requested_ps_id and requested_ps_id != registration.problem_statement_id:
+        raise HTTPException(status_code=400, detail="Submission must use the problem statement selected during registration.")
+    ps_id = registration.problem_statement_id
     demo_url = payload.demo_url if payload.demo_url and payload.demo_url.strip() else None
     video_url = payload.video_url if payload.video_url and payload.video_url.strip() else None
     notes = payload.additional_notes if payload.additional_notes and payload.additional_notes.strip() else None
@@ -252,7 +268,7 @@ def create_submission(
     return StandardResponse(
         success=True,
         message="Project submitted successfully!",
-        data=SubmissionResponse.from_orm(submission)
+        data=SubmissionResponse.from_orm_safe(submission)
     )
 
 
@@ -287,7 +303,8 @@ def update_submission(
 
     # Deadline check
     hackathon = db.query(Hackathon).filter(Hackathon.id == submission.hackathon_id).first()
-    if hackathon and hackathon.end_date and datetime.utcnow() > hackathon.end_date:
+    submission_deadline = (hackathon.submission_deadline or hackathon.end_date) if hackathon else None
+    if submission_deadline and datetime.utcnow() > submission_deadline:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Submission deadline has passed."
@@ -304,7 +321,7 @@ def update_submission(
     return StandardResponse(
         success=True,
         message="Submission updated successfully.",
-        data=SubmissionResponse.from_orm(submission)
+        data=SubmissionResponse.from_orm_safe(submission)
     )
 
 
@@ -356,6 +373,10 @@ async def upload_submission_file(
         submission = db.query(Submission).filter(Submission.id == submission_id).first()
         if submission:
             _ensure_team_membership(db, submission.team_id, current_user.id)
+            hackathon = db.query(Hackathon).filter(Hackathon.id == submission.hackathon_id).first()
+            submission_deadline = (hackathon.submission_deadline or hackathon.end_date) if hackathon else None
+            if submission_deadline and datetime.utcnow() > submission_deadline:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Submission deadline has passed.")
             # Delete old file if present
             if submission.file_url:
                 old_path = submission.file_url.lstrip("/")

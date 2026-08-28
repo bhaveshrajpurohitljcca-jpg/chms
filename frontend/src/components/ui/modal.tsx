@@ -39,7 +39,7 @@ export const Modal = ({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] overflow-y-auto flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 overflow-y-auto">
       {/* Backdrop overlay */}
       <div 
         className="fixed inset-0 bg-black/80 backdrop-blur-[6px] transition-opacity duration-500" 
@@ -47,7 +47,7 @@ export const Modal = ({
       />
       
       {/* Modal Dialog */}
-      <div className={`relative w-full ${sizes[size]} rounded-dialog glass-card bg-[#050505]/95 border border-[rgba(255,255,255,0.12)] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-10 my-auto transform scale-100 transition-transform duration-500 ease-out flex flex-col gap-4 max-h-[95vh] overflow-hidden`}>
+      <div className={`relative w-full ${sizes[size]} rounded-dialog glass-card bg-[#050505]/95 border border-[rgba(255,255,255,0.12)] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-10 my-auto flex flex-col gap-4`}>
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] pb-4 flex-shrink-0">
@@ -65,7 +65,7 @@ export const Modal = ({
         </div>
 
         {/* Content body */}
-        <div className="overflow-y-auto pr-1 flex-1 min-h-0">
+        <div className="flex-1">
           {children}
         </div>
       </div>

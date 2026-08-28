@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Text, Float, DateTime, ForeignKey, Boolean, UniqueConstraint
+from sqlalchemy import Column, String, Text, Float, DateTime, ForeignKey, Boolean, Integer, UniqueConstraint
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.models.base import BaseTable
@@ -38,6 +38,9 @@ class Submission(BaseTable):
     file_name = Column(String(255), nullable=True)
     tech_stack = Column(String(500), nullable=True)
     status = Column(String(50), default=SubmissionStatus.SUBMITTED, nullable=False)
+    is_finalist = Column(Boolean, default=False, nullable=False)
+    round_one_score = Column(Float, nullable=True)
+    final_rank = Column(Integer, nullable=True)
     submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     team = relationship("Team", back_populates="submissions")
@@ -45,6 +48,12 @@ class Submission(BaseTable):
     problem_statement = relationship("ProblemStatement", back_populates="submissions")
     evaluations = relationship("Evaluation", back_populates="submission", cascade="all, delete-orphan")
     judge_assignments = relationship("JudgeAssignment", back_populates="submission", cascade="all, delete-orphan")
+
+    @property
+    def evaluation_round(self):
+        if self.hackathon and self.hackathon.evaluation_mode == "two_round":
+            return self.hackathon.current_evaluation_round
+        return 1
 
 
 # ─── Judge Assignment ───────────────────────────────────────────
@@ -97,6 +106,7 @@ class Evaluation(BaseTable):
     weaknesses = Column(Text, nullable=True)        # Areas needing improvement
     suggestions = Column(Text, nullable=True)       # Actionable suggestions
     recommendation = Column(String(50), default=EvaluationRecommendation.PENDING, nullable=False)
+    round_number = Column(Integer, default=1, nullable=False)
 
     # ── Lifecycle State ────────────────────────────────────────
     is_draft = Column(Boolean, default=True, nullable=False)
@@ -106,7 +116,7 @@ class Evaluation(BaseTable):
     judge = relationship("User")
 
     __table_args__ = (
-        UniqueConstraint("submission_id", "judge_id", name="unique_judge_submission_evaluation"),
+        UniqueConstraint("submission_id", "judge_id", "round_number", name="unique_judge_submission_round_evaluation"),
     )
 
 

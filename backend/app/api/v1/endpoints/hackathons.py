@@ -59,6 +59,35 @@ def _sync_assignment_account_statuses(db: Session) -> None:
     db.commit()
 
 
+def _ensure_hackathon_editor(db: Session, user: User, hackathon_id: str) -> None:
+    """Admins can manage every event; coordinators only manage assigned events."""
+    if user.role == UserRole.ADMIN:
+        return
+    if user.role == UserRole.COORDINATOR and db.query(CoordinatorAssignment).filter(
+        CoordinatorAssignment.coordinator_id == user.id,
+        CoordinatorAssignment.hackathon_id == hackathon_id,
+    ).first():
+        return
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not assigned to manage this hackathon.")
+
+
+def _normalise_hackathon_dates(payload: HackathonCreate) -> None:
+    for field in (
+        "start_date", "end_date", "registration_deadline", "problem_statement_publish_at",
+        "problem_selection_deadline", "submission_deadline",
+    ):
+        setattr(payload, field, make_naive(getattr(payload, field)))
+
+    if payload.end_date and payload.start_date and payload.end_date < payload.start_date:
+        raise HTTPException(status_code=400, detail="End date cannot be before start date.")
+    if payload.problem_statement_publish_at and payload.start_date and payload.problem_statement_publish_at < payload.start_date:
+        raise HTTPException(status_code=400, detail="Problem statement release cannot be before the hackathon start.")
+    if payload.problem_selection_deadline and payload.problem_statement_publish_at and payload.problem_selection_deadline < payload.problem_statement_publish_at:
+        raise HTTPException(status_code=400, detail="Problem selection deadline cannot be before problem statement release.")
+    if payload.submission_deadline and payload.start_date and payload.submission_deadline < payload.start_date:
+        raise HTTPException(status_code=400, detail="Submission deadline cannot be before the hackathon start.")
+
+
 @router.get("", response_model=StandardResponse[List[HackathonResponse]])
 def list_hackathons(
     status_filter: Optional[HackathonStatus] = None,
@@ -80,7 +109,8 @@ def list_hackathons(
     for h in hackathons:
         res = HackathonResponse.from_orm(h)
         if not is_privileged and not h.announce_ps_advance:
-            if h.start_date and now < h.start_date:
+            publish_at = h.problem_statement_publish_at or h.start_date
+            if publish_at and now < publish_at:
                 res.problem_statements = []
         results.append(res)
         
@@ -111,7 +141,8 @@ def get_hackathon(
     
     res = HackathonResponse.from_orm(hackathon)
     if not is_privileged and not hackathon.announce_ps_advance:
-        if hackathon.start_date and now < hackathon.start_date:
+        publish_at = hackathon.problem_statement_publish_at or hackathon.start_date
+        if publish_at and now < publish_at:
             res.problem_statements = []
             
     return StandardResponse(
@@ -130,11 +161,9 @@ def make_naive(dt: Optional[datetime]) -> Optional[datetime]:
 def create_hackathon(
     payload: HackathonCreate,
     db: Session = Depends(get_db),
-    admin: User = Depends(RoleChecker([UserRole.ADMIN, UserRole.COORDINATOR]))
+    admin: User = Depends(RoleChecker([UserRole.ADMIN]))
 ):
-    payload.start_date = make_naive(payload.start_date)
-    payload.end_date = make_naive(payload.end_date)
-    payload.registration_deadline = make_naive(payload.registration_deadline)
+    _normalise_hackathon_dates(payload)
 
     existing = db.query(Hackathon).filter(Hackathon.slug == payload.slug).first()
     if existing:
@@ -148,8 +177,10 @@ def create_hackathon(
         raise HTTPException(status_code=400, detail="Registration deadline cannot be in the past.")
     if payload.end_date and payload.end_date.date() < now.date():
         raise HTTPException(status_code=400, detail="End date cannot be in the past.")
-    if payload.end_date and payload.start_date and payload.end_date < payload.start_date:
-        raise HTTPException(status_code=400, detail="End date cannot be before start date.")
+    if payload.evaluation_mode not in ("single_round", "two_round"):
+        raise HTTPException(status_code=400, detail="Evaluation mode must be single_round or two_round.")
+    if payload.finalists_per_problem is not None and payload.finalists_per_problem < 1:
+        raise HTTPException(status_code=400, detail="Finalists per problem must be at least 1.")
 
     is_strict = payload.is_strict_team_size or False
     strict_size = payload.strict_team_size if is_strict else None
@@ -165,13 +196,18 @@ def create_hackathon(
         start_date=payload.start_date,
         end_date=payload.end_date,
         registration_deadline=payload.registration_deadline,
+        problem_statement_publish_at=payload.problem_statement_publish_at,
+        problem_selection_deadline=payload.problem_selection_deadline,
+        submission_deadline=payload.submission_deadline,
         max_team_size=max_size,
         min_team_size=min_size,
         is_strict_team_size=is_strict,
         strict_team_size=strict_size,
         status=payload.status or HackathonStatus.UPCOMING,
         banner_url=payload.banner_url,
-        announce_ps_advance=payload.announce_ps_advance if payload.announce_ps_advance is not None else True
+        announce_ps_advance=payload.announce_ps_advance if payload.announce_ps_advance is not None else True,
+        evaluation_mode=payload.evaluation_mode or "single_round",
+        finalists_per_problem=payload.finalists_per_problem or 3
     )
     db.add(hackathon)
     db.commit()
@@ -192,15 +228,14 @@ def update_hackathon(
     admin: User = Depends(RoleChecker([UserRole.ADMIN, UserRole.COORDINATOR]))
 ):
     """Update hackathon details and deadlines."""
-    payload.start_date = make_naive(payload.start_date)
-    payload.end_date = make_naive(payload.end_date)
-    payload.registration_deadline = make_naive(payload.registration_deadline)
+    _normalise_hackathon_dates(payload)
 
     hackathon = db.query(Hackathon).filter(Hackathon.id == hackathon_id).first()
     if not hackathon:
         hackathon = db.query(Hackathon).filter(Hackathon.slug == hackathon_id).first()
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found.")
+    _ensure_hackathon_editor(db, admin, hackathon.id)
 
     if payload.slug != hackathon.slug:
         existing = db.query(Hackathon).filter(Hackathon.slug == payload.slug).first()
@@ -220,6 +255,9 @@ def update_hackathon(
     hackathon.start_date = payload.start_date
     hackathon.end_date = payload.end_date
     hackathon.registration_deadline = payload.registration_deadline
+    hackathon.problem_statement_publish_at = payload.problem_statement_publish_at
+    hackathon.problem_selection_deadline = payload.problem_selection_deadline
+    hackathon.submission_deadline = payload.submission_deadline
     if payload.is_strict_team_size is not None:
         hackathon.is_strict_team_size = payload.is_strict_team_size
     if payload.strict_team_size is not None:
@@ -245,6 +283,12 @@ def update_hackathon(
     hackathon.banner_url = payload.banner_url
     if payload.announce_ps_advance is not None:
         hackathon.announce_ps_advance = payload.announce_ps_advance
+    if payload.evaluation_mode is not None:
+        if payload.evaluation_mode not in ("single_round", "two_round"):
+            raise HTTPException(status_code=400, detail="Evaluation mode must be single_round or two_round.")
+        hackathon.evaluation_mode = payload.evaluation_mode
+    if payload.finalists_per_problem is not None:
+        hackathon.finalists_per_problem = max(1, payload.finalists_per_problem)
 
     db.commit()
     db.refresh(hackathon)
@@ -268,6 +312,7 @@ def update_problem_statement(
     hackathon = db.query(Hackathon).filter(Hackathon.id == hackathon_id).first()
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found.")
+    _ensure_hackathon_editor(db, admin, hackathon.id)
 
     ps = db.query(ProblemStatement).filter(
         ProblemStatement.id == problem_id,
@@ -279,6 +324,7 @@ def update_problem_statement(
     ps.title = payload.title
     ps.description = payload.description
     ps.technical_deliverable = payload.technical_deliverable
+    ps.points = payload.points if payload.points is not None else 100
     ps.category = payload.category
     ps.difficulty = payload.difficulty or "Medium"
     ps.max_teams = payload.max_teams or 10
@@ -304,6 +350,7 @@ def delete_problem_statement(
     hackathon = db.query(Hackathon).filter(Hackathon.id == hackathon_id).first()
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found.")
+    _ensure_hackathon_editor(db, admin, hackathon.id)
 
     ps = db.query(ProblemStatement).filter(
         ProblemStatement.id == problem_id,
@@ -332,12 +379,14 @@ def create_problem_statement(
     hackathon = db.query(Hackathon).filter(Hackathon.id == hackathon_id).first()
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found.")
+    _ensure_hackathon_editor(db, admin, hackathon.id)
 
     ps = ProblemStatement(
         hackathon_id=hackathon.id,
         title=payload.title,
         description=payload.description,
         technical_deliverable=payload.technical_deliverable,
+        points=payload.points if payload.points is not None else 100,
         category=payload.category,
         difficulty=payload.difficulty or "Medium",
         max_teams=payload.max_teams or 10
@@ -481,6 +530,98 @@ def get_hackathon_leaderboard(
         message="Leaderboard retrieved successfully.",
         data=leaderboard
     )
+
+
+@router.post("/{hackathon_id}/rounds/shortlist", response_model=StandardResponse[List[dict]])
+def shortlist_round_one_finalists(
+    hackathon_id: str,
+    current_user: User = Depends(RoleChecker([UserRole.COORDINATOR, UserRole.ADMIN])),
+    db: Session = Depends(get_db)
+):
+    """Select the top configured teams for every problem statement from round-one scores."""
+    from app.models.submission import Submission, Evaluation
+    hackathon = db.query(Hackathon).filter(Hackathon.id == hackathon_id).first()
+    if not hackathon:
+        raise HTTPException(status_code=404, detail="Hackathon not found.")
+    _ensure_hackathon_editor(db, current_user, hackathon.id)
+    if hackathon.evaluation_mode != "two_round":
+        raise HTTPException(status_code=400, detail="Enable two-round evaluation before shortlisting finalists.")
+    if hackathon.current_evaluation_round != 1:
+        raise HTTPException(status_code=400, detail="Round-one finalists have already been selected.")
+
+    shortlisted = []
+    for problem in hackathon.problem_statements:
+        scored = []
+        for submission in db.query(Submission).filter(
+            Submission.hackathon_id == hackathon.id,
+            Submission.problem_statement_id == problem.id
+        ).all():
+            scores = [evaluation.total_score for evaluation in db.query(Evaluation).filter(
+                Evaluation.submission_id == submission.id,
+                Evaluation.round_number == 1,
+                Evaluation.is_draft == False
+            ).all()]
+            submission.is_finalist = False
+            submission.final_rank = None
+            submission.round_one_score = round(sum(scores) / len(scores), 2) if scores else None
+            if scores:
+                scored.append(submission)
+        scored.sort(key=lambda item: item.round_one_score or 0, reverse=True)
+        for rank, submission in enumerate(scored[:hackathon.finalists_per_problem], start=1):
+            submission.is_finalist = True
+            shortlisted.append({
+                "problem_statement_id": problem.id,
+                "problem_statement_title": problem.title,
+                "team_id": submission.team_id,
+                "team_name": submission.team.name if submission.team else "Unknown Team",
+                "round_one_rank": rank,
+                "round_one_score": submission.round_one_score,
+            })
+    hackathon.current_evaluation_round = 2
+    db.commit()
+    return StandardResponse(success=True, message="Round-one finalists selected.", data=shortlisted)
+
+
+@router.post("/{hackathon_id}/rounds/finalize", response_model=StandardResponse[List[dict]])
+def finalize_problem_statement_winners(
+    hackathon_id: str,
+    current_user: User = Depends(RoleChecker([UserRole.COORDINATOR, UserRole.ADMIN])),
+    db: Session = Depends(get_db)
+):
+    """Rank only shortlisted teams inside their own problem statement and mark one winner each."""
+    from app.models.submission import Submission, Evaluation
+    hackathon = db.query(Hackathon).filter(Hackathon.id == hackathon_id).first()
+    if not hackathon:
+        raise HTTPException(status_code=404, detail="Hackathon not found.")
+    _ensure_hackathon_editor(db, current_user, hackathon.id)
+    if hackathon.evaluation_mode != "two_round" or hackathon.current_evaluation_round != 2:
+        raise HTTPException(status_code=400, detail="Shortlist round-one finalists before finalizing winners.")
+
+    results = []
+    for problem in hackathon.problem_statements:
+        finalists = db.query(Submission).filter(
+            Submission.hackathon_id == hackathon.id,
+            Submission.problem_statement_id == problem.id,
+            Submission.is_finalist == True
+        ).all()
+        ranked = []
+        for submission in finalists:
+            scores = [evaluation.total_score for evaluation in db.query(Evaluation).filter(
+                Evaluation.submission_id == submission.id,
+                Evaluation.round_number == 2,
+                Evaluation.is_draft == False
+            ).all()]
+            if scores:
+                ranked.append((submission, round(sum(scores) / len(scores), 2)))
+        ranked.sort(key=lambda item: item[1], reverse=True)
+        for rank, (submission, score) in enumerate(ranked, start=1):
+            submission.final_rank = rank
+            results.append({"problem_statement_id": problem.id, "problem_statement_title": problem.title,
+                            "team_id": submission.team_id, "team_name": submission.team.name if submission.team else "Unknown Team",
+                            "rank": rank, "score": score, "is_winner": rank == 1})
+    hackathon.current_evaluation_round = 3
+    db.commit()
+    return StandardResponse(success=True, message="Problem-statement winners finalized.", data=results)
 
 
 @router.get("/{hackathon_id}/certificates/eligibility", response_model=StandardResponse[dict])

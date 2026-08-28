@@ -19,7 +19,7 @@ from app.models.submission import (
     SubmissionStatus, EvaluationRecommendation
 )
 from app.models.user import User, UserRole
-from app.models.hackathon import CoordinatorAssignment
+from app.models.hackathon import CoordinatorAssignment, Hackathon
 from app.schemas.submission import (
     JudgeAssignmentCreate, JudgeAssignmentResponse,
     EvaluationDraftSave, EvaluationFinalSubmit, EvaluationResponse,
@@ -40,11 +40,32 @@ def _calculate_total(
     return round((innovation + technical + uiux + impact + presentation) * 2.0, 2)
 
 
-def _get_evaluation(db: Session, submission_id: str, judge_id: str) -> Optional[Evaluation]:
+def _get_evaluation(db: Session, submission_id: str, judge_id: str, round_number: int = 1) -> Optional[Evaluation]:
     return db.query(Evaluation).filter(
         Evaluation.submission_id == submission_id,
-        Evaluation.judge_id == judge_id
+        Evaluation.judge_id == judge_id,
+        Evaluation.round_number == round_number
     ).first()
+
+
+def _get_active_round(db: Session, submission_id: str, requested_round: int) -> int:
+    submission = db.query(Submission).filter(Submission.id == submission_id).first()
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found.")
+    hackathon = db.query(Hackathon).filter(Hackathon.id == submission.hackathon_id).first()
+    if not hackathon or hackathon.evaluation_mode != "two_round":
+        if requested_round != 1:
+            raise HTTPException(status_code=400, detail="Single-round hackathons only support round 1 evaluations.")
+        return 1
+
+    active_round = hackathon.current_evaluation_round
+    if active_round not in (1, 2):
+        raise HTTPException(status_code=400, detail="Judging is closed for this hackathon.")
+    if requested_round != active_round:
+        raise HTTPException(status_code=400, detail=f"This hackathon is currently in evaluation round {active_round}.")
+    if active_round == 2 and not submission.is_finalist:
+        raise HTTPException(status_code=403, detail="Only round-one finalists can be evaluated in round 2.")
+    return active_round
 
 
 def _verify_assigned(db: Session, submission_id: str, judge_id: str):
@@ -237,12 +258,18 @@ def get_my_assignments(
     submissions = db.query(Submission).options(
         joinedload(Submission.evaluations),
         joinedload(Submission.judge_assignments).joinedload(JudgeAssignment.judge),
-        joinedload(Submission.team)
+        joinedload(Submission.team),
+        joinedload(Submission.hackathon)
     ).filter(Submission.id.in_(ids)).all()
+    submissions = [submission for submission in submissions if not (
+        submission.hackathon and submission.hackathon.evaluation_mode == "two_round"
+        and submission.hackathon.current_evaluation_round == 2
+        and not submission.is_finalist
+    )]
 
     return StandardResponse(
         success=True, message="Assigned submissions retrieved.",
-        data=[SubmissionResponse.from_orm(s) for s in submissions]
+        data=[SubmissionResponse.from_orm_safe(s) for s in submissions]
     )
 
 
@@ -270,13 +297,16 @@ def list_judges(
 @router.get("/submission/{submission_id}", response_model=StandardResponse[Optional[EvaluationResponse]])
 def get_evaluation(
     submission_id: str,
+    round_number: Optional[int] = Query(None, ge=1, le=2),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Get evaluation for a submission. Judges only see their own; Admin sees any."""
+    requested_round = round_number or 1
+    active_round = _get_active_round(db, submission_id, requested_round)
     if current_user.role == UserRole.JUDGE:
         _verify_assigned(db, submission_id, current_user.id)
-        ev = _get_evaluation(db, submission_id, current_user.id)
+        ev = _get_evaluation(db, submission_id, current_user.id, active_round)
     else:
         submission = db.query(Submission).filter(Submission.id == submission_id).first()
         if not submission:
@@ -286,6 +316,7 @@ def get_evaluation(
             db.query(Evaluation)
             .options(joinedload(Evaluation.judge))
             .filter(Evaluation.submission_id == submission_id)
+            .filter(Evaluation.round_number == active_round)
             .order_by(Evaluation.submitted_at.desc().nullslast(), Evaluation.id.desc())
             .first()
         )
@@ -293,7 +324,7 @@ def get_evaluation(
     return StandardResponse(
         success=True,
         message="Evaluation retrieved." if ev else "No evaluation found yet.",
-        data=EvaluationResponse.from_orm(ev) if ev else None
+        data=EvaluationResponse.model_validate(ev, from_attributes=True) if ev else None
     )
 
 
@@ -304,9 +335,9 @@ def save_draft(
     db: Session = Depends(get_db)
 ):
     """Save or update a draft evaluation. Can be called many times. No feedback required."""
+    active_round = _get_active_round(db, payload.submission_id, payload.round_number)
     _verify_assigned(db, payload.submission_id, current_user.id)
-
-    existing = _get_evaluation(db, payload.submission_id, current_user.id)
+    existing = _get_evaluation(db, payload.submission_id, current_user.id, active_round)
     if existing and not existing.is_draft:
         raise HTTPException(status_code=400, detail="Evaluation is finalized. Only Admin can modify it.")
 
@@ -345,13 +376,14 @@ def save_draft(
             weaknesses=payload.weaknesses,
             suggestions=payload.suggestions,
             recommendation=payload.recommendation or EvaluationRecommendation.PENDING,
+            round_number=active_round,
             is_draft=True
         )
         db.add(ev)
         db.commit()
         db.refresh(ev)
 
-    return StandardResponse(success=True, message="Draft saved.", data=EvaluationResponse.from_orm(ev))
+    return StandardResponse(success=True, message="Draft saved.", data=EvaluationResponse.model_validate(ev, from_attributes=True))
 
 
 @router.post("/submit", response_model=StandardResponse[EvaluationResponse])
@@ -364,9 +396,9 @@ def submit_evaluation(
     Submit final evaluation. Feedback required. Evaluation locked after this.
     Submission status → GRADED.
     """
+    active_round = _get_active_round(db, payload.submission_id, payload.round_number)
     _verify_assigned(db, payload.submission_id, current_user.id)
-
-    existing = _get_evaluation(db, payload.submission_id, current_user.id)
+    existing = _get_evaluation(db, payload.submission_id, current_user.id, active_round)
     if existing and not existing.is_draft:
         raise HTTPException(status_code=400, detail="Already submitted. Contact Admin for changes.")
 
@@ -406,6 +438,7 @@ def submit_evaluation(
             weaknesses=payload.weaknesses,
             suggestions=payload.suggestions,
             recommendation=payload.recommendation,
+            round_number=active_round,
             is_draft=False,
             submitted_at=now
         )
@@ -418,7 +451,7 @@ def submit_evaluation(
 
     db.commit()
     db.refresh(ev)
-    return StandardResponse(success=True, message="Evaluation submitted and locked.", data=EvaluationResponse.from_orm(ev))
+    return StandardResponse(success=True, message="Evaluation submitted and locked.", data=EvaluationResponse.model_validate(ev, from_attributes=True))
 
 
 @router.put("/{evaluation_id}", response_model=StandardResponse[EvaluationResponse])
@@ -452,7 +485,7 @@ def admin_update_evaluation(
 
     db.commit()
     db.refresh(ev)
-    return StandardResponse(success=True, message="Evaluation updated by Admin.", data=EvaluationResponse.from_orm(ev))
+    return StandardResponse(success=True, message="Evaluation updated by Admin.", data=EvaluationResponse.model_validate(ev, from_attributes=True))
 
 
 @router.get("/history", response_model=StandardResponse[List[EvaluationResponse]])
@@ -476,5 +509,5 @@ def get_evaluation_history(
     results = query.order_by(Evaluation.submitted_at.desc().nullslast()).all()
     return StandardResponse(
         success=True, message="History retrieved.",
-        data=[EvaluationResponse.from_orm(e) for e in results]
+        data=[EvaluationResponse.model_validate(e, from_attributes=True) for e in results]
     )

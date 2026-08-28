@@ -11,7 +11,7 @@ import { apiService, type SubmissionRecord, STATIC_BASE } from '@/services/api';
 import { EvaluationScorecardModal } from '@/components/student/EvaluationScorecardModal';
 
 // ─── Validation Schema ──────────────────────────────────────
-const GITHUB_REGEX = /^https:\/\/github\.com\/[\w\-\.]+\/[\w\-\.]+\/?$/;
+const GITHUB_REGEX = /^https:\/\/github\.com\/[\w-.]+\/[\w-.]+\/?$/;
 
 const submissionSchema = z.object({
   title: z.string().min(3, 'Project title must be at least 3 characters').max(255),

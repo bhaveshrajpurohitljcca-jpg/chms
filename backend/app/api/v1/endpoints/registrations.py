@@ -1,4 +1,5 @@
 from typing import List
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -12,6 +13,18 @@ from app.api.deps import get_current_active_user
 from typing import Optional
 
 router = APIRouter(prefix="/registrations", tags=["Registrations"])
+
+
+def _ensure_problem_selection_is_open(hackathon: Hackathon) -> None:
+    """Apply one server-side PS visibility window to every selection path."""
+    now = datetime.utcnow()
+    publish_at = hackathon.problem_statement_publish_at or (
+        hackathon.start_date if not hackathon.announce_ps_advance else None
+    )
+    if publish_at and now < publish_at:
+        raise HTTPException(status_code=400, detail="Problem statements have not been released yet.")
+    if hackathon.problem_selection_deadline and now > hackathon.problem_selection_deadline:
+        raise HTTPException(status_code=400, detail="The problem statement selection deadline has passed.")
 
 
 @router.get("", response_model=StandardResponse[List[RegistrationResponse]])
@@ -85,6 +98,12 @@ def create_registration(
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found.")
 
+    if hackathon.registration_deadline and datetime.utcnow() > hackathon.registration_deadline:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The registration deadline has passed."
+        )
+
     # Validate team belongs to this hackathon
     if team.hackathon_id != hackathon.id:
         raise HTTPException(
@@ -94,6 +113,7 @@ def create_registration(
 
     # Validate problem statement belongs to hackathon
     if payload.problem_statement_id:
+        _ensure_problem_selection_is_open(hackathon)
         ps = db.query(ProblemStatement).filter(
             ProblemStatement.id == payload.problem_statement_id,
             ProblemStatement.hackathon_id == hackathon.id
@@ -254,6 +274,9 @@ def select_problem_statement(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only team members can select or modify the problem statement choice."
         )
+
+    hackathon = registration.hackathon
+    _ensure_problem_selection_is_open(hackathon)
 
     ps_id = payload.get("problem_statement_id")
     if not ps_id:

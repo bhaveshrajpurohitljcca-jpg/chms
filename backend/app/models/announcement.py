@@ -37,6 +37,8 @@ class Announcement(BaseTable):
         ForeignKey("user.id", ondelete="SET NULL"),
         nullable=True
     )
+    # all_platform_users | all_users | team:<team_id> | user:<user_id>
+    target = Column(String(255), nullable=True)
 
     hackathon = relationship("Hackathon", back_populates="announcements")
     created_by = relationship("User", foreign_keys=[created_by_id])

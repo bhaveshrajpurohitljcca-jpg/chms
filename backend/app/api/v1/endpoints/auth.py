@@ -6,8 +6,10 @@ from app.database import get_db
 from app.models.user import User, UserRole
 from app.schemas.user import UserRegister, UserLogin, UserResponse, TokenResponse
 from app.schemas.response import StandardResponse
-from app.core.security import hash_password, verify_password, create_access_token
+from app.core.security import hash_password, verify_password, password_needs_rehash, create_access_token
 from app.api.deps import get_current_active_user
+import threading
+from app.utils.email import send_welcome_email
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -25,7 +27,9 @@ def register_user(payload: UserRegister, db: Session = Depends(get_db)):
         email=clean_email,
         hashed_password=hash_password(payload.password),
         full_name=payload.full_name,
-        role=payload.role or UserRole.STUDENT,
+        # Public registration must never allow a caller to self-assign an
+        # elevated role. Admin assigns coordinator/admin roles separately.
+        role=UserRole.STUDENT,
         department=payload.department,
         college_id=payload.college_id,
         bio=payload.bio,
@@ -41,6 +45,7 @@ def register_user(payload: UserRegister, db: Session = Depends(get_db)):
 
     from app.services.notification_service import NotificationEventDispatcher
     NotificationEventDispatcher.dispatch_user_registration(db, new_user.id, new_user.full_name)
+    threading.Thread(target=send_welcome_email, kwargs={"to_email": new_user.email, "recipient_name": new_user.full_name}, daemon=True).start()
 
     token = create_access_token({"sub": new_user.id, "email": new_user.email, "role": new_user.role.value})
     user_resp = UserResponse.from_orm(new_user)
@@ -73,6 +78,11 @@ def login_user(payload: UserLogin, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Account is inactive. Please contact system administrator."
         )
+
+    # Upgrade legacy SHA-256 credentials without forcing a password reset.
+    if password_needs_rehash(user.hashed_password):
+        user.hashed_password = hash_password(payload.password)
+        db.commit()
 
     token = create_access_token({"sub": user.id, "email": user.email, "role": user.role.value})
     user_resp = UserResponse.from_orm(user)

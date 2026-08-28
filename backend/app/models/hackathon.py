@@ -26,6 +26,9 @@ class Hackathon(BaseTable):
     start_date = Column(DateTime, nullable=True)
     end_date = Column(DateTime, nullable=True)
     registration_deadline = Column(DateTime, nullable=True)
+    problem_statement_publish_at = Column(DateTime, nullable=True)
+    problem_selection_deadline = Column(DateTime, nullable=True)
+    submission_deadline = Column(DateTime, nullable=True)
     max_team_size = Column(Integer, default=3, nullable=False)
     min_team_size = Column(Integer, default=1, nullable=False)
     is_strict_team_size = Column(Boolean, default=False, nullable=False)
@@ -34,6 +37,9 @@ class Hackathon(BaseTable):
     banner_url = Column(String(500), nullable=True)
     results_published = Column(Boolean, default=False, nullable=False)
     announce_ps_advance = Column(Boolean, default=True, nullable=False)
+    evaluation_mode = Column(String(20), default="single_round", nullable=False)
+    finalists_per_problem = Column(Integer, default=3, nullable=False)
+    current_evaluation_round = Column(Integer, default=1, nullable=False)
 
 
     problem_statements = relationship("ProblemStatement", back_populates="hackathon", cascade="all, delete-orphan")
@@ -47,6 +53,7 @@ class ProblemStatement(BaseTable):
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
     technical_deliverable = Column(Text, nullable=True)
+    points = Column(Integer, default=100, nullable=False)
     category = Column(SQLEnum(ProblemCategory), default=ProblemCategory.OPEN_INNOVATION, nullable=False)
     difficulty = Column(String(50), default="Medium", nullable=False)
     max_teams = Column(Integer, default=10, nullable=False)

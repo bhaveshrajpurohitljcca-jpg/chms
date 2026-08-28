@@ -7,6 +7,7 @@ from app.models.invitation import TeamInvitation, InvitationStatus
 from app.models.registration import Registration, RegistrationStatus
 from app.models.notification import Notification, NotificationType
 from app.models.announcement import Announcement
+from app.models.certificate import Certificate, CertificateTemplate
 
 __all__ = [
     "Base",
@@ -32,4 +33,6 @@ __all__ = [
     "Announcement",
     "JudgeAssignment",
     "CoordinatorAssignment",
+    "Certificate",
+    "CertificateTemplate",
 ]

@@ -480,6 +480,23 @@ def send_team_invitation_email(
         )
     return sent
 
+def send_welcome_email(to_email: str, recipient_name: str) -> bool:
+    """Send a transactional welcome email after account creation."""
+    safe_name = html.escape(recipient_name or to_email)
+    dashboard_url = f"{_frontend_url()}/student"
+    plain_text = f"Hi {recipient_name or to_email},\n\nWelcome to CHMS. Your account is ready.\n\nOpen your dashboard: {dashboard_url}\n\n— CHMS Team"
+    html_body = f"""
+    <html><body style="font-family:Arial,sans-serif;background:#0a0a0f;color:#fff;padding:32px">
+      <div style="max-width:560px;margin:auto;padding:32px;border:1px solid #164e63;border-radius:14px;background:#111827">
+        <p style="color:#00f3ff;font-weight:700;letter-spacing:.12em">CHMS</p>
+        <h1>Welcome, {safe_name}!</h1>
+        <p>Your College Hackathon Management System account has been created successfully.</p>
+        <p><a href="{dashboard_url}" style="display:inline-block;padding:12px 22px;background:#00f3ff;color:#001018;border-radius:7px;text-decoration:none;font-weight:700">Open dashboard</a></p>
+      </div>
+    </body></html>
+    """
+    return _send_html_email(to_email, "Welcome to CHMS", plain_text, html_body)
+
 
 def send_announcement_email(
     to_email: str,
