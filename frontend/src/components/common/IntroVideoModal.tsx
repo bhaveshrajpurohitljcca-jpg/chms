@@ -31,7 +31,7 @@ export const IntroVideoModal: React.FC<IntroVideoModalProps> = ({ isOpen, onClos
       {/* Full-Screen Edge-to-Edge Video */}
       <video
         ref={videoRef}
-        src="/hexathon_intro.mp4"
+        src="/new_intro.mp4"
         className="w-full h-full object-cover"
         autoPlay
         playsInline
@@ -61,14 +61,24 @@ export const IntroVideoModal: React.FC<IntroVideoModalProps> = ({ isOpen, onClos
           </div>
         </div>
 
-        {/* Transparent Enter Console Button */}
-        <button
-          onClick={onClose}
-          className="px-6 py-2.5 rounded-2xl bg-white/5 hover:bg-white/15 border border-white/15 backdrop-blur-md text-white/80 hover:text-white text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-2.5 shadow-[0_0_20px_rgba(255,255,255,0.05)]"
-        >
-          <span>Enter Console</span>
-          <ArrowRight size={14} />
-        </button>
+        <div className="flex items-center gap-6">
+          {/* Skip Button */}
+          <button
+            onClick={onClose}
+            className="text-white/50 hover:text-white text-xs font-bold uppercase tracking-wider transition-all duration-300"
+          >
+            Skip
+          </button>
+
+          {/* Transparent Enter Console Button */}
+          <button
+            onClick={onClose}
+            className="px-6 py-2.5 rounded-2xl bg-white/5 hover:bg-white/15 border border-white/15 backdrop-blur-md text-white/80 hover:text-white text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-2.5 shadow-[0_0_20px_rgba(255,255,255,0.05)]"
+          >
+            <span>Enter Console</span>
+            <ArrowRight size={14} />
+          </button>
+        </div>
       </div>
     </div>
   );

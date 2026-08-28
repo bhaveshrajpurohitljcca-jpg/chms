@@ -271,3 +271,61 @@
 - ✅ PostgreSQL database tables schema automatically synchronized.
 
 ---
+
+## 🔄 Change #11 — Logo Background Removal & Intro Video Splash Restoration
+**Date:** 2026-08-26  
+**Branch:** `main`
+
+### Kya kiya:
+1. **Background Removal on Exact Specified Logo (`logo/WhatsApp Image 2026-08-14 at 7.00.24 AM.jpeg` & `6.54.14 AM.jpeg`):**
+   - User path `logo/WhatsApp Image 2026-08-14 at 7.00.24 AM.jpeg` image ko Python Pillow script ke dwara background-removed smooth RGBA transparent PNG (`630x794` exact artwork crop) me convert kiya.
+   - Header icon (`/real_logo.png`) aur full horizontal brand logo (`/chms_logo_full.png`) dono ko transparent PNG format me set kiya taaki kisi bhi black or white background box ke bina dark theme navbar me glowing cyan filter ke sath merge ho.
+2. **Intro Video Splash Screen Restoration (`App.tsx` & `IntroVideoModal.tsx`):**
+   - `App.tsx` me disabled `showSplash` state ko restore karke `sessionStorage.getItem('chms_splash_shown')` logic se trigger kiya.
+   - Initial page load par full-screen edge-to-edge animation video (`logo_intro.mp4`) auto-play aur click-to-skip support ke sath display hota hai.
+
+### Kyu kiya:
+- User ne report kiya ki galat logo display ho raha tha aur initial page load animation video trigger hona band ho gaya tha.
+
+### Kya impact aaya:
+- ✅ Exact user logo `WhatsApp Image 2026-08-14 at 7.00.24 AM.jpeg` with zero background box top header navbar me live display ho raha hai.
+- ✅ Full-screen intro animation video first load aur sign-in flows me cleanly render aur skip ho raha hai.
+- ✅ Build tests aur browser automation tests 100% pass!
+
+---
+
+## 🔄 Change #12 — Removal of Old HX Icon & Displaying Single New Hexagon Logo
+**Date:** 2026-08-26  
+**Branch:** `main`
+
+### Kya kiya:
+1. **Old HX Circuit Icon Removal (`App.tsx` & `RoleLayout.tsx`):**
+   - Header me se purane circuit wale `HX` logo (`real_logo.png` old version) ko poori tarah se remove kar diya gaya.
+   - Header brand link me ab **sirf single naya background-removed Hexagon H logo** (`hexathon_logo_transparent.png` processed directly from `WhatsApp Image 2026-08-14 at 7.00.24 AM.jpeg`) render ho raha hai with `HexaThon` title text.
+
+### Kyu kiya:
+- User ne screenshot ke sath report kiya ki header me purana HX icon aur naya logo side-by-side aarahe the, aur purane HX icon ko remove karna tha.
+
+### Kya impact aaya:
+- ✅ Website par ab sirf single stylish glowing Hexagon "H" logo (`WhatsApp Image 2026-08-14 at 7.00.24 AM.jpeg` transparent version) next to "HexaThon" display hota hai.
+- ✅ Automated browser verification (`homepage` & `/student` dashboards) 100% successful.
+
+---
+
+## 🔄 Change #13 — Removal of "HexaThon" Text from Header Logo Section
+**Date:** 2026-08-26  
+**Branch:** `main`
+
+### Kya kiya:
+1. **Header Text Removal (`App.tsx` & `RoleLayout.tsx`):**
+   - Header me logo icon ke side me se `HexaThon` text span (`<span className="font-archivo ...">HexaThon</span>`) ko completely remove kar diya gaya.
+   - Header me ab **sirf glowing Hexagon H logo icon** standalone brand link ke roop me render hota hai.
+
+### Kyu kiya:
+- User request: "logo ke side me jo text hai 'Hexathon' header me w remove kardo".
+
+### Kya impact aaya:
+- ✅ Top navbar minimalist aur clean look me update ho gaya hai jisme sirf background-removed glowing Hexagon H logo icon hai.
+- ✅ Automated browser testing (`/` & `/student`) verified 100% clean UI.
+
+---

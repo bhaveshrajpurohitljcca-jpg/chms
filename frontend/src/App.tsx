@@ -47,6 +47,7 @@ import ThreeParticleBg from '@/components/ui/ThreeParticleBg';
 import StatusPulseBadge from '@/components/ui/StatusPulseBadge';
 import GlassProductCard from '@/components/ui/GlassProductCard';
 import Button from '@/components/ui/button';
+import { IntroVideoModal } from '@/components/common/IntroVideoModal';
 import { ProjectDetailModal } from '@/components/student/ProjectDetailModal';
 import type { MockProjectData } from '@/components/student/ProjectDetailModal';
 import { TeamDetailModal } from '@/components/student/TeamDetailModal';
@@ -118,14 +119,9 @@ const GlobalLayout = () => {
         <div className="flex items-center gap-3 select-none">
           <Link to="/" className="flex items-center gap-3 flex-shrink-0 group hover:scale-105 transition-transform" title="HexaThon Home">
             <img
-              src="/chms_logo.jpeg"
-              alt="HexaThon Icon"
-              className="w-10 h-10 md:w-12 md:h-12 object-contain rounded-lg drop-shadow-[0_0_16px_rgba(100,120,255,0.95)]"
-            />
-            <img
-              src="/chms_logo_full.jpeg"
+              src="/hexathon_logo_transparent.png"
               alt="HexaThon Logo"
-              className="hidden md:block h-8 w-auto object-contain drop-shadow-[0_0_12px_rgba(100,120,255,0.7)]"
+              className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-[0_0_16px_rgba(0,243,255,0.95)] filter brightness-115"
             />
           </Link>
         </div>
@@ -6433,8 +6429,15 @@ const AdminView = () => {
 // C. CENTRAL ROUTER BOOT
 // ==========================================
 
+// Root-level intro video — rendered inside AuthProvider so it can
+// access showIntroVideo from context and fires after sign-in from ANY page.
+const AppIntroVideo = () => {
+  const { showIntroVideo, closeIntroVideo } = useAuth();
+  return <IntroVideoModal isOpen={showIntroVideo} onClose={closeIntroVideo} />;
+};
 
 function App() {
+  // Splash enabled: intro video plays on first site visit and after sign-in
   const [showSplash, setShowSplash] = useState(() => !sessionStorage.getItem('chms_splash_shown'));
   const [isFadingOut, setIsFadingOut] = useState(false);
 
@@ -6503,6 +6506,8 @@ function App() {
           </div>
         </div>
       )}
+
+      <AppIntroVideo />
 
       <Router>
         <Suspense fallback={<div className="min-h-screen bg-[#050505] flex items-center justify-center text-accent-primary font-mono text-sm">Loading workspace...</div>}>

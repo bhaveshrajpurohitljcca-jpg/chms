@@ -14,6 +14,8 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthModalOpen: boolean;
   authModalTab: 'login' | 'register';
+  showIntroVideo: boolean;
+  closeIntroVideo: () => void;
   openAuthModal: (initialMode?: 'login' | 'register') => void;
   closeAuthModal: () => void;
   login: (email: string, password: string) => Promise<UserProfile>;
@@ -103,6 +105,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState<boolean>(() => !!getStoredToken());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [authModalTab, setAuthModalTab] = useState<'login' | 'register'>('login');
+  const [showIntroVideo, setShowIntroVideo] = useState<boolean>(false);
+
+  const closeIntroVideo = () => setShowIntroVideo(false);
 
   useEffect(() => {
     async function initAuth() {
@@ -159,6 +164,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setToken(response.data.access_token);
         setUser(response.data.user);
         closeAuthModal();
+        setShowIntroVideo(true);
         setIsLoading(false);
         return response.data.user;
       }
@@ -169,6 +175,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (matchingDemo) {
         setUser(matchingDemo);
         closeAuthModal();
+        setShowIntroVideo(true);
         setIsLoading(false);
         return matchingDemo;
       } else {
@@ -197,6 +204,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setToken(response.data.access_token);
         setUser(response.data.user);
         closeAuthModal();
+        setShowIntroVideo(true);
         setIsLoading(false);
         return response.data.user;
       }
@@ -215,6 +223,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
         setUser(newUser);
         closeAuthModal();
+        setShowIntroVideo(true);
         setIsLoading(false);
         return newUser;
       }
@@ -283,6 +292,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isLoading,
         isAuthModalOpen,
         authModalTab,
+        showIntroVideo,
+        closeIntroVideo,
         openAuthModal,
         closeAuthModal,
         login,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import {} from 'react';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { 
@@ -17,7 +17,6 @@ import {
   Moon
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
-import { IntroVideoModal } from '@/components/common/IntroVideoModal';
 
 interface SidebarItem {
   label: string;
@@ -29,17 +28,6 @@ interface SidebarItem {
 export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] }) {
   const { user, isLoading } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [showIntroVideo, setShowIntroVideo] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      setShowIntroVideo(true);
-    }
-  }, [user]);
-
-  const handleCloseIntro = () => {
-    setShowIntroVideo(false);
-  };
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -171,16 +159,13 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
         
         {/* Left: HexaThon Brand Link with Larger Glowing Logo */}
         <Link to="/" className="flex items-center gap-3 flex-shrink-0 group hover:opacity-90 transition-opacity" title="HexaThon Home">
-          <div className="relative w-12 h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+          <div className="relative w-10 h-10 md:w-12 md:h-12 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
             <img
-              src="/real_logo.png"
+              src="/hexathon_logo_transparent.png"
               alt="HexaThon Logo"
-              className="w-12 h-12 md:w-14 md:h-14 object-contain drop-shadow-[0_0_16px_rgba(0,243,255,0.95)] filter brightness-115"
+              className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-[0_0_16px_rgba(0,243,255,0.95)] filter brightness-115"
             />
           </div>
-          <span className="font-archivo text-xl md:text-2xl tracking-wider font-black text-white text-glow-cyan">
-            HexaThon
-          </span>
         </Link>
 
         {/* Center: TOP MENU OPTIONS (Desktop Navigation) */}
@@ -249,10 +234,6 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
         </div>
       </nav>
 
-      <IntroVideoModal
-        isOpen={showIntroVideo}
-        onClose={handleCloseIntro}
-      />
     </div>
   );
 }
