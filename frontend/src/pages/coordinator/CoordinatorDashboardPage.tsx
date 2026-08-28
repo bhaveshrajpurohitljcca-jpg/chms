@@ -102,6 +102,7 @@ export function CoordinatorDashboardPage() {
       announce_ps_advance: selectedHackathon.announce_ps_advance !== false,
       evaluation_mode: selectedHackathon.evaluation_mode || 'single_round',
       finalists_per_problem: selectedHackathon.finalists_per_problem || 3,
+      winners_per_problem: selectedHackathon.winners_per_problem || 1,
       max_team_size: selectedHackathon.max_team_size || 3,
       min_team_size: selectedHackathon.min_team_size || 1,
       is_strict_team_size: selectedHackathon.is_strict_team_size || false,
@@ -139,6 +140,7 @@ export function CoordinatorDashboardPage() {
         announce_ps_advance: editForm.announce_ps_advance,
         evaluation_mode: editForm.evaluation_mode,
         finalists_per_problem: editForm.finalists_per_problem,
+        winners_per_problem: editForm.winners_per_problem || 1,
       };
       const res = await apiService.updateHackathon(selectedHackathon.id, payload);
       if (res.data) {
@@ -350,7 +352,7 @@ export function CoordinatorDashboardPage() {
                       <button type="button" onClick={() => runRoundAction('finalize')}
                         className="flex items-center gap-3 p-3.5 rounded-xl border border-success/30 bg-success/5 hover:bg-success/10 transition-all text-left w-full">
                         <Award size={14} className="text-success" />
-                        <span className="text-xs font-semibold text-success flex-1">Finalize Winners Per Problem</span>
+                        <span className="text-xs font-semibold text-success flex-1">Finalize Winners Per Problem ({selectedHackathon.winners_per_problem === 3 ? "Top 3 Podium" : "Single Winner"})</span>
                       </button>
                     )}
                   </div>
@@ -564,12 +566,23 @@ export function CoordinatorDashboardPage() {
             </div>
 
             {editForm.evaluation_mode === 'two_round' && (
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">Finalists Per Problem</label>
-                <input type="number" min={1} max={20} value={editForm.finalists_per_problem}
-                  onChange={(e) => setEditForm({ ...editForm, finalists_per_problem: Number(e.target.value) || 3 })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs outline-none focus:border-accent-primary" />
-              </div>
+              <>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">Finalists Per Problem</label>
+                  <input type="number" min={1} max={20} value={editForm.finalists_per_problem}
+                    onChange={(e) => setEditForm({ ...editForm, finalists_per_problem: Number(e.target.value) || 3 })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs outline-none focus:border-accent-primary" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">Winner Policy</label>
+                  <select value={editForm.winners_per_problem || 1}
+                    onChange={(e) => setEditForm({ ...editForm, winners_per_problem: Number(e.target.value) || 1 })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-black border border-white/10 text-white text-xs outline-none focus:border-accent-primary">
+                    <option value={1}>Single Winner (1 Winner per track)</option>
+                    <option value={3}>Top 3 Winners (Winner, 1st & 2nd Runner Up)</option>
+                  </select>
+                </div>
+              </>
             )}
 
             <div className="sm:col-span-2 rounded-xl border border-white/10 bg-white/[0.02] p-3.5">

@@ -105,11 +105,16 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
         ];
       case 'coordinator':
         return [
-          { label: 'Dashboard',          shortLabel: 'Home',    path: '/coordinator',                    icon: LayoutDashboard },
-          { label: 'Certificate Studio', shortLabel: 'Certs',   path: '/coordinator/certificates',       icon: Award },
-          { label: 'Certificate Vault', shortLabel: 'Vault', path: '/coordinator/certificate-vault', icon: Shield },
-          { label: 'Announcements',      shortLabel: 'News',    path: '/coordinator/announcements',      icon: Bell },
-          { label: 'Profile Settings',   shortLabel: 'Profile', path: '/coordinator/profile',            icon: UserIcon },
+          { label: 'Dashboard',          shortLabel: 'Home',     path: '/coordinator',                    icon: LayoutDashboard },
+          { label: 'Hackathons',         shortLabel: 'Events',   path: '/coordinator/hackathons',         icon: Calendar },
+          { label: 'Problem Statements', shortLabel: 'Problems', path: '/coordinator/problem-statements',icon: Code },
+          { label: 'Registrations',      shortLabel: 'Teams',    path: '/coordinator/registrations',      icon: Users },
+          { label: 'Submissions',        shortLabel: 'Projects', path: '/coordinator/submissions',        icon: BookOpen },
+          { label: 'Judge Assignments',  shortLabel: 'Judges',   path: '/coordinator/assignments',        icon: Cpu },
+          { label: 'Certificate Studio', shortLabel: 'Certs',    path: '/coordinator/certificates',       icon: Award },
+          { label: 'Certificate Vault',  shortLabel: 'Vault',    path: '/coordinator/certificate-vault',  icon: Shield },
+          { label: 'Announcements',      shortLabel: 'News',     path: '/coordinator/announcements',      icon: Bell },
+          { label: 'Profile Settings',   shortLabel: 'Profile',  path: '/coordinator/profile',            icon: UserIcon },
         ];
       case 'admin':
         return [

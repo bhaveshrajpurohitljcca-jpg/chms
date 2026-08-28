@@ -25,8 +25,16 @@ class UserRegister(BaseModel):
         return v
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    email: str = Field(min_length=3, max_length=255)
     password: str
+
+    @field_validator('email', mode='after')
+    @classmethod
+    def validate_login_email(cls, v: str) -> str:
+        v = v.strip().lower()
+        if '@' not in v or len(v.split('@')) != 2 or not v.split('@')[1]:
+            raise ValueError('Please enter a valid email address')
+        return v
 
 class UserProfileUpdate(BaseModel):
     full_name: Optional[str] = None

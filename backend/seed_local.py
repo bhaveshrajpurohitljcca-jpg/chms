@@ -30,6 +30,7 @@ from app.models.submission import Submission, JudgeAssignment, Evaluation
 from app.models.invitation import TeamInvitation
 from app.models.notification import Notification
 from app.models.announcement import Announcement
+from app.models.certificate import Certificate, CertificateTemplate
 
 # ─────────────────────────────────────────────
 # SAFETY: Only run on local/SQLite database

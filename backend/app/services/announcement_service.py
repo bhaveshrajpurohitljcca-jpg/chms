@@ -142,7 +142,7 @@ def dispatch_announcement(
     """
     recipients = resolve_announcement_recipients(db, target, hackathon_id)
     if not recipients:
-        raise HTTPException(status_code=400, detail="No recipients found for this announcement target.")
+        return 0, 0
 
     hackathon_name: Optional[str] = None
     if hackathon_id:

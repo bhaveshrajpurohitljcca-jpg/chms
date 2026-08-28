@@ -633,15 +633,7 @@ export default function StudentSubmissionPage() {
         )}
       </div>
 
-      {/* ── Alert: Read-Only Check for non-leaders ────────── */}
-      {false && (
-        <div className="flex items-start gap-3 p-4 rounded-xl border border-yellow-500/20 bg-yellow-500/5">
-          <AlertCircle size={16} className="text-yellow-400 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-yellow-300/80 font-light">
-            <strong>Read-Only Access:</strong> Only the Team Leader (<code>{activeTeam.leader?.full_name || 'Leader'}</code>) can submit or modify project solutions. You can view the details below.
-          </p>
-        </div>
-      )}
+
 
       {/* ── Alert: Team Size Criteria Unfulfilled ──────────── */}
       {isTeamSizeUnfulfilled && (

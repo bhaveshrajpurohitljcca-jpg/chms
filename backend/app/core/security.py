@@ -1,4 +1,5 @@
 import hmac
+import hashlib
 import base64
 import json
 import time

@@ -13,31 +13,8 @@ router = APIRouter(prefix="/assignments", tags=["Assignments"])
 
 
 def _sync_assignment_account_statuses(db: Session) -> None:
-    active_hackathon_ids = {
-        hackathon_id
-        for (hackathon_id,) in db.query(Hackathon.id).filter(
-            Hackathon.status.in_([HackathonStatus.DRAFT, HackathonStatus.UPCOMING, HackathonStatus.ACTIVE])
-        ).all()
-    }
-
-    coordinator_ids = {
-        assignment.coordinator_id
-        for assignment in db.query(CoordinatorAssignment).all()
-        if assignment.hackathon_id in active_hackathon_ids
-    }
-    judge_ids = {
-        assignment.judge_id
-        for assignment in db.query(JudgeAssignment).all()
-        if assignment.hackathon_id in active_hackathon_ids
-    }
-
-    for user in db.query(User).filter(User.role == UserRole.COORDINATOR).all():
-        user.is_active = user.id in coordinator_ids
-
-    for user in db.query(User).filter(User.role == UserRole.JUDGE).all():
-        user.is_active = user.id in judge_ids
-
-    db.commit()
+    """User active statuses are managed explicitly by administrators."""
+    pass
 
 # ─────────────────────────────────────────────────────────────
 # PYDANTIC SCHEMAS

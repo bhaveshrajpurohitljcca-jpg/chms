@@ -3430,7 +3430,8 @@ const AdminView = () => {
     problemSelectionDeadline: '',
     submissionDeadline: '',
     evaluationMode: 'single_round' as 'single_round' | 'two_round',
-    finalistsPerProblem: 3
+    finalistsPerProblem: 3,
+    winnersPerProblem: 1
   });
   
   const [newPS, setNewPS] = useState({ 
@@ -3774,10 +3775,11 @@ const AdminView = () => {
         problem_selection_deadline: istInputToISOString(newEvent.problemSelectionDeadline),
         submission_deadline: istInputToISOString(newEvent.submissionDeadline),
         evaluation_mode: newEvent.evaluationMode,
-        finalists_per_problem: newEvent.evaluationMode === 'two_round' ? newEvent.finalistsPerProblem : undefined
+        finalists_per_problem: newEvent.evaluationMode === 'two_round' ? newEvent.finalistsPerProblem : undefined,
+        winners_per_problem: newEvent.evaluationMode === 'two_round' ? newEvent.winnersPerProblem : undefined
       });
       showToast(`Hackathon "${newEvent.title}" successfully created!`);
-      setNewEvent({ title: '', slug: '', tagline: '', description: '', startDate: '', endDate: '', registrationDeadline: '', maxTeamSize: 3, announcePsAdvance: true, problemStatementPublishAt: '', problemSelectionDeadline: '', submissionDeadline: '', evaluationMode: 'single_round', finalistsPerProblem: 3 });
+      setNewEvent({ title: '', slug: '', tagline: '', description: '', startDate: '', endDate: '', registrationDeadline: '', maxTeamSize: 3, announcePsAdvance: true, problemStatementPublishAt: '', problemSelectionDeadline: '', submissionDeadline: '', evaluationMode: 'single_round', finalistsPerProblem: 3, winnersPerProblem: 1 });
       setShowEventModal(false);
       fetchHackathons();
     } catch (err: any) {
@@ -5677,18 +5679,49 @@ const AdminView = () => {
                     className="sr-only"
                   />
                   <span className="block text-xs font-bold text-white">Two Rounds</span>
-                  <span className="mt-1 block text-[10px] text-white/45">Shortlist finalists first, then select one winner per problem.</span>
+                  <span className="mt-1 block text-[10px] text-white/45">Screening round first, followed by live presentation final round.</span>
                 </label>
               </div>
               {newEvent.evaluationMode === 'two_round' && (
-                <Input
-                  label="Finalists Per Problem Statement"
-                  type="number"
-                  min="1"
-                  required
-                  value={newEvent.finalistsPerProblem}
-                  onChange={(e) => setNewEvent(prev => ({ ...prev, finalistsPerProblem: Math.max(1, parseInt(e.target.value) || 1) }))}
-                />
+                <div className="space-y-4">
+                  <Input
+                    label="Finalists Per Problem Statement"
+                    type="number"
+                    min="1"
+                    required
+                    value={newEvent.finalistsPerProblem}
+                    onChange={(e) => setNewEvent(prev => ({ ...prev, finalistsPerProblem: Math.max(1, parseInt(e.target.value) || 1) }))}
+                  />
+                  <div>
+                    <label className="text-xs font-semibold text-white/70 block mb-2">Final Round Winner Policy</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className={`cursor-pointer rounded-lg border p-3 transition-colors ${newEvent.winnersPerProblem === 1 ? 'border-accent-primary bg-accent-primary/10' : 'border-white/10 bg-black/20'}`}>
+                        <input
+                          type="radio"
+                          name="winnersPerProblem"
+                          value={1}
+                          checked={newEvent.winnersPerProblem === 1}
+                          onChange={() => setNewEvent(prev => ({ ...prev, winnersPerProblem: 1 }))}
+                          className="sr-only"
+                        />
+                        <span className="block text-xs font-bold text-white">Single Winner</span>
+                        <span className="mt-1 block text-[10px] text-white/45">Only 1 Winner per Problem Statement (Rank 1).</span>
+                      </label>
+                      <label className={`cursor-pointer rounded-lg border p-3 transition-colors ${newEvent.winnersPerProblem === 3 ? 'border-accent-primary bg-accent-primary/10' : 'border-white/10 bg-black/20'}`}>
+                        <input
+                          type="radio"
+                          name="winnersPerProblem"
+                          value={3}
+                          checked={newEvent.winnersPerProblem === 3}
+                          onChange={() => setNewEvent(prev => ({ ...prev, winnersPerProblem: 3 }))}
+                          className="sr-only"
+                        />
+                        <span className="block text-xs font-bold text-white">Top 3 Winners</span>
+                        <span className="mt-1 block text-[10px] text-white/45">Winner, 1st Runner Up & 2nd Runner Up podium.</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
 
@@ -6529,8 +6562,11 @@ function App() {
           <Route path="/admin" element={<RoleLayout allowedRoles={['admin']} />}>
             <Route index element={<AdminView />} />
             <Route path="assignments" element={<JudgeAssignmentPage />} />
-            <Route path="users" element={<LeaderboardView />} />
-            <Route path="settings" element={<AnnouncementsView />} />
+            <Route path="users" element={<Navigate to="/admin?tab=users" replace />} />
+            <Route path="hackathons" element={<Navigate to="/admin?tab=hackathons" replace />} />
+            <Route path="judges" element={<Navigate to="/admin?tab=judges" replace />} />
+            <Route path="coordinators" element={<Navigate to="/admin?tab=coordinators" replace />} />
+            <Route path="settings" element={<Navigate to="/admin?tab=hackathons" replace />} />
             <Route path="profile" element={<ProfilePage />} />
           </Route>
           

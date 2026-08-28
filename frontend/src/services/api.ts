@@ -73,6 +73,7 @@ export interface BackendHackathon {
   announce_ps_advance: boolean;
   evaluation_mode?: 'single_round' | 'two_round';
   finalists_per_problem?: number;
+  winners_per_problem?: number;
   current_evaluation_round?: number;
   created_at: string;
 }
@@ -505,6 +506,7 @@ export const apiService = {
     announce_ps_advance?: boolean;
     evaluation_mode?: 'single_round' | 'two_round';
     finalists_per_problem?: number;
+    winners_per_problem?: number;
   }) {
     return request<any>('/hackathons', {
       method: 'POST',
@@ -534,6 +536,7 @@ export const apiService = {
     announce_ps_advance?: boolean;
     evaluation_mode?: 'single_round' | 'two_round';
     finalists_per_problem?: number;
+    winners_per_problem?: number;
   }) {
     return request<any>(`/hackathons/${hackathonId}`, {
       method: 'PUT',
@@ -1040,8 +1043,11 @@ export const apiService = {
     return request<any[]>(`/hackathons/${hackathonId}/rounds/shortlist`, { method: 'POST' });
   },
 
-  async finalizeProblemStatementWinners(hackathonId: string) {
-    return request<any[]>(`/hackathons/${hackathonId}/rounds/finalize`, { method: 'POST' });
+  async finalizeProblemStatementWinners(hackathonId: string, payload?: any) {
+    return request<any[]>(`/hackathons/${hackathonId}/rounds/finalize`, {
+      method: 'POST',
+      body: payload ? JSON.stringify(payload) : undefined,
+    });
   },
 
   async getCertificateEligibility(hackathonId: string) {

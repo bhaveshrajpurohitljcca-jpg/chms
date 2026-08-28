@@ -13,7 +13,8 @@ from app.models.user import User, UserRole
 from app.models.submission import JudgeAssignment
 from app.schemas.hackathon import (
     HackathonCreate, HackathonResponse,
-    ProblemStatementCreate, ProblemStatementResponse
+    ProblemStatementCreate, ProblemStatementResponse,
+    FinalizeRankingsRequest
 )
 from app.schemas.response import StandardResponse
 from app.api.deps import get_current_active_user, RoleChecker, get_current_user_optional
@@ -207,7 +208,8 @@ def create_hackathon(
         banner_url=payload.banner_url,
         announce_ps_advance=payload.announce_ps_advance if payload.announce_ps_advance is not None else True,
         evaluation_mode=payload.evaluation_mode or "single_round",
-        finalists_per_problem=payload.finalists_per_problem or 3
+        finalists_per_problem=payload.finalists_per_problem or 3,
+        winners_per_problem=payload.winners_per_problem or 1
     )
     db.add(hackathon)
     db.commit()
@@ -289,6 +291,8 @@ def update_hackathon(
         hackathon.evaluation_mode = payload.evaluation_mode
     if payload.finalists_per_problem is not None:
         hackathon.finalists_per_problem = max(1, payload.finalists_per_problem)
+    if payload.winners_per_problem is not None:
+        hackathon.winners_per_problem = max(1, payload.winners_per_problem)
 
     db.commit()
     db.refresh(hackathon)
@@ -476,7 +480,7 @@ def get_hackathon_leaderboard(
 ):
     """
     Calculate and return the leaderboard for a given hackathon.
-    Includes only graded submissions, sorted by average evaluation score.
+    Includes only finalized (non-draft) graded evaluations, sorted by evaluation score.
     """
     from app.models.submission import Submission, SubmissionStatus
     hackathon = db.query(Hackathon).filter(Hackathon.id == hackathon_id).first()
@@ -484,17 +488,54 @@ def get_hackathon_leaderboard(
         hackathon = db.query(Hackathon).filter(Hackathon.slug == hackathon_id).first()
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found.")
+
+    # If results are not published yet, only Admins and assigned Coordinators can preview the leaderboard
+    if not hackathon.results_published:
+        is_authorized_viewer = False
+        if current_user:
+            if current_user.role == UserRole.ADMIN:
+                is_authorized_viewer = True
+            elif current_user.role == UserRole.COORDINATOR:
+                from app.models.hackathon import CoordinatorAssignment
+                assignment = db.query(CoordinatorAssignment).filter(
+                    CoordinatorAssignment.coordinator_id == current_user.id,
+                    CoordinatorAssignment.hackathon_id == hackathon.id
+                ).first()
+                if assignment:
+                    is_authorized_viewer = True
+
+        if not is_authorized_viewer:
+            return StandardResponse(
+                success=True,
+                message="Results for this hackathon have not been published yet.",
+                data=[]
+            )
         
     submissions = db.query(Submission).filter(
         Submission.hackathon_id == hackathon.id,
         Submission.status == SubmissionStatus.GRADED
     ).all()
     
+    is_two_round = (hackathon.evaluation_mode == "two_round")
+    
     leaderboard = []
     for s in submissions:
-        if not s.evaluations:
+        # Only consider finalized (non-draft) evaluations
+        finalized_evals = [e for e in s.evaluations if not getattr(e, "is_draft", False)]
+        if not finalized_evals:
             continue
-        avg_score = sum(e.total_score for e in s.evaluations) / len(s.evaluations)
+
+        if is_two_round:
+            # If two-round, prioritize Round 2 scores for finalists who advanced
+            r2_evals = [e for e in finalized_evals if getattr(e, "round_number", 1) == 2]
+            evals_to_use = r2_evals if r2_evals else [e for e in finalized_evals if getattr(e, "round_number", 1) == 1]
+        else:
+            evals_to_use = finalized_evals
+
+        if not evals_to_use:
+            continue
+
+        avg_score = sum(e.total_score for e in evals_to_use) / len(evals_to_use)
         members_data = []
         if s.team and s.team.members:
             for m in s.team.members:
@@ -517,6 +558,7 @@ def get_hackathon_leaderboard(
             "tech_stack": getattr(s, "tech_stack", None) or "Python, React, FastAPI",
             "score": round(avg_score, 2),
             "rank": 0,
+            "is_finalist": getattr(s, "is_finalist", False),
             "members": members_data
         })
         
@@ -585,10 +627,17 @@ def shortlist_round_one_finalists(
 @router.post("/{hackathon_id}/rounds/finalize", response_model=StandardResponse[List[dict]])
 def finalize_problem_statement_winners(
     hackathon_id: str,
+    payload: Optional[FinalizeRankingsRequest] = None,
     current_user: User = Depends(RoleChecker([UserRole.COORDINATOR, UserRole.ADMIN])),
     db: Session = Depends(get_db)
 ):
-    """Rank only shortlisted teams inside their own problem statement and mark one winner each."""
+    """
+    Rank only shortlisted teams inside their own problem statement and assign winners/runner-ups.
+    Supports:
+    - Direct finalist ranking payload from live presentation pitch (no redundant 5-metric scoring needed).
+    - Configurable winners policy: Single Winner (winners_per_problem=1) or Top 3 Podium (winners_per_problem=3).
+    - Automatic fallback to Round 1 screening scores if no manual rankings are provided.
+    """
     from app.models.submission import Submission, Evaluation
     hackathon = db.query(Hackathon).filter(Hackathon.id == hackathon_id).first()
     if not hackathon:
@@ -597,6 +646,12 @@ def finalize_problem_statement_winners(
     if hackathon.evaluation_mode != "two_round" or hackathon.current_evaluation_round != 2:
         raise HTTPException(status_code=400, detail="Shortlist round-one finalists before finalizing winners.")
 
+    max_winners = getattr(hackathon, "winners_per_problem", 1) or 1
+    custom_ranks = {}
+    if payload and payload.rankings:
+        for r_item in payload.rankings:
+            custom_ranks[r_item.submission_id] = r_item.rank
+
     results = []
     for problem in hackathon.problem_statements:
         finalists = db.query(Submission).filter(
@@ -604,21 +659,69 @@ def finalize_problem_statement_winners(
             Submission.problem_statement_id == problem.id,
             Submission.is_finalist == True
         ).all()
+        if not finalists:
+            continue
+
         ranked = []
         for submission in finalists:
-            scores = [evaluation.total_score for evaluation in db.query(Evaluation).filter(
-                Evaluation.submission_id == submission.id,
-                Evaluation.round_number == 2,
-                Evaluation.is_draft == False
-            ).all()]
-            if scores:
-                ranked.append((submission, round(sum(scores) / len(scores), 2)))
+            # 1. Custom rank if provided directly from pitch
+            if submission.id in custom_ranks:
+                rank_assigned = custom_ranks[submission.id]
+                ranked.append((submission, 1000.0 - rank_assigned, rank_assigned))
+            else:
+                # 2. Check if any round 2 evaluations were saved
+                r2_scores = [evaluation.total_score for evaluation in db.query(Evaluation).filter(
+                    Evaluation.submission_id == submission.id,
+                    Evaluation.round_number == 2,
+                    Evaluation.is_draft == False
+                ).all()]
+                if r2_scores:
+                    avg_score = round(sum(r2_scores) / len(r2_scores), 2)
+                    ranked.append((submission, avg_score, None))
+                else:
+                    # 3. Direct reuse of Round 1 screening score (no redundant scoring required)
+                    score_val = submission.round_one_score
+                    if score_val is None:
+                        r1_scores = [evaluation.total_score for evaluation in db.query(Evaluation).filter(
+                            Evaluation.submission_id == submission.id,
+                            Evaluation.round_number == 1,
+                            Evaluation.is_draft == False
+                        ).all()]
+                        score_val = round(sum(r1_scores) / len(r1_scores), 2) if r1_scores else 0.0
+                    ranked.append((submission, score_val, None))
+
         ranked.sort(key=lambda item: item[1], reverse=True)
-        for rank, (submission, score) in enumerate(ranked, start=1):
+
+        for calculated_rank, (submission, score_metric, explicit_rank) in enumerate(ranked, start=1):
+            rank = explicit_rank if explicit_rank is not None else calculated_rank
             submission.final_rank = rank
-            results.append({"problem_statement_id": problem.id, "problem_statement_title": problem.title,
-                            "team_id": submission.team_id, "team_name": submission.team.name if submission.team else "Unknown Team",
-                            "rank": rank, "score": score, "is_winner": rank == 1})
+            is_winner = (rank <= max_winners)
+
+            award_title = None
+            if is_winner:
+                if rank == 1:
+                    award_title = "Winner"
+                elif rank == 2:
+                    award_title = "1st Runner Up"
+                elif rank == 3:
+                    award_title = "2nd Runner Up"
+                else:
+                    award_title = f"Rank {rank} Winner"
+            else:
+                award_title = "Finalist"
+
+            actual_score = submission.round_one_score or (score_metric if score_metric < 500 else 100.0)
+            results.append({
+                "problem_statement_id": problem.id,
+                "problem_statement_title": problem.title,
+                "team_id": submission.team_id,
+                "team_name": submission.team.name if submission.team else "Unknown Team",
+                "rank": rank,
+                "score": actual_score,
+                "is_winner": is_winner,
+                "award_title": award_title
+            })
+
     hackathon.current_evaluation_round = 3
     db.commit()
     return StandardResponse(success=True, message="Problem-statement winners finalized.", data=results)
@@ -688,19 +791,26 @@ def check_certificate_eligibility(
         leaderboard.append((s.team_id, avg_score))
     leaderboard.sort(key=lambda x: x[1], reverse=True)
     
-    rank = None
-    for i, (tid, _) in enumerate(leaderboard):
-        if tid == team.id:
-            rank = i + 1
-            break
-            
+    is_two_round = (hackathon.evaluation_mode == "two_round")
+    if is_two_round and submission.final_rank is not None:
+        rank = submission.final_rank
+    else:
+        rank = None
+        for i, (tid, _) in enumerate(leaderboard):
+            if tid == team.id:
+                rank = i + 1
+                break
+
+    max_winners = getattr(hackathon, "winners_per_problem", 1) or 1
     cert_type = "Participation Certificate"
     if rank == 1:
         cert_type = "First Place Winner Certificate"
     elif rank == 2:
-        cert_type = "Second Place Runner-Up Certificate"
+        cert_type = "Second Place Runner-Up Certificate" if max_winners >= 2 else "Finalist Certificate"
     elif rank == 3:
-        cert_type = "Third Place Runner-Up Certificate"
+        cert_type = "Third Place Runner-Up Certificate" if max_winners >= 3 else "Finalist Certificate"
+    elif getattr(submission, "is_finalist", False):
+        cert_type = "Finalist Certificate"
         
     return StandardResponse(
         success=True,
@@ -801,6 +911,8 @@ def delete_hackathon(
     hackathon = db.query(Hackathon).filter(Hackathon.id == hackathon_id).first()
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found.")
+
+    _ensure_hackathon_editor(db, current_user, hackathon.id)
 
     from app.models.registration import Registration
     reg_count = db.query(Registration).filter(Registration.hackathon_id == hackathon_id).count()

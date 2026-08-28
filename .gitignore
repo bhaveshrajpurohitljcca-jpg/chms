@@ -12,6 +12,7 @@ test.db
 *.db
 .pytest_cache/
 .alembic/
+backend/uploads/
 
 # Node (Frontend)
 node_modules/

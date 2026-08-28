@@ -163,6 +163,15 @@ def join_team(
     if existing_member:
         raise HTTPException(status_code=400, detail="You are already a member of this team.")
 
+    # Check team capacity from hackathon rules
+    if team.hackathon:
+        current_member_count = db.query(TeamMember).filter(TeamMember.team_id == team.id).count()
+        if current_member_count >= team.hackathon.max_team_size:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Team has reached the maximum capacity of {team.hackathon.max_team_size} members."
+            )
+
     new_member = TeamMember(
         team_id=team.id,
         user_id=current_user.id,
