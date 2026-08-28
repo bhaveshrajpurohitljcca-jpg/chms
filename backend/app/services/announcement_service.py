@@ -169,12 +169,19 @@ def dispatch_announcement(
             for recipient in recipients
             if recipient.email
         ]
-        email_count = send_bulk_announcement_emails(
-            recipients=email_recipients,
-            title=title,
-            message=message,
-            sender_name=sender_name,
-            hackathon_name=hackathon_name,
-        )
+        if email_recipients:
+            import threading
+            threading.Thread(
+                target=send_bulk_announcement_emails,
+                kwargs={
+                    "recipients": email_recipients,
+                    "title": title,
+                    "message": message,
+                    "sender_name": sender_name,
+                    "hackathon_name": hackathon_name,
+                },
+                daemon=True,
+            ).start()
+            email_count = len(email_recipients)
 
     return notification_count, email_count

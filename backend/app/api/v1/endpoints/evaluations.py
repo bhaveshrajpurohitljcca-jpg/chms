@@ -69,15 +69,25 @@ def _get_active_round(db: Session, submission_id: str, requested_round: int) -> 
 
 
 def _verify_assigned(db: Session, submission_id: str, judge_id: str):
-    """Raises 403 if judge is not assigned to the submission."""
-    if not db.query(JudgeAssignment).filter(
+    """Raises 403 if judge is not assigned to the submission (either directly or hackathon-wide)."""
+    if db.query(JudgeAssignment).filter(
         JudgeAssignment.submission_id == submission_id,
         JudgeAssignment.judge_id == judge_id
     ).first():
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied. You are not assigned to this submission."
-        )
+        return
+
+    sub = db.query(Submission).filter(Submission.id == submission_id).first()
+    if sub and db.query(JudgeAssignment).filter(
+        JudgeAssignment.judge_id == judge_id,
+        JudgeAssignment.hackathon_id == sub.hackathon_id,
+        JudgeAssignment.submission_id.is_(None)
+    ).first():
+        return
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Access denied. You are not assigned to this submission."
+    )
 
 
 def _get_coordinator_hackathon_ids(db: Session, coordinator_id: str) -> list[str]:
