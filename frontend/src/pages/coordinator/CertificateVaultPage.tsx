@@ -99,8 +99,6 @@ export default function CoordinatorCertificateVaultPage() {
                       <a
                         href={apiService.certificateDownloadUrl(record.id, 'pdf')}
                         download={`${record.verification_id}.pdf`}
-                        target="_blank"
-                        rel="noreferrer"
                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-accent-primary/10 border border-accent-primary/30 text-xs font-bold text-accent-primary hover:bg-accent-primary hover:text-black transition-colors"
                       >
                         <Download size={13} /> PDF
@@ -108,8 +106,6 @@ export default function CoordinatorCertificateVaultPage() {
                       <a
                         href={apiService.certificateDownloadUrl(record.id, 'jpg')}
                         download={`${record.verification_id}.jpg`}
-                        target="_blank"
-                        rel="noreferrer"
                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-accent-secondary/10 border border-accent-secondary/30 text-xs font-bold text-accent-secondary hover:bg-accent-secondary hover:text-black transition-colors"
                       >
                         <FileImage size={13} /> JPG

@@ -347,9 +347,18 @@ def download_certificate(
     current_user = get_user_from_query_or_header(token=token, credentials=credentials, db=db)
     certificate = db.query(Certificate).filter(Certificate.id == certificate_id).first()
     if not certificate or (certificate.recipient_id != current_user.id and current_user.role not in (UserRole.ADMIN, UserRole.COORDINATOR)):
-        raise HTTPException(status_code=404, detail="Certificate not found.")
+        raise HTTPException(status_code=404, detail="Certificate record not found.")
     if current_user.role == UserRole.COORDINATOR:
         _ensure_template_scope(db, current_user, certificate.hackathon_id)
+
+    # Ensure PDF file exists on disk; generate on-the-fly if missing
+    pdf_path = Path(certificate.pdf_url.lstrip("/")) if certificate.pdf_url else None
+    if not pdf_path or not pdf_path.exists():
+        new_pdf_url = _store_certificate_pdf(certificate)
+        certificate.pdf_url = new_pdf_url
+        db.commit()
+        db.refresh(certificate)
+        pdf_path = Path(new_pdf_url.lstrip("/"))
 
     fmt = (format or "pdf").lower()
     if fmt in ("jpg", "jpeg", "png"):
@@ -361,12 +370,11 @@ def download_certificate(
                 ext = "jpg" if fmt in ("jpg", "jpeg") else "png"
                 return FileResponse(bg_path, media_type=media_type, filename=f"{certificate.verification_id}.{ext}")
 
-    if not certificate.pdf_url:
-        raise HTTPException(status_code=404, detail="Certificate PDF is not available.")
-    path = Path(certificate.pdf_url.lstrip("/"))
-    if not path.exists():
-        raise HTTPException(status_code=404, detail="Certificate PDF is not available.")
-    return FileResponse(path, media_type="application/pdf", filename=f"{certificate.verification_id}.pdf")
+    return FileResponse(
+        pdf_path,
+        media_type="application/pdf",
+        filename=f"{certificate.verification_id}.pdf"
+    )
 
 
 @router.get("/available", response_model=StandardResponse[list[CertificateTemplateResponse]])

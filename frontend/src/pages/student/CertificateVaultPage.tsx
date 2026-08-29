@@ -89,8 +89,6 @@ export default function CertificateVaultPage() {
             <a
               href={apiService.certificateDownloadUrl(selected.id, 'pdf')}
               download={`${selected.verification_id}.pdf`}
-              target="_blank"
-              rel="noreferrer"
               className="inline-flex items-center gap-2 rounded-lg bg-accent-primary px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-black hover:opacity-90 transition-opacity"
             >
               <Download size={15} /> Download PDF (.pdf)
@@ -98,8 +96,6 @@ export default function CertificateVaultPage() {
             <a
               href={apiService.certificateDownloadUrl(selected.id, 'jpg')}
               download={`${selected.verification_id}.jpg`}
-              target="_blank"
-              rel="noreferrer"
               className="inline-flex items-center gap-2 rounded-lg border border-accent-primary/40 bg-accent-primary/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-accent-primary hover:bg-accent-primary/20 transition-colors"
             >
               <FileImage size={15} /> Download JPG (.jpg)
