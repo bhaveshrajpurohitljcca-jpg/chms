@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Award, CheckCircle2, Download, Loader2, Plus, Printer, ShieldCheck } from 'lucide-react';
+import { Award, CheckCircle2, Download, FileImage, Loader2, Plus, Printer, ShieldCheck } from 'lucide-react';
 import { apiService, STATIC_BASE, type CertificateRecord, type CertificateTemplateRecord } from '@/services/api';
 
 const valueFor = (key: string, certificate: CertificateRecord) => ({
@@ -72,6 +72,51 @@ export default function CertificateVaultPage() {
       {loading ? <Loader2 className="animate-spin text-accent-primary" /> : available.length === 0 ? <p className="text-sm text-text-secondary">No published certificate is available for your completed hackathons yet.</p> : <div className="grid gap-3 md:grid-cols-2">{available.map((template) => <div key={template.id} className="rounded-xl border border-[var(--border-color)] p-4"><p className="font-bold">{template.certificate_type}</p><p className="mt-1 text-xs text-text-secondary">{template.recipient_type} template: {template.name}</p><button onClick={() => void generate(template)} disabled={workingId === template.id} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-accent-primary px-3 py-2 text-xs font-bold text-black disabled:opacity-60">{workingId === template.id ? <Loader2 size={14} className="animate-spin" /> : <Award size={14} />} Generate certificate</button></div>)}</div>}
     </section>
     <section><div className="mb-4 flex items-center gap-2"><ShieldCheck size={18} className="text-accent-primary" /><h2 className="font-archivo font-bold uppercase">Issued Certificates</h2></div><div className="grid gap-5 md:grid-cols-2">{issued.map((certificate) => <article key={certificate.id} className="rounded-2xl border border-[var(--border-color)] bg-white/[.03] p-4"><CertificatePreview certificate={certificate} /><div className="mt-4"><p className="font-bold">{certificate.certificate_type}</p><p className="text-sm text-text-secondary">{certificate.hackathon_title}</p><p className="mt-2 font-mono text-[10px] text-accent-primary">{certificate.verification_id}</p><button onClick={() => setSelected(certificate)} className="mt-3 inline-flex items-center gap-2 rounded-lg border border-accent-primary/40 px-3 py-2 text-xs font-bold text-accent-primary"><Download size={14} /> View / Download</button></div></article>)}</div></section>
-    {selected && <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-4"><div className="mx-auto mt-8 max-w-4xl rounded-2xl bg-[var(--bg-primary)] p-5"><div className="mb-4 flex justify-between gap-4"><div><h2 className="font-archivo text-xl font-bold uppercase">Certificate Preview</h2><p className="text-xs text-text-secondary">Verification ID: {selected.verification_id}</p></div><button onClick={() => setSelected(null)} className="text-sm">Close</button></div><div className="certificate-print-target"><CertificatePreview certificate={selected} /></div><button onClick={() => window.print()} className="mt-5 inline-flex items-center gap-2 rounded-lg bg-accent-primary px-4 py-2 text-sm font-bold text-black"><Printer size={16} /> Print / Save as PDF</button><p className="mt-2 text-xs text-text-secondary"><CheckCircle2 size={12} className="mr-1 inline" />Choose “Save as PDF” in your browser print dialog.</p></div></div>}
+    {selected && (
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-4">
+        <div className="mx-auto mt-8 max-w-4xl rounded-2xl bg-[var(--bg-primary)] p-6">
+          <div className="mb-4 flex justify-between gap-4">
+            <div>
+              <h2 className="font-archivo text-xl font-bold uppercase">Certificate Preview</h2>
+              <p className="text-xs text-text-secondary">Verification ID: {selected.verification_id}</p>
+            </div>
+            <button onClick={() => setSelected(null)} className="px-3 py-1 rounded bg-white/10 text-sm font-semibold hover:bg-white/20">Close</button>
+          </div>
+          <div className="certificate-print-target">
+            <CertificatePreview certificate={selected} />
+          </div>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <a
+              href={apiService.certificateDownloadUrl(selected.id, 'pdf')}
+              download={`${selected.verification_id}.pdf`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg bg-accent-primary px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-black hover:opacity-90 transition-opacity"
+            >
+              <Download size={15} /> Download PDF (.pdf)
+            </a>
+            <a
+              href={apiService.certificateDownloadUrl(selected.id, 'jpg')}
+              download={`${selected.verification_id}.jpg`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border border-accent-primary/40 bg-accent-primary/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-accent-primary hover:bg-accent-primary/20 transition-colors"
+            >
+              <FileImage size={15} /> Download JPG (.jpg)
+            </a>
+            <button
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-2 rounded-lg border border-[var(--border-color)] px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-text-primary hover:bg-white/5 transition-colors"
+            >
+              <Printer size={15} /> Print / Browser PDF
+            </button>
+          </div>
+          <p className="mt-3 text-xs text-text-secondary">
+            <CheckCircle2 size={13} className="mr-1 inline text-success" />
+            Verified official record issued by CHMS engine.
+          </p>
+        </div>
+      </div>
+    )}
   </div>;
 }

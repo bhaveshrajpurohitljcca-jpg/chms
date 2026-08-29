@@ -8,7 +8,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Query, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import RoleChecker, get_current_active_user
@@ -302,15 +303,69 @@ def coordinator_vault(hackathon_id: str, db: Session = Depends(get_db), current_
     rows = query.order_by(Certificate.issued_at.desc()).all()
     return StandardResponse(message="Certificate vault retrieved.", data=[_certificate_response(row) for row in rows])
 
+def get_user_from_query_or_header(
+    token: Optional[str] = None,
+    credentials: Optional[object] = Depends(security),
+    db: Session = Depends(get_db)
+) -> User:
+    raw_token = token or (credentials.credentials if credentials and hasattr(credentials, 'credentials') else None)
+    if not raw_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication credentials were not provided",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    from app.core.security import decode_access_token
+    try:
+        payload = decode_access_token(raw_token)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired authentication token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not payload or "sub" not in payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token payload",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    user = db.query(User).filter(User.id == payload["sub"], User.is_deleted == False).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    return user
+
+
 @router.get("/{certificate_id}/download")
-def download_certificate(certificate_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+def download_certificate(
+    certificate_id: str,
+    token: Optional[str] = None,
+    format: Optional[str] = "pdf",
+    db: Session = Depends(get_db),
+    credentials: Optional[object] = Depends(security)
+):
+    current_user = get_user_from_query_or_header(token=token, credentials=credentials, db=db)
     certificate = db.query(Certificate).filter(Certificate.id == certificate_id).first()
     if not certificate or (certificate.recipient_id != current_user.id and current_user.role not in (UserRole.ADMIN, UserRole.COORDINATOR)):
         raise HTTPException(status_code=404, detail="Certificate not found.")
-    if current_user.role == UserRole.COORDINATOR: _ensure_template_scope(db, current_user, certificate.hackathon_id)
-    if not certificate.pdf_url: raise HTTPException(status_code=404, detail="Certificate PDF is not available.")
+    if current_user.role == UserRole.COORDINATOR:
+        _ensure_template_scope(db, current_user, certificate.hackathon_id)
+
+    fmt = (format or "pdf").lower()
+    if fmt in ("jpg", "jpeg", "png"):
+        bg_url = certificate.template.background_url if certificate.template else None
+        if bg_url:
+            bg_path = Path(bg_url.lstrip("/"))
+            if bg_path.exists():
+                media_type = "image/jpeg" if fmt in ("jpg", "jpeg") else "image/png"
+                ext = "jpg" if fmt in ("jpg", "jpeg") else "png"
+                return FileResponse(bg_path, media_type=media_type, filename=f"{certificate.verification_id}.{ext}")
+
+    if not certificate.pdf_url:
+        raise HTTPException(status_code=404, detail="Certificate PDF is not available.")
     path = Path(certificate.pdf_url.lstrip("/"))
-    if not path.exists(): raise HTTPException(status_code=404, detail="Certificate PDF is not available.")
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Certificate PDF is not available.")
     return FileResponse(path, media_type="application/pdf", filename=f"{certificate.verification_id}.pdf")
 
 

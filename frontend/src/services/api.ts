@@ -1101,8 +1101,11 @@ export const apiService = {
       return request<CertificateRecord[]>(`/certificates/vault?hackathon_id=${encodeURIComponent(hackathonId)}`);
     },
 
-    certificateDownloadUrl(certificateId: string) {
-      return `${API_BASE}/certificates/${certificateId}/download`;
+    certificateDownloadUrl(certificateId: string, format: 'pdf' | 'jpg' | 'png' = 'pdf') {
+      const token = getStoredToken() || '';
+      const params = new URLSearchParams({ format });
+      if (token) params.append('token', token);
+      return `${API_BASE}/certificates/${certificateId}/download?${params.toString()}`;
     },
 
   async revokeCertificate(certificateId: string, reason: string) {
