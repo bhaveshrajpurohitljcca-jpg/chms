@@ -3939,7 +3939,7 @@ const AdminView = () => {
     e.preventDefault();
     setIsPerformingAction(true);
     try {
-      await apiService.register({
+      const regRes = await apiService.register({
         email: newJudge.email,
         password: newJudge.password,
         full_name: newJudge.fullName,
@@ -3948,10 +3948,14 @@ const AdminView = () => {
         department: newJudge.department,
         phone: newJudge.phone
       });
+      const createdUserId = regRes?.data?.user?.id || (regRes as any)?.data?.id;
+      if (createdUserId) {
+        await apiService.updateUserRole(createdUserId, 'judge');
+      }
       showToast(`Judge "${newJudge.fullName}" account successfully created!`);
       setNewJudge({ fullName: '', email: '', password: '', judgeType: 'INTERNAL', department: '', phone: '' });
       setShowCreateJudgeModal(false);
-      fetchUsers();
+      await fetchUsers();
     } catch (err: any) {
       showToast(err.message || 'Failed to create judge account');
     } finally {
@@ -4087,7 +4091,7 @@ const AdminView = () => {
     e.preventDefault();
     setIsPerformingAction(true);
     try {
-      await apiService.register({
+      const regRes = await apiService.register({
         email: newCoordinator.email,
         password: newCoordinator.password,
         full_name: newCoordinator.fullName,
@@ -4097,10 +4101,14 @@ const AdminView = () => {
         phone: newCoordinator.phone,
         semester: newCoordinator.semester
       });
+      const createdUserId = regRes?.data?.user?.id || (regRes as any)?.data?.id;
+      if (createdUserId) {
+        await apiService.updateUserRole(createdUserId, 'coordinator');
+      }
       showToast(`Coordinator "${newCoordinator.fullName}" account successfully created!`);
       setNewCoordinator({ fullName: '', email: '', password: '', semester: '1', rollNumber: '', phone: '', stream: '' });
       setShowCreateCoordinatorModal(false);
-      fetchUsers();
+      await fetchUsers();
     } catch (err: any) {
       showToast(err.message || 'Failed to create coordinator account');
     } finally {
@@ -4117,7 +4125,8 @@ const AdminView = () => {
     }
     
     const alreadyAssigned = coordinatorAssignments.some(
-      a => a.coordinatorId === selectedCoordinatorDetail.id && a.hackathonId === coordAllocHackathonId
+      a => (a.coordinatorId === selectedCoordinatorDetail.id || a.coordinator_id === selectedCoordinatorDetail.id) &&
+           (a.hackathonId === coordAllocHackathonId || a.hackathon_id === coordAllocHackathonId)
     );
     if (alreadyAssigned) {
       showToast("This hackathon is already assigned to this coordinator.");
@@ -4128,7 +4137,8 @@ const AdminView = () => {
       await apiService.createCoordinatorAssignment(selectedCoordinatorDetail.id, coordAllocHackathonId);
       showToast("Hackathon scope assigned to coordinator.");
       setCoordAllocHackathonId('');
-      fetchAssignments();
+      await fetchAssignments();
+      await fetchUsers();
     } catch (err: any) {
       showToast(err.message || "Failed to assign coordinator.");
     }
@@ -5405,7 +5415,7 @@ const AdminView = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {users.filter(u => u.role === 'coordinator').map((c) => {
-                    const assignedScopesCount = coordinatorAssignments.filter(a => a.coordinatorId === c.id).length;
+                    const assignedScopesCount = coordinatorAssignments.filter(a => String(a.coordinatorId || a.coordinator_id) === String(c.id)).length;
                     return (
                       <div 
                         key={c.id} 
@@ -5494,7 +5504,7 @@ const AdminView = () => {
                     <p className="text-[10px] text-white/40 mt-0.5">Assign this coordinator to manage a specific event scope</p>
                   </div>
 
-                  {coordinatorAssignments.filter(a => a.coordinatorId === selectedCoordinatorDetail.id).length === 0 ? (
+                  {coordinatorAssignments.filter(a => String(a.coordinatorId || a.coordinator_id) === String(selectedCoordinatorDetail.id)).length === 0 ? (
                     <div className="flex flex-col gap-3">
                       <label className="font-bold text-white/70 text-xs">Assign Event Scope</label>
                       <form onSubmit={handleAssignCoordinator} className="flex flex-col gap-2.5">
@@ -5506,7 +5516,7 @@ const AdminView = () => {
                         >
                           <option value="">-- Choose Hackathon Scope --</option>
                           {hackathonsList
-                            .filter(h => !coordinatorAssignments.some(a => a.coordinatorId === selectedCoordinatorDetail.id && a.hackathonId === h.id))
+                            .filter(h => !coordinatorAssignments.some(a => String(a.coordinatorId || a.coordinator_id) === String(selectedCoordinatorDetail.id) && String(a.hackathonId || a.hackathon_id) === String(h.id)))
                             .map(h => (
                               <option key={h.id} value={h.id}>{h.title}</option>
                             ))
@@ -5532,7 +5542,7 @@ const AdminView = () => {
                     <p className="text-[10px] text-white/40 mt-0.5">List of active events this coordinator is authorized to administer</p>
                   </div>
 
-                  {coordinatorAssignments.filter(a => a.coordinatorId === selectedCoordinatorDetail.id).length === 0 ? (
+                  {coordinatorAssignments.filter(a => String(a.coordinatorId || a.coordinator_id) === String(selectedCoordinatorDetail.id)).length === 0 ? (
                     <div className="py-12 flex flex-col items-center justify-center text-center text-white/30 border border-dashed border-white/10 rounded-2xl">
                       <Terminal size={32} className="text-white/10 mb-3" />
                       <p className="font-bold text-sm">No Scopes Assigned</p>
@@ -5540,13 +5550,13 @@ const AdminView = () => {
                     </div>
                   ) : (
                     <div className="flex flex-col gap-3">
-                      {coordinatorAssignments.filter(a => a.coordinatorId === selectedCoordinatorDetail.id).map(a => (
+                      {coordinatorAssignments.filter(a => String(a.coordinatorId || a.coordinator_id) === String(selectedCoordinatorDetail.id)).map(a => (
                         <div 
                           key={a.id} 
                           className="p-4 rounded-xl border border-white/5 bg-white/[0.01] flex justify-between items-center"
                         >
                           <div>
-                            <p className="font-bold text-white text-sm">{a.hackathonName}</p>
+                            <p className="font-bold text-white text-sm">{a.hackathonName || a.hackathon_name || 'Assigned Hackathon'}</p>
                             <span className="px-1.5 py-0.5 rounded bg-success/10 text-success text-[9px] font-bold uppercase tracking-wider block mt-1 w-max">
                               Active Event Admin Scope
                             </span>
