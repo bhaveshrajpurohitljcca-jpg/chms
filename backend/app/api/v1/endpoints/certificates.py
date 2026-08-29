@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Query, 
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from app.api.deps import RoleChecker, get_current_active_user
+from app.api.deps import RoleChecker, get_current_active_user, security
 from app.database import get_db
 from app.models.certificate import Certificate, CertificateTemplate
 from app.models.hackathon import CoordinatorAssignment, Hackathon, HackathonStatus
