@@ -1,4 +1,4 @@
-import {} from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { 
@@ -14,7 +14,9 @@ import {
   Shield,
   Loader2,
   Sun,
-  Moon
+  Moon,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 
@@ -126,30 +128,95 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
     location.pathname + location.search === path ||
     (location.pathname === path && path === '/admin' && !location.search);
 
-  // Shared nav link renderer (Horizontal top bar)
-  const NavLinks = ({ onNavigate }: { onNavigate?: () => void }) => (
-    <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 overflow-x-auto no-scrollbar max-w-full py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-      {menuItems.map((item) => {
-        const Icon = item.icon;
-        const active = isActive(item.path);
-        return (
-          <Link
-            key={item.path}
-            to={item.path}
-            onClick={onNavigate}
-            className={`flex items-center gap-2 px-3 sm:px-4 h-9 sm:h-10 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-300 touch-target ${
-              active
-                ? 'bg-[#0f172a]/10 dark:bg-accent-primary text-[#0f172a] dark:text-black border border-[#0f172a]/15 dark:border-transparent shadow-sm scale-[1.02]'
-                : 'text-[#475569] dark:text-text-secondary hover:text-[#0f172a] dark:hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/10'
-            }`}
+  // Shared nav link renderer (Horizontal top bar with sleek scrollbar & smooth controls)
+  const NavLinks = ({ onNavigate }: { onNavigate?: () => void }) => {
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
+
+    const checkScroll = () => {
+      const el = scrollContainerRef.current;
+      if (el) {
+        setCanScrollLeft(el.scrollLeft > 5);
+        setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 5);
+      }
+    };
+
+    useEffect(() => {
+      checkScroll();
+      window.addEventListener('resize', checkScroll);
+      return () => window.removeEventListener('resize', checkScroll);
+    }, [menuItems]);
+
+    const scroll = (direction: 'left' | 'right') => {
+      if (scrollContainerRef.current) {
+        const amount = direction === 'left' ? -220 : 220;
+        scrollContainerRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+      }
+    };
+
+    const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+      if (scrollContainerRef.current && e.deltaY !== 0) {
+        scrollContainerRef.current.scrollLeft += e.deltaY;
+        checkScroll();
+      }
+    };
+
+    return (
+      <div className="relative flex items-center w-full max-w-full min-w-0 group/nav px-1">
+        {canScrollLeft && (
+          <button
+            onClick={() => scroll('left')}
+            className="absolute left-0 z-20 w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full bg-black/80 dark:bg-black/90 text-accent-primary shadow-lg hover:scale-110 transition-all border border-accent-primary/30"
+            title="Scroll Left"
+            aria-label="Scroll navigation left"
           >
-            <Icon size={14} className={active ? 'text-[#0f172a] dark:text-black' : 'text-[#64748b] dark:text-text-secondary'} />
-            <span>{item.label}</span>
-          </Link>
-        );
-      })}
-    </div>
-  );
+            <ChevronLeft size={16} />
+          </button>
+        )}
+
+        <div
+          ref={scrollContainerRef}
+          onScroll={checkScroll}
+          onWheel={handleWheel}
+          className="flex items-center gap-1.5 md:gap-2 overflow-x-auto py-2 px-1 max-w-full w-full [scrollbar-width:thin] [scrollbar-color:var(--accent-primary)_transparent] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-black/5 dark:[&::-webkit-scrollbar-track]:bg-white/5 [&::-webkit-scrollbar-thumb]:bg-accent-primary/40 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-accent-primary transition-all"
+        >
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.path);
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={onNavigate}
+                title={item.label}
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 h-8 sm:h-9 rounded-full text-[11px] sm:text-xs font-bold uppercase tracking-wider whitespace-nowrap shrink-0 transition-all duration-300 touch-target ${
+                  active
+                    ? 'bg-[#0f172a]/10 dark:bg-accent-primary text-[#0f172a] dark:text-black border border-[#0f172a]/15 dark:border-transparent shadow-sm scale-[1.02]'
+                    : 'text-[#475569] dark:text-text-secondary hover:text-[#0f172a] dark:hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/10'
+                }`}
+              >
+                <Icon size={14} className={`shrink-0 ${active ? 'text-[#0f172a] dark:text-black' : 'text-[#64748b] dark:text-text-secondary'}`} />
+                <span className="hidden xl:inline">{item.label}</span>
+                <span className="inline xl:hidden">{item.shortLabel || item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+
+        {canScrollRight && (
+          <button
+            onClick={() => scroll('right')}
+            className="absolute right-0 z-20 w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full bg-black/80 dark:bg-black/90 text-accent-primary shadow-lg hover:scale-110 transition-all border border-accent-primary/30"
+            title="Scroll Right"
+            aria-label="Scroll navigation right"
+          >
+            <ChevronRight size={16} />
+          </button>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="relative min-h-screen bg-[var(--bg-primary)] text-text-primary flex flex-col font-manrope selection:bg-accent-primary selection:text-white overflow-x-hidden">
@@ -169,7 +236,7 @@ export default function RoleLayout({ allowedRoles }: { allowedRoles: string[] })
         </Link>
 
         {/* Center: TOP MENU OPTIONS (Desktop Navigation) */}
-        <nav className="hidden md:flex items-center justify-center mx-4 flex-1 min-w-0 overflow-hidden no-scrollbar">
+        <nav className="hidden md:flex items-center justify-start xl:justify-center mx-2 md:mx-4 flex-1 min-w-0 overflow-hidden">
           <NavLinks />
         </nav>
 
