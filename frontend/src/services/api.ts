@@ -1108,6 +1108,28 @@ export const apiService = {
       return `${API_BASE}/certificates/${certificateId}/download?${params.toString()}`;
     },
 
+    async downloadCertificateFile(certificateId: string, format: 'pdf' | 'jpg' = 'pdf'): Promise<Blob> {
+      const token = getStoredToken() || '';
+      const params = new URLSearchParams({ format });
+      if (token) params.append('token', token);
+      const url = `${API_BASE}/certificates/${certificateId}/download?${params.toString()}`;
+      const res = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        let errMessage = 'Failed to download certificate';
+        try {
+          const json = await res.json();
+          errMessage = json.detail || json.message || errMessage;
+        } catch {
+          const txt = await res.text();
+          if (txt) errMessage = txt.slice(0, 120);
+        }
+        throw new Error(errMessage);
+      }
+      return await res.blob();
+    },
+
   async revokeCertificate(certificateId: string, reason: string) {
     return request<CertificateRecord>(`/certificates/${certificateId}/revoke`, { method: 'POST', body: JSON.stringify({ reason }) });
   },

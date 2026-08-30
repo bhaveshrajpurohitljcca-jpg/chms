@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Download, FileImage, Loader2, ShieldCheck } from 'lucide-react';
 import { apiService, type BackendHackathon, type CertificateRecord } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
+import { downloadCertificateAsPdf, downloadCertificateAsJpg } from '@/utils/certificateGenerator';
 
 export default function CoordinatorCertificateVaultPage() {
   const { user } = useAuth();
@@ -9,6 +10,7 @@ export default function CoordinatorCertificateVaultPage() {
   const [selected, setSelected] = useState('');
   const [records, setRecords] = useState<CertificateRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   const load = async (id: string) => {
@@ -21,6 +23,56 @@ export default function CoordinatorCertificateVaultPage() {
       setError(e.message || 'Vault could not be loaded.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadPdf = async (record: CertificateRecord) => {
+    setDownloadingKey(`${record.id}-pdf`);
+    setError('');
+    try {
+      await downloadCertificateAsPdf(record);
+    } catch (clientErr) {
+      console.warn('Client PDF generation error, trying API fallback:', clientErr);
+      try {
+        const blob = await apiService.downloadCertificateFile(record.id, 'pdf');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${record.verification_id}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch (apiErr: any) {
+        setError(`Download failed: ${apiErr.message || 'Unable to download PDF'}`);
+      }
+    } finally {
+      setDownloadingKey(null);
+    }
+  };
+
+  const handleDownloadJpg = async (record: CertificateRecord) => {
+    setDownloadingKey(`${record.id}-jpg`);
+    setError('');
+    try {
+      await downloadCertificateAsJpg(record);
+    } catch (clientErr) {
+      console.warn('Client JPG generation error, trying API fallback:', clientErr);
+      try {
+        const blob = await apiService.downloadCertificateFile(record.id, 'jpg');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${record.verification_id}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch (apiErr: any) {
+        setError(`Download failed: ${apiErr.message || 'Unable to download JPG'}`);
+      }
+    } finally {
+      setDownloadingKey(null);
     }
   };
 
@@ -96,20 +148,20 @@ export default function CoordinatorCertificateVaultPage() {
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
-                      <a
-                        href={apiService.certificateDownloadUrl(record.id, 'pdf')}
-                        download={`${record.verification_id}.pdf`}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-accent-primary/10 border border-accent-primary/30 text-xs font-bold text-accent-primary hover:bg-accent-primary hover:text-black transition-colors"
+                      <button
+                        onClick={() => void handleDownloadPdf(record)}
+                        disabled={downloadingKey !== null}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-accent-primary/10 border border-accent-primary/30 text-xs font-bold text-accent-primary hover:bg-accent-primary hover:text-black transition-colors disabled:opacity-50 cursor-pointer"
                       >
-                        <Download size={13} /> PDF
-                      </a>
-                      <a
-                        href={apiService.certificateDownloadUrl(record.id, 'jpg')}
-                        download={`${record.verification_id}.jpg`}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-accent-secondary/10 border border-accent-secondary/30 text-xs font-bold text-accent-secondary hover:bg-accent-secondary hover:text-black transition-colors"
+                        {downloadingKey === `${record.id}-pdf` ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} PDF
+                      </button>
+                      <button
+                        onClick={() => void handleDownloadJpg(record)}
+                        disabled={downloadingKey !== null}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-accent-secondary/10 border border-accent-secondary/30 text-xs font-bold text-accent-secondary hover:bg-accent-secondary hover:text-black transition-colors disabled:opacity-50 cursor-pointer"
                       >
-                        <FileImage size={13} /> JPG
-                      </a>
+                        {downloadingKey === `${record.id}-jpg` ? <Loader2 size={13} className="animate-spin" /> : <FileImage size={13} />} JPG
+                      </button>
                     </div>
                   </td>
                 </tr>

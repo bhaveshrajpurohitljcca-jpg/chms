@@ -40,3 +40,32 @@ def test_registered_team_member_is_eligible_for_participant_template():
 
     assert _participant_eligibility(session, student, hackathon.id)["team"].name == "Team Alpha"
     assert _template_response(template).recipient_type == "participant"
+
+
+def test_valid_pdf_generation_can_be_parsed():
+    import io
+    import PyPDF2
+    from datetime import datetime
+    from app.api.v1.endpoints.certificates import _build_valid_certificate_pdf
+    from app.models.certificate import Certificate
+
+    cert = Certificate(
+        certificate_type="Certificate of Achievement",
+        recipient_name="Bhavesh Rajpurohit",
+        team_name="CyberTech",
+        award_label="Winner",
+        verification_id="CERT-2026-TEST",
+        issued_at=datetime.utcnow()
+    )
+    cert.hackathon = Hackathon(title="HexaThon 2026")
+
+    pdf_bytes = _build_valid_certificate_pdf(cert)
+    assert pdf_bytes.startswith(b"%PDF-1.4")
+    assert b"%%EOF" in pdf_bytes
+
+    reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
+    assert len(reader.pages) == 1
+    text = reader.pages[0].extract_text()
+    assert "Bhavesh Rajpurohit" in text
+    assert "CERT-2026-TEST" in text
+

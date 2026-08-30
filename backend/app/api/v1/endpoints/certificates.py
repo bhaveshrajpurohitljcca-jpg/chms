@@ -1,7 +1,9 @@
+import io
 import json
 import os
 import secrets
 import shutil
+import tempfile
 import httpx
 from urllib.parse import urljoin
 from datetime import datetime
@@ -9,7 +11,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Query, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
 
 from app.api.deps import RoleChecker, get_current_active_user, security
@@ -130,16 +132,141 @@ def _certificate_response(certificate: Certificate) -> CertificateResponse:
         template=_template_response(certificate.template),
     )
 
+def _build_valid_certificate_pdf(certificate: Certificate) -> bytes:
+    """Generate a standard, 100% valid PDF-1.4 binary file with exact xref table and fonts."""
+    width = 842
+    height = 595
+
+    cert_type = (certificate.certificate_type or "Certificate of Participation").upper()
+    recipient = certificate.recipient_name or "Participant"
+    hack_title = certificate.hackathon.title if certificate.hackathon else "College Hackathon"
+    team_info = f"Team: {certificate.team_name}" if certificate.team_name else ""
+    award_info = f"Award: {certificate.award_label}" if certificate.award_label else ""
+    issue_date = f"Issued on: {certificate.issued_at.strftime('%d %B %Y')}" if certificate.issued_at else ""
+    verification = f"Verification ID: {certificate.verification_id}"
+
+    def escape_pdf(s: str) -> str:
+        return s.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+
+    stream_lines = [
+        "q",
+        "0.97 0.95 0.91 rg",
+        f"0 0 {width} {height} re f",
+        "0.76 0.60 0.25 RG",
+        "4 w",
+        f"24 24 {width - 48} {height - 48} re S",
+        "0.55 0.40 0.15 RG",
+        "1.5 w",
+        f"32 32 {width - 64} {height - 64} re S",
+        "Q",
+        "BT",
+        "/F2 26 Tf",
+        "0.12 0.15 0.25 rg",
+        f"1 0 0 1 70 {height - 110} Tm",
+        f"({escape_pdf(cert_type)}) Tj",
+        "/F1 15 Tf",
+        "0.4 0.4 0.4 rg",
+        f"1 0 0 1 70 {height - 165} Tm",
+        "(This is proudly presented to) Tj",
+        "/F2 30 Tf",
+        "0.05 0.20 0.55 rg",
+        f"1 0 0 1 70 {height - 225} Tm",
+        f"({escape_pdf(recipient)}) Tj",
+        "/F1 15 Tf",
+        "0.25 0.25 0.25 rg",
+        f"1 0 0 1 70 {height - 280} Tm",
+        f"(For participating in {escape_pdf(hack_title)}) Tj",
+    ]
+
+    current_y = height - 325
+    if team_info:
+        stream_lines.extend([
+            "/F1 14 Tf",
+            "0.35 0.35 0.35 rg",
+            f"1 0 0 1 70 {current_y} Tm",
+            f"({escape_pdf(team_info)}) Tj",
+        ])
+        current_y -= 30
+
+    if award_info:
+        stream_lines.extend([
+            "/F2 15 Tf",
+            "0.70 0.45 0.05 rg",
+            f"1 0 0 1 70 {current_y} Tm",
+            f"({escape_pdf(award_info)}) Tj",
+        ])
+        current_y -= 30
+
+    stream_lines.extend([
+        "/F1 11 Tf",
+        "0.45 0.45 0.45 rg",
+        f"1 0 0 1 70 {height - 520} Tm",
+        f"({escape_pdf(issue_date)}) Tj",
+        f"1 0 0 1 {width - 320} {height - 520} Tm",
+        f"({escape_pdf(verification)}) Tj",
+        "ET",
+    ])
+
+    stream_content = "\n".join(stream_lines).encode("latin-1")
+
+    buf = io.BytesIO()
+    offsets = []
+
+    buf.write(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+
+    offsets.append(buf.tell())
+    buf.write(b"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n")
+
+    offsets.append(buf.tell())
+    buf.write(b"2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n")
+
+    offsets.append(buf.tell())
+    buf.write(
+        f"3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {width} {height}] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>\nendobj\n".encode("latin-1")
+    )
+
+    offsets.append(buf.tell())
+    buf.write(b"4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n")
+
+    offsets.append(buf.tell())
+    buf.write(b"5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>\nendobj\n")
+
+    offsets.append(buf.tell())
+    buf.write(f"6 0 obj\n<< /Length {len(stream_content)} >>\nstream\n".encode("latin-1"))
+    buf.write(stream_content)
+    buf.write(b"\nendstream\nendobj\n")
+
+    xref_offset = buf.tell()
+    buf.write(f"xref\n0 {len(offsets) + 1}\n0000000000 65535 f \n".encode("latin-1"))
+    for off in offsets:
+        buf.write(f"{off:010d} 00000 n \n".encode("latin-1"))
+
+    buf.write(f"trailer\n<< /Size {len(offsets) + 1} /Root 1 0 R >>\nstartxref\n{xref_offset}\n%%EOF\n".encode("latin-1"))
+    return buf.getvalue()
+
+
 def _store_certificate_pdf(certificate: Certificate) -> str:
-    """Store a minimal, permanent PDF artifact for the immutable issue record."""
-    directory = Path("uploads") / "certificates" / "issued"
-    directory.mkdir(parents=True, exist_ok=True)
-    path = directory / f"{certificate.verification_id}.pdf"
-    text = f"{certificate.certificate_type}\\n{certificate.recipient_name}\\n{certificate.hackathon.title}\\nVerification: {certificate.verification_id}"
-    stream = f"BT /F1 18 Tf 72 720 Td ({text.replace(chr(10), ') Tj 0 -28 Td (' )}) Tj ET".replace("\\n", " ")
-    body = f"1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\\n2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\\n3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj\\n4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\\n5 0 obj << /Length {len(stream)} >> stream\\n{stream}\\nendstream endobj"
-    path.write_bytes(("%PDF-1.4\\n" + body + "\\ntrailer << /Root 1 0 R >>\\n%%EOF").encode("latin-1", "replace"))
-    return f"/uploads/certificates/issued/{path.name}"
+    """Store a permanent PDF artifact on disk if possible, or return a virtual path."""
+    filename = f"{certificate.verification_id}.pdf"
+    pdf_bytes = _build_valid_certificate_pdf(certificate)
+
+    try:
+        directory = Path("uploads") / "certificates" / "issued"
+        directory.mkdir(parents=True, exist_ok=True)
+        path = directory / filename
+        path.write_bytes(pdf_bytes)
+        return f"/uploads/certificates/issued/{filename}"
+    except (OSError, PermissionError):
+        pass
+
+    try:
+        temp_dir = Path(tempfile.gettempdir()) / "chms_certificates"
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        path = temp_dir / filename
+        path.write_bytes(pdf_bytes)
+        return str(path)
+    except Exception:
+        return f"/uploads/certificates/issued/{filename}"
 
 def _issue_certificate(db: Session, template: CertificateTemplate, user: User, team=None, award_label=None) -> Certificate:
     existing = db.query(Certificate).filter(Certificate.template_id == template.id, Certificate.recipient_id == user.id).first()
@@ -351,29 +478,49 @@ def download_certificate(
     if current_user.role == UserRole.COORDINATOR:
         _ensure_template_scope(db, current_user, certificate.hackathon_id)
 
-    # Ensure PDF file exists on disk; generate on-the-fly if missing
-    pdf_path = Path(certificate.pdf_url.lstrip("/")) if certificate.pdf_url else None
-    if not pdf_path or not pdf_path.exists():
-        new_pdf_url = _store_certificate_pdf(certificate)
-        certificate.pdf_url = new_pdf_url
-        db.commit()
-        db.refresh(certificate)
-        pdf_path = Path(new_pdf_url.lstrip("/"))
-
     fmt = (format or "pdf").lower()
     if fmt in ("jpg", "jpeg", "png"):
         bg_url = certificate.template.background_url if certificate.template else None
         if bg_url:
-            bg_path = Path(bg_url.lstrip("/"))
-            if bg_path.exists():
-                media_type = "image/jpeg" if fmt in ("jpg", "jpeg") else "image/png"
-                ext = "jpg" if fmt in ("jpg", "jpeg") else "png"
-                return FileResponse(bg_path, media_type=media_type, filename=f"{certificate.verification_id}.{ext}")
+            if bg_url.startswith("http://") or bg_url.startswith("https://"):
+                try:
+                    with httpx.Client(timeout=15.0) as client:
+                        resp = client.get(bg_url)
+                        if resp.is_success:
+                            media_type = "image/jpeg" if fmt in ("jpg", "jpeg") else "image/png"
+                            ext = "jpg" if fmt in ("jpg", "jpeg") else "png"
+                            return Response(
+                                content=resp.content,
+                                media_type=media_type,
+                                headers={"Content-Disposition": f'attachment; filename="{certificate.verification_id}.{ext}"'}
+                            )
+                except Exception:
+                    pass
+            else:
+                bg_path = Path(bg_url.lstrip("/"))
+                if bg_path.exists():
+                    media_type = "image/jpeg" if fmt in ("jpg", "jpeg") else "image/png"
+                    ext = "jpg" if fmt in ("jpg", "jpeg") else "png"
+                    return FileResponse(bg_path, media_type=media_type, filename=f"{certificate.verification_id}.{ext}")
 
-    return FileResponse(
-        pdf_path,
+    # Generate 100% valid standard PDF bytes
+    pdf_bytes = _build_valid_certificate_pdf(certificate)
+
+    # Best-effort disk persistence (safe on Vercel/serverless read-only filesystems)
+    try:
+        if not certificate.pdf_url:
+            certificate.pdf_url = _store_certificate_pdf(certificate)
+            db.commit()
+    except Exception:
+        pass
+
+    return Response(
+        content=pdf_bytes,
         media_type="application/pdf",
-        filename=f"{certificate.verification_id}.pdf"
+        headers={
+            "Content-Disposition": f'attachment; filename="{certificate.verification_id}.pdf"',
+            "Content-Type": "application/pdf"
+        }
     )
 
 

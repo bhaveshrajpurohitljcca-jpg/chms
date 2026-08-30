@@ -1,16 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Award, CheckCircle2, Download, FileImage, Loader2, Plus, Printer, ShieldCheck } from 'lucide-react';
 import { apiService, STATIC_BASE, type CertificateRecord, type CertificateTemplateRecord } from '@/services/api';
+import {
+  downloadCertificateAsPdf,
+  downloadCertificateAsJpg,
+  getCertificateFieldValue,
+} from '@/utils/certificateGenerator';
 
-const valueFor = (key: string, certificate: CertificateRecord) => ({
-  student_name: certificate.recipient_name,
-  team_name: certificate.team_name || '',
-  hackathon_title: certificate.hackathon_title,
-  certificate_type: certificate.certificate_type,
-  issue_date: new Date(certificate.issued_at).toLocaleDateString('en-IN'),
-  verification_id: certificate.verification_id,
-  award_label: certificate.award_label || '',
-}[key] || '');
+const valueFor = (key: string, certificate: CertificateRecord) => getCertificateFieldValue(key, certificate);
 
 const assetUrl = (url?: string) => {
   if (!url) return '';
@@ -25,9 +22,28 @@ function CertificatePreview({ certificate }: { certificate: CertificateRecord })
       {!template.background_url && <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#fff7df,#d4a85c)]" />}
       <div className="absolute inset-3 border-2 border-[#8a6429]/70" />
       {template.field_layout.length ? template.field_layout.map((field, index) => (
-        <span key={`${field.key}-${index}`} className="absolute -translate-x-1/2 -translate-y-1/2 text-center font-serif font-semibold" style={{ left: `${field.x ?? 50}%`, top: `${field.y ?? 50}%`, fontSize: `${field.fontSize ?? 16}px`, color: field.color || '#302312' }}>
-          {valueFor(field.key, certificate)}
-        </span>
+        field.visible !== false && (
+          <span
+            key={`${field.key}-${index}`}
+            className="absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap"
+            style={{
+              left: `${field.x ?? 50}%`,
+              top: `${field.y ?? 50}%`,
+              fontSize: `${field.fontSize ?? 16}px`,
+              color: field.color || '#302312',
+              fontFamily: field.fontFamily || 'Georgia, serif',
+              fontWeight: field.fontWeight || 600,
+              fontStyle: field.fontStyle || 'normal',
+              textDecoration: field.textDecoration || 'none',
+              opacity: field.opacity ?? 1,
+              letterSpacing: `${field.letterSpacing || 0}px`,
+              textAlign: field.textAlign || 'center',
+              transform: `translate(-50%, -50%) rotate(${field.rotation || 0}deg)`,
+            }}
+          >
+            {valueFor(field.key, certificate)}
+          </span>
+        )
       )) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center">
           <Award size={34} /><p className="text-lg font-bold">{certificate.certificate_type}</p><p>{certificate.recipient_name}</p><p className="text-xs">{certificate.hackathon_title}</p>
@@ -43,6 +59,7 @@ export default function CertificateVaultPage() {
   const [loading, setLoading] = useState(true);
   const [workingId, setWorkingId] = useState<string | null>(null);
   const [selected, setSelected] = useState<CertificateRecord | null>(null);
+  const [downloading, setDownloading] = useState<'pdf' | 'jpg' | null>(null);
   const [error, setError] = useState('');
 
   const load = async () => {
@@ -62,6 +79,56 @@ export default function CertificateVaultPage() {
       if (result.data) { setSelected(result.data); await load(); }
     } catch (err: any) { setError(err.message || 'Certificate could not be generated.'); }
     finally { setWorkingId(null); }
+  };
+
+  const handleDownloadPdf = async (cert: CertificateRecord) => {
+    setDownloading('pdf');
+    setError('');
+    try {
+      await downloadCertificateAsPdf(cert);
+    } catch (clientErr) {
+      console.warn('Client PDF generation error, trying API fallback:', clientErr);
+      try {
+        const blob = await apiService.downloadCertificateFile(cert.id, 'pdf');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${cert.verification_id}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch (apiErr: any) {
+        setError(`Download failed: ${apiErr.message || 'Unable to generate PDF'}`);
+      }
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  const handleDownloadJpg = async (cert: CertificateRecord) => {
+    setDownloading('jpg');
+    setError('');
+    try {
+      await downloadCertificateAsJpg(cert);
+    } catch (clientErr) {
+      console.warn('Client JPG generation error, trying API fallback:', clientErr);
+      try {
+        const blob = await apiService.downloadCertificateFile(cert.id, 'jpg');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${cert.verification_id}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch (apiErr: any) {
+        setError(`Download failed: ${apiErr.message || 'Unable to generate JPG'}`);
+      }
+    } finally {
+      setDownloading(null);
+    }
   };
 
   return <div className="mx-auto flex max-w-6xl flex-col gap-7">
@@ -86,23 +153,25 @@ export default function CertificateVaultPage() {
             <CertificatePreview certificate={selected} />
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
-            <a
-              href={apiService.certificateDownloadUrl(selected.id, 'pdf')}
-              download={`${selected.verification_id}.pdf`}
-              className="inline-flex items-center gap-2 rounded-lg bg-accent-primary px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-black hover:opacity-90 transition-opacity"
+            <button
+              onClick={() => void handleDownloadPdf(selected)}
+              disabled={downloading !== null}
+              className="inline-flex items-center gap-2 rounded-lg bg-accent-primary px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-black hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
             >
-              <Download size={15} /> Download PDF (.pdf)
-            </a>
-            <a
-              href={apiService.certificateDownloadUrl(selected.id, 'jpg')}
-              download={`${selected.verification_id}.jpg`}
-              className="inline-flex items-center gap-2 rounded-lg border border-accent-primary/40 bg-accent-primary/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-accent-primary hover:bg-accent-primary/20 transition-colors"
+              {downloading === 'pdf' ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
+              {downloading === 'pdf' ? 'Generating PDF...' : 'Download PDF (.pdf)'}
+            </button>
+            <button
+              onClick={() => void handleDownloadJpg(selected)}
+              disabled={downloading !== null}
+              className="inline-flex items-center gap-2 rounded-lg border border-accent-primary/40 bg-accent-primary/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-accent-primary hover:bg-accent-primary/20 transition-colors disabled:opacity-50 cursor-pointer"
             >
-              <FileImage size={15} /> Download JPG (.jpg)
-            </a>
+              {downloading === 'jpg' ? <Loader2 size={15} className="animate-spin" /> : <FileImage size={15} />}
+              {downloading === 'jpg' ? 'Generating JPG...' : 'Download JPG (.jpg)'}
+            </button>
             <button
               onClick={() => window.print()}
-              className="inline-flex items-center gap-2 rounded-lg border border-[var(--border-color)] px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-text-primary hover:bg-white/5 transition-colors"
+              className="inline-flex items-center gap-2 rounded-lg border border-[var(--border-color)] px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-text-primary hover:bg-white/5 transition-colors cursor-pointer"
             >
               <Printer size={15} /> Print / Browser PDF
             </button>
