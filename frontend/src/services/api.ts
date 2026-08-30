@@ -255,15 +255,29 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
       headers,
     });
 
-    const data = await response.json();
+    let data: any = null;
+    const rawText = await response.text();
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      data = null;
+    }
+
     if (!response.ok) {
       if (response.status === 401 && getStoredToken()) {
         removeStoredToken();
         window.dispatchEvent(new CustomEvent('chms-unauthorized'));
       }
-      throw new Error(data.detail || data.message || `Request failed (${response.status})`);
+      if (response.status === 502 || response.status === 503 || response.status === 504) {
+        throw new Error('Server is starting up or temporarily busy. Please retry in a few moments.');
+      }
+      const errMsg = (data && (data.detail || data.message))
+        ? (data.detail || data.message)
+        : (rawText && rawText.length < 150 ? rawText : `Request failed (${response.status})`);
+      throw new Error(errMsg);
     }
-    return data;
+
+    return (data !== null ? data : { success: true, message: 'OK' }) as StandardApiResponse<T>;
   } catch (error: any) {
     console.warn(`[API Error: ${endpoint}]`, error.message);
     throw error;
@@ -289,15 +303,29 @@ async function requestFormData<T>(
       body: formData,
     });
 
-    const data = await response.json();
+    let data: any = null;
+    const rawText = await response.text();
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      data = null;
+    }
+
     if (!response.ok) {
       if (response.status === 401 && getStoredToken()) {
         removeStoredToken();
         window.dispatchEvent(new CustomEvent('chms-unauthorized'));
       }
-      throw new Error(data.detail || data.message || 'File upload failed');
+      if (response.status === 502 || response.status === 503 || response.status === 504) {
+        throw new Error('Server is starting up or temporarily busy. Please retry in a few moments.');
+      }
+      const errMsg = (data && (data.detail || data.message))
+        ? (data.detail || data.message)
+        : (rawText && rawText.length < 150 ? rawText : 'File upload failed');
+      throw new Error(errMsg);
     }
-    return data;
+
+    return (data !== null ? data : { success: true, message: 'OK' }) as StandardApiResponse<T>;
   } catch (error: any) {
     console.warn(`[Upload Error: ${endpoint}]`, error.message);
     throw error;

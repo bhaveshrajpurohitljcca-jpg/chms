@@ -95,9 +95,10 @@ export function CoordinatorHackathonsPage() {
 
   useEffect(() => { loadHackathons(); }, [loadHackathons]);
 
-  // Real-time auto-polling every 6 seconds
+  // Real-time auto-polling every 6 seconds (paused when tab hidden)
   useEffect(() => {
     const interval = setInterval(async () => {
+      if (document.hidden) return;
       try {
         const [hackathonsRes, assignmentsRes] = await Promise.all([
           apiService.listHackathons(),

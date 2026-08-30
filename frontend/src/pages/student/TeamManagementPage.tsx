@@ -115,10 +115,11 @@ export const TeamManagementPage: React.FC = () => {
     loadData();
   }, [user?.id]);
 
-  // Real-time auto-polling every 10 seconds for team/invitations update (silent sync)
+  // Real-time auto-polling every 10 seconds for team/invitations update (paused when tab hidden)
   useEffect(() => {
     if (!user?.id) return;
     const interval = setInterval(() => {
+      if (document.hidden) return;
       loadData(undefined, true);
     }, 10000);
     return () => clearInterval(interval);

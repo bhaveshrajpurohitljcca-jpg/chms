@@ -46,9 +46,10 @@ export const HackathonsListPage: React.FC = () => {
     loadData();
   }, []);
 
-  // Real-time auto-polling every 6 seconds
+  // Real-time auto-polling every 6 seconds (paused when tab is hidden)
   useEffect(() => {
     const interval = setInterval(async () => {
+      if (document.hidden) return;
       try {
         const res = await apiService.listHackathons();
         if (res.data) setHackathons(res.data);

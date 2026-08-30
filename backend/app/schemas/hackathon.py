@@ -1,6 +1,6 @@
 from typing import Optional, List
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from app.models.hackathon import HackathonStatus, ProblemCategory
 
 class ProblemStatementCreate(BaseModel):
@@ -33,9 +33,7 @@ class ProblemStatementResponse(BaseModel):
     max_teams: int
     created_at: datetime
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class HackathonCreate(BaseModel):
     title: str
@@ -114,6 +112,4 @@ class HackathonResponse(BaseModel):
     problem_statements: List[ProblemStatementResponse] = []
     created_at: datetime
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

@@ -31,9 +31,10 @@ export function CoordinatorRegistrationsPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Real-time auto-polling every 6 seconds
+  // Real-time auto-polling every 6 seconds (paused when tab hidden)
   useEffect(() => {
     const interval = setInterval(async () => {
+      if (document.hidden) return;
       try {
         const regRes = await apiService.listAllRegistrations(selectedHackathon || undefined, statusFilter || undefined);
         if (regRes.data) setRegistrations(regRes.data);

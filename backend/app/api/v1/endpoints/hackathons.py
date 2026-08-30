@@ -22,42 +22,61 @@ from app.api.deps import get_current_active_user, RoleChecker, get_current_user_
 router = APIRouter(prefix="/hackathons", tags=["Hackathons"])
 
 
-def sync_hackathon_statuses(db: Session):
+_last_status_sync_timestamp: float = 0.0
+
+def sync_hackathon_statuses(db: Session, force: bool = False):
     """
     Automatically updates the status of hackathons based on their start and end dates.
-    Self-healing routine run on queries to keep DB columns accurate.
+    Throttled to run at most once every 60 seconds across requests to eliminate database row-lock contention.
     """
-    now = datetime.utcnow()
-    # 1. If start_date is in the future, status MUST be UPCOMING
-    db.query(Hackathon).filter(
-        Hackathon.start_date != None,
-        Hackathon.start_date > now
-    ).update({Hackathon.status: HackathonStatus.UPCOMING}, synchronize_session=False)
+    global _last_status_sync_timestamp
+    import time
+    now_ts = time.time()
+    if not force and (now_ts - _last_status_sync_timestamp < 60.0):
+        return
 
-    # 2. If start_date <= now and (end_date is null or end_date > now), status MUST be ACTIVE
-    db.query(Hackathon).filter(
-        Hackathon.start_date != None,
-        Hackathon.start_date <= now,
-        (Hackathon.end_date == None) | (Hackathon.end_date > now)
-    ).update({Hackathon.status: HackathonStatus.ACTIVE}, synchronize_session=False)
+    _last_status_sync_timestamp = now_ts
 
-    # 3. Only if start_date <= now AND end_date <= now, status is ENDED
-    db.query(Hackathon).filter(
-        Hackathon.start_date != None,
-        Hackathon.start_date <= now,
-        Hackathon.end_date != None,
-        Hackathon.end_date <= now
-    ).update({Hackathon.status: HackathonStatus.ENDED}, synchronize_session=False)
+    try:
+        now = datetime.utcnow()
+        # 1. If start_date is in the future, status MUST be UPCOMING
+        db.query(Hackathon).filter(
+            Hackathon.start_date != None,
+            Hackathon.start_date > now
+        ).update({Hackathon.status: HackathonStatus.UPCOMING}, synchronize_session=False)
 
-    db.commit()
-    _sync_assignment_account_statuses(db)
+        # 2. If start_date <= now and (end_date is null or end_date > now), status MUST be ACTIVE
+        db.query(Hackathon).filter(
+            Hackathon.start_date != None,
+            Hackathon.start_date <= now,
+            (Hackathon.end_date == None) | (Hackathon.end_date > now)
+        ).update({Hackathon.status: HackathonStatus.ACTIVE}, synchronize_session=False)
+
+        # 3. Only if start_date <= now AND end_date <= now, status is ENDED
+        db.query(Hackathon).filter(
+            Hackathon.start_date != None,
+            Hackathon.start_date <= now,
+            Hackathon.end_date != None,
+            Hackathon.end_date <= now
+        ).update({Hackathon.status: HackathonStatus.ENDED}, synchronize_session=False)
+
+        db.commit()
+        _sync_assignment_account_statuses(db)
+    except Exception:
+        db.rollback()
 
 
 def _sync_assignment_account_statuses(db: Session) -> None:
-    # Ensure coordinator and judge accounts remain active so past hackathons remain accessible
-    for user in db.query(User).filter(User.role.in_([UserRole.COORDINATOR, UserRole.JUDGE])).all():
-        user.is_active = True
-    db.commit()
+    try:
+        # Single bulk update instead of a slow python loop
+        db.query(User).filter(
+            User.role.in_([UserRole.COORDINATOR, UserRole.JUDGE]),
+            User.is_active == False,
+            User.is_deleted == False
+        ).update({User.is_active: True}, synchronize_session=False)
+        db.commit()
+    except Exception:
+        db.rollback()
 
 
 def _ensure_hackathon_editor(db: Session, user: User, hackathon_id: str) -> None:

@@ -12,6 +12,12 @@ if db_url.startswith("postgres://"):
 engine_kwargs = {}
 if db_url.startswith("sqlite"):
     engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    # Production PostgreSQL (Supabase / Render) connection pool tuning
+    engine_kwargs["pool_size"] = 15
+    engine_kwargs["max_overflow"] = 25
+    engine_kwargs["pool_recycle"] = 1800
+    engine_kwargs["pool_pre_ping"] = True
 
 # Create SQLAlchemy engine
 engine = create_engine(db_url, **engine_kwargs)

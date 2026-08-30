@@ -94,10 +94,11 @@ export function CoordinatorProblemStatementsPage() {
     })();
   }, []);
 
-  // Real-time auto-polling every 6 seconds
+  // Real-time auto-polling every 6 seconds (paused when tab hidden)
   useEffect(() => {
     if (!selectedHackathon) return;
     const interval = setInterval(async () => {
+      if (document.hidden) return;
       try {
         const res = await apiService.getProblemStatements(selectedHackathon.id);
         if (res.data) setProblemStatements(res.data);

@@ -1,6 +1,6 @@
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from app.models.registration import RegistrationStatus
 from app.schemas.team import TeamResponse
 from app.schemas.hackathon import HackathonResponse, ProblemStatementResponse
@@ -26,6 +26,4 @@ class RegistrationResponse(BaseModel):
     registered_by: Optional[UserResponse] = None
     created_at: datetime
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

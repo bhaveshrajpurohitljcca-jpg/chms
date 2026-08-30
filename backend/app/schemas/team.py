@@ -1,6 +1,6 @@
 from typing import Optional, List
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from app.models.team import TeamStatus, MemberRole
 from app.schemas.user import UserResponse
 
@@ -18,9 +18,7 @@ class TeamMemberResponse(BaseModel):
     role_in_team: MemberRole
     user: Optional[UserResponse] = None
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class TeamResponse(BaseModel):
     id: str
@@ -34,6 +32,4 @@ class TeamResponse(BaseModel):
     created_at: datetime
     problem_statement_id: Optional[str] = None
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
